@@ -100,8 +100,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     href={item.href}
                     className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 group ${
                       active
-                        ? 'bg-red-600 text-white shadow-md shadow-red-950/20'
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                        ? 'bg-slate-900 text-white shadow-md shadow-slate-950/10 font-bold border-l-4 border-red-600 pl-2.5'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -118,7 +118,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         </span>
                       )}
                       <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
-                        active ? 'bg-red-700 text-red-100' : 'bg-slate-100 text-slate-400 group-hover:text-slate-600'
+                        active ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-400 group-hover:text-slate-600'
                       }`}>
                         {item.shortcut}
                       </span>

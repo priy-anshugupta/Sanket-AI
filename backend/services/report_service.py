@@ -9,7 +9,7 @@ import io
 from datetime import datetime
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc
+from sqlalchemy import select, func, desc, case
 from sqlalchemy.orm import selectinload
 
 from backend.models.report import Report
@@ -273,7 +273,11 @@ class ReportService:
                 Report.activity_type,
                 func.count(Report.id).label("total"),
                 func.sum(
-                    func.cast(Report.is_sif_precursor, type_=None)
+                    case(
+                        (Report.sif_label == "HIGH", 1),
+                        (Report.sif_score >= 0.75, 1),
+                        else_=0
+                    )
                 ).label("sif_count"),
             )
             .where(Report.location.isnot(None))
