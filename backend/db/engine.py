@@ -60,6 +60,10 @@ async def get_db() -> AsyncSession:
 
 async def init_db():
     """Create all tables on startup."""
+    # Import the model package before reading metadata.  SQLAlchemy only knows
+    # about declarative classes that have been imported into this process.
+    import backend.models  # noqa: F401
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
