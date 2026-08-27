@@ -1,0 +1,162 @@
+"""
+SANKET · AI — Stage 2: SIF Classifier
+Scientific SIF Risk Classification using multilingual embeddings + negation-aware keyword boost.
+"""
+
+import numpy as np
+from sentence_transformers import SentenceTransformer
+from backend.config.settings import settings
+from ai.sif.anchor_library import anchor_library
+from ai.sif.negation import negation_parser
+
+
+class SIFClassifier:
+    """
+    Stage 2 of the 5-stage NLP pipeline.
+
+    Classification pipeline:
+        1. Encode report text with multilingual-e5-small (384-dim)
+        2. Cosine similarity against 50 SIF anchors
+        3. Negation-aware keyword boost (+0.15)
+        4. Clamp to [0.0, 1.0]
+        5. Label: HIGH (≥0.75), MEDIUM (0.50-0.74), LOW (<0.50)
+    """
+
+    def __init__(self):
+        self.model: SentenceTransformer | None = None
+        self._initialized = False
+
+    def initialize(self):
+        """Load embedding model and precompute anchor embeddings."""
+        if self._initialized:
+            return
+
+        print(f"[SIF Classifier] Loading embedding model: {settings.EMBEDDING_MODEL}")
+        self.model = SentenceTransformer(settings.EMBEDDING_MODEL)
+        print(f"[SIF Classifier] Model loaded. Embedding dim: {self.model.get_sentence_embedding_dimension()}")
+
+        # Precompute anchor embeddings
+        anchor_library.load(embedding_model=self.model)
+        print(f"[SIF Classifier] Loaded {anchor_library.count} SIF anchors with embeddings")
+
+        self._initialized = True
+
+    def classify(self, text: str) -> dict:
+        """
+        Classify a single report text for SIF potential.
+
+        Args:
+            text: Preprocessed report text
+
+        Returns:
+            {
+                "sif_score": float (0.0-1.0),
+                "sif_label": str (HIGH/MEDIUM/LOW),
+                "is_sif_precursor": bool,
+                "matched_anchor_id": str,
+                "matched_anchor_text": str,
+                "keyword_boost_applied": bool,
+                "boosted_keywords": list[str]
+            }
+        """
+        if not self._initialized:
+            self.initialize()
+
+        # 1. Encode the report text
+        report_embedding = self.model.encode(
+            f"query: {text}",
+            normalize_embeddings=True,
+            show_progress_bar=False,
+        )
+
+        # 2. Cosine similarity against all anchors
+        similarities = np.dot(anchor_library.anchor_embeddings, report_embedding)
+        max_idx = int(np.argmax(similarities))
+        max_similarity = float(similarities[max_idx])
+        matched_anchor = anchor_library.anchors[max_idx]
+
+        # 3. Negation-aware keyword boost
+        keyword_results = negation_parser.check_keywords(text, settings.CRITICAL_KEYWORDS)
+        boosted_keywords = [kr["keyword"] for kr in keyword_results if kr["should_boost"]]
+        keyword_boost = settings.KEYWORD_BOOST if boosted_keywords else 0.0
+
+        # 4. Raw score + clamp
+        raw_score = max_similarity + keyword_boost
+        final_score = float(np.clip(raw_score, 0.0, 1.0))
+
+        # 5. Label assignment
+        if final_score >= settings.SIF_HIGH_THRESHOLD:
+            label = "HIGH"
+        elif final_score >= settings.SIF_MEDIUM_THRESHOLD:
+            label = "MEDIUM"
+        else:
+            label = "LOW"
+
+        return {
+            "sif_score": round(final_score, 4),
+            "sif_label": label,
+            "is_sif_precursor": label in ("HIGH", "MEDIUM"),
+            "matched_anchor_id": matched_anchor["id"],
+            "matched_anchor_text": matched_anchor["text"],
+            "matched_anchor_similarity": round(max_similarity, 4),
+            "keyword_boost_applied": bool(boosted_keywords),
+            "boosted_keywords": boosted_keywords,
+        }
+
+    def classify_batch(self, texts: list[str]) -> list[dict]:
+        """
+        Classify a batch of report texts efficiently.
+        Uses batched encoding for performance (200 reports < 5s target).
+        """
+        if not self._initialized:
+            self.initialize()
+
+        if not texts:
+            return []
+
+        # Batch encode all reports
+        report_embeddings = self.model.encode(
+            [f"query: {t}" for t in texts],
+            normalize_embeddings=True,
+            show_progress_bar=False,
+            batch_size=64,
+        )
+
+        results = []
+        for i, (text, embedding) in enumerate(zip(texts, report_embeddings)):
+            # Cosine similarity
+            similarities = np.dot(anchor_library.anchor_embeddings, embedding)
+            max_idx = int(np.argmax(similarities))
+            max_similarity = float(similarities[max_idx])
+            matched_anchor = anchor_library.anchors[max_idx]
+
+            # Keyword boost
+            keyword_results = negation_parser.check_keywords(text, settings.CRITICAL_KEYWORDS)
+            boosted = [kr["keyword"] for kr in keyword_results if kr["should_boost"]]
+            boost = settings.KEYWORD_BOOST if boosted else 0.0
+
+            score = float(np.clip(max_similarity + boost, 0.0, 1.0))
+
+            if score >= settings.SIF_HIGH_THRESHOLD:
+                label = "HIGH"
+            elif score >= settings.SIF_MEDIUM_THRESHOLD:
+                label = "MEDIUM"
+            else:
+                label = "LOW"
+
+            results.append({
+                "sif_score": round(score, 4),
+                "sif_label": label,
+                "is_sif_precursor": label in ("HIGH", "MEDIUM"),
+                "matched_anchor_id": matched_anchor["id"],
+                "matched_anchor_text": matched_anchor["text"],
+                "matched_anchor_similarity": round(max_similarity, 4),
+                "keyword_boost_applied": bool(boosted),
+                "boosted_keywords": boosted,
+            })
+
+        return results
+
+
+# Singleton
+sif_classifier = SIFClassifier()

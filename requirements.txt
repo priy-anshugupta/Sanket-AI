@@ -1,0 +1,53 @@
+# ============================================
+# SANKET · AI — Python Dependencies
+# SIH26165 · Oil India SIF Precursor Detection
+# ============================================
+
+# --- Backend (FastAPI) ---
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+pydantic==2.10.4
+pydantic-settings==2.7.1
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.2.1
+
+# --- Database ---
+sqlalchemy[asyncio]==2.0.36
+aiosqlite==0.20.0
+
+# --- AI / NLP ---
+sentence-transformers==3.3.1
+torch==2.5.1
+transformers==4.47.1
+numpy==1.26.4
+scikit-learn==1.6.0
+spacy==3.8.3
+langdetect==1.0.9
+
+# --- LangGraph Agent Orchestration ---
+langgraph==0.2.60
+langchain-core==0.3.28
+
+# --- MCP Tool Protocol ---
+fastmcp==2.3.4
+
+# --- Knowledge Graph ---
+networkx==3.4.2
+
+# --- Document Generation ---
+reportlab==4.2.5
+
+# --- LLM Providers ---
+groq==0.13.0
+httpx==0.28.1
+
+# --- Voice / Audio ---
+openai-whisper==20240930
+
+# --- Utilities ---
+python-dotenv==1.0.1
+psutil==6.1.1
+ftfy==6.3.1
+aiofiles==24.1.0

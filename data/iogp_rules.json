@@ -1,0 +1,65 @@
+[
+  {
+    "rule_id": "LSR-01",
+    "rule_name": "Working at Height",
+    "description": "Protect yourself against a fall when working at height. Always use fall protection when working at a height of 1.8 meters or more above ground level.",
+    "examples": ["Working on scaffolding without harness", "Ladder work above 2 meters", "Roof access without guardrails"],
+    "barriers": ["Fall arrest system", "Guardrails", "Safety nets", "Harness and lanyard", "Secured ladders"]
+  },
+  {
+    "rule_id": "LSR-02",
+    "rule_name": "Confined Space",
+    "description": "Obtain authorization before entering a confined space. Test the atmosphere, use ventilation, and have a rescue plan before entry.",
+    "examples": ["Tank entry without gas test", "Vessel inspection without ventilation", "Pit work without rescue standby"],
+    "barriers": ["Gas testing", "Forced ventilation", "Entry permit", "Rescue team standby", "Continuous monitoring"]
+  },
+  {
+    "rule_id": "LSR-03",
+    "rule_name": "Hot Work",
+    "description": "Control flammables and ignition sources when performing hot work. Always obtain a hot work permit and maintain fire watch.",
+    "examples": ["Welding near fuel storage", "Grinding near gas lines", "Torch cutting without fire watch"],
+    "barriers": ["Hot work permit", "Fire watch", "Flammable material removal", "Fire extinguisher present", "Gas testing"]
+  },
+  {
+    "rule_id": "LSR-04",
+    "rule_name": "Energy Isolation",
+    "description": "Verify isolation and zero energy before work begins. Follow lockout/tagout procedures for all energy sources.",
+    "examples": ["Working on live electrical panel", "Maintenance without LOTO", "Valve work under pressure"],
+    "barriers": ["LOTO procedures", "Energy verification", "Isolation permits", "Zero energy confirmation", "Tag and lock devices"]
+  },
+  {
+    "rule_id": "LSR-05",
+    "rule_name": "Line of Fire",
+    "description": "Keep yourself and others out of the line of fire. Be aware of moving objects, vehicles, pressure releases, and falling objects.",
+    "examples": ["Standing under suspended load", "Working near rotating equipment", "In path of pressurized release"],
+    "barriers": ["Exclusion zones", "Barricades", "Warning signs", "Machine guarding", "Spotters"]
+  },
+  {
+    "rule_id": "LSR-06",
+    "rule_name": "Safe Mechanical Lifting",
+    "description": "Plan lifting operations and control the area. Verify equipment ratings and rig properly before any lift.",
+    "examples": ["Overloaded crane lift", "Unrated sling usage", "Lifting without lift plan"],
+    "barriers": ["Lift plan", "Equipment inspection", "Load calculation", "Competent rigger", "Exclusion zone"]
+  },
+  {
+    "rule_id": "LSR-07",
+    "rule_name": "Driving Safety",
+    "description": "Follow safe driving rules. Wear seatbelts, do not use mobile phones, respect speed limits, and ensure vehicle fitness.",
+    "examples": ["Overspeeding on rig road", "Driving in monsoon without precaution", "Unfit vehicle on field duty"],
+    "barriers": ["Speed limits", "Seatbelt usage", "Vehicle inspection", "Journey management plan", "Driver fitness"]
+  },
+  {
+    "rule_id": "LSR-08",
+    "rule_name": "Bypassing Safety Controls",
+    "description": "Do not bypass, disable, or override safety-critical equipment or procedures without authorization. This includes BOP systems, PSVs, interlocks, and safety instrumented systems.",
+    "examples": ["Disabling BOP alarm", "Bypassing pressure safety valve", "Overriding interlock system"],
+    "barriers": ["Management of change", "Authorization process", "Temporary bypass register", "Risk assessment", "Competent person approval"]
+  },
+  {
+    "rule_id": "LSR-09",
+    "rule_name": "Ground Disturbance",
+    "description": "Obtain authorization before ground disturbance activities. Verify buried services and underground utilities before excavation.",
+    "examples": ["Excavation near pipeline", "Drilling near underground cables", "Trenching without survey"],
+    "barriers": ["Ground disturbance permit", "Utility survey", "Hand digging near services", "Trench shoring", "Competent person supervision"]
+  }
+]
