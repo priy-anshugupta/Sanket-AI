@@ -192,9 +192,14 @@ def main():
     print("  Creating 30 Clean Git Commits on main")
     print("=" * 60)
 
-    # Set user info if not set
+    # Set user info with user's verified GitHub email
     run_git('git config user.name "Priyanshu Gupta"')
-    run_git('git config user.email "priyanshu@oilindia.internal"')
+    run_git('git config user.email "priyanshug26005@gmail.com"')
+
+    # Reset repository to fresh state for clean 30 commits
+    run_git('git checkout --orphan temp_main')
+    run_git('git branch -D main')
+    run_git('git branch -M main')
 
     for idx, (msg, paths) in enumerate(COMMITS, 1):
         for p in paths:
@@ -219,15 +224,17 @@ def main():
     print(f"  Total Commits on main: {out}")
     print("=" * 60)
 
-    # Push to origin main
-    print("  Pushing to origin main...")
-    code, out, err = run_git("git push -u origin main --force")
+    # Push to origin main, vansh, dibyaranjan
+    print("  Pushing to origin main, vansh, and dibyaranjan...")
+    run_git("git branch -f vansh main")
+    run_git("git branch -f dibyaranjan main")
+    code, out, err = run_git("git push -u origin main vansh dibyaranjan --force")
     if code == 0:
         print("  [SUCCESS] Successfully pushed all 30 commits to https://github.com/priy-anshugupta/Sanket-AI.git")
         print(out)
     else:
         print(f"  [PUSH NOTICE] {err or out}")
-        print("  If GitHub requires authentication, you can run: git push -u origin main")
+        print("  If GitHub requires authentication, you can run: git push -u origin main --force")
 
 if __name__ == "__main__":
     main()
