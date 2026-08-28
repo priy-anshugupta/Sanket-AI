@@ -204,7 +204,7 @@ export default function TriageDashboard() {
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-md shadow-slate-950/20 transition-all hover:scale-[1.02] cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            + Ingest Safety Observation
+            Ingest Safety Observation
           </button>
         </div>
       </div>
