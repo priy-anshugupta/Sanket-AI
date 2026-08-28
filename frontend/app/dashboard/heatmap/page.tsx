@@ -3,31 +3,21 @@
 import { useState, useEffect, useRef } from 'react';
 import { 
   Map, 
-  Table2, 
   AlertTriangle, 
   Flame, 
-  ShieldAlert, 
-  ArrowUpRight, 
   CheckCircle2, 
   Info, 
-  Navigation, 
   Compass, 
   Radio, 
   Layers, 
   Phone, 
   AlertOctagon, 
-  Eye, 
-  SlidersHorizontal, 
-  Sparkles, 
-  LocateFixed, 
-  Satellite, 
   Maximize2, 
   Minimize2, 
   Wind, 
   Droplets, 
-  FlameKindling, 
-  Activity, 
-  Waves 
+  Activity,
+  MapPin
 } from 'lucide-react';
 
 const API = 'http://localhost:8000';
@@ -285,22 +275,20 @@ function DensityCell({
   const isHigh = density >= 25;
   const isMed = density >= 10 && density < 25;
 
-  let bgClass = "bg-emerald-50 text-emerald-900 border-emerald-200 hover:bg-emerald-100/80";
+  let bgClass = "bg-[#EDFAF4] text-[#1B8A6C] border-[#BFEADB]";
 
   if (isHigh) {
-    bgClass = "bg-red-50 text-red-950 border-red-200 hover:bg-red-100 font-extrabold shadow-2xs";
+    bgClass = "bg-[#FDF2F2] text-[#D63B3B] border-[#F5C6C6] font-bold";
   } else if (isMed) {
-    bgClass = "bg-amber-50 text-amber-950 border-amber-200 hover:bg-amber-100 font-bold";
+    bgClass = "bg-[#FEF7EC] text-[#D4820A] border-[#F8DFB6] font-semibold";
   }
 
   return (
-    <td className={`px-3.5 py-3 text-center border transition-all cursor-pointer ${bgClass}`}>
-      <div className="flex items-center justify-center gap-1">
-        <span className="font-mono text-sm tracking-tight">{density.toFixed(1)}%</span>
-      </div>
+    <td className={`px-3 py-2.5 text-center border text-xs transition-all ${bgClass}`}>
+      <div className="font-mono">{density.toFixed(1)}%</div>
       {totalCount !== undefined && totalCount > 0 && (
-        <div className="text-[10px] font-mono opacity-70 mt-0.5">
-          ({sifCount}/{totalCount} SIFp)
+        <div className="text-[10px] font-mono opacity-75 mt-0.5">
+          ({sifCount}/{totalCount})
         </div>
       )}
     </td>
@@ -487,7 +475,7 @@ export default function DualHeatmapAndMapPage() {
     if (showPipelines) {
       TRUNK_PIPELINES.forEach(pipe => {
         L.polyline(pipe.points as any, {
-          color: '#38BDF8',
+          color: '#0A6B63',
           weight: 3.5,
           dashArray: '8, 8',
           opacity: 0.85,
@@ -544,9 +532,9 @@ export default function DualHeatmapAndMapPage() {
           [tipLat, tipLng],
           [rightLat, rightLng],
         ], {
-          color: '#DC2626',
+          color: '#D63B3B',
           weight: 2,
-          fillColor: '#EF4444',
+          fillColor: '#D63B3B',
           fillOpacity: 0.35,
         }).bindTooltip(`💨 TOXIC ${asset.gas_type} DISPERSION PLUME<br>• Wind: ${windVector.speedKmh} km/h ${windVector.directionText}<br>• Downwind Hazard Zone: 5.2 km<br>• Immediate Action: Downwind Evacuation Required`, { sticky: true }).addTo(group);
       });
@@ -585,10 +573,10 @@ export default function DualHeatmapAndMapPage() {
       if (selectedAsset?.id === asset.id || isHigh) {
         L.circle([asset.lat, asset.lng], {
           radius: bufferRadiusMeters,
-          color: isHigh ? '#EF4444' : '#F59E0B',
+          color: isHigh ? '#D63B3B' : '#D4820A',
           weight: 2,
           dashArray: '6, 6',
-          fillColor: isHigh ? '#EF4444' : '#F59E0B',
+          fillColor: isHigh ? '#D63B3B' : '#D4820A',
           fillOpacity: selectedAsset?.id === asset.id ? 0.22 : 0.12,
         }).addTo(group);
       }
@@ -604,419 +592,396 @@ export default function DualHeatmapAndMapPage() {
     setTimeout(() => setSwaToast(null), 5000);
   };
 
-  const flyToAsset = (asset: GeoAsset) => {
-    setSelectedAsset(asset);
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.flyTo([asset.lat, asset.lng], 12, { duration: 1.2 });
-    }
-  };
+  useEffect(() => {
+    const handleLiveReport = (e: any) => {
+      const rep = e.detail;
+      if (rep) {
+        setSwaToast(`🚨 Live Field Precursor Ingested: ${rep.location || 'Well Pad 7'} (${(rep.sif_score * 100).toFixed(0)}% SIF Potential)`);
+        setTimeout(() => setSwaToast(null), 6000);
+      }
+    };
+    window.addEventListener('sanket:new_report', handleLiveReport);
+    return () => window.removeEventListener('sanket:new_report', handleLiveReport);
+  }, []);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 bg-[#F1F5F9]/70 min-h-screen">
+    <div className="dashboard-page space-y-5 p-6 bg-[#F7F8F5] min-h-screen text-[#1A2B2D]">
       
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-300 shadow-sm">
+      {/* ── Compact Header & Tab Switcher Bar ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-md">
-              {activeTab === 'gis_map' ? (
-                <Satellite className="w-5 h-5 text-amber-400 animate-pulse" />
-              ) : (
-                <Table2 className="w-5 h-5 text-blue-400" />
-              )}
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="font-heading font-black text-2xl text-slate-900 tracking-tight">
-                  {activeTab === 'gis_map' ? 'Upper Assam Geospatial Intelligence & Environmental Defense' : 'SIF-Precursor Density Heatmap Matrix'}
-                </h1>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-red-100 text-red-800 border border-red-300 flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-red-600" />
-                  NASA FIRMS + GAUSSIAN GAS PLUME AI
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
-                {activeTab === 'gis_map' 
-                  ? 'Real-world sub-meter photographic satellite imagery, dynamic toxic H2S dispersion modeling, NASA thermal flaring & Brahmaputra flood telemetry'
-                  : 'Calculates corporate concentration density: D_SIF = (Confirmed SIF Precursors ÷ Total Observations) × 100'
-                }
-              </p>
-            </div>
+            <h1 className="font-heading font-bold text-xl text-[#1A2B2D] tracking-tight">
+              Upper Assam GIS Map & SIF Heatmap Matrix
+            </h1>
+            <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#EDFAF4] text-[#1B8A6C] border border-[#BFEADB] flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#1B8A6C] animate-pulse" />
+              Live Telemetry
+            </span>
           </div>
+          <p className="text-[13px] text-[#5E7072] mt-0.5 font-normal">
+            Geospatial precursor density, active e-PTW buffer zones, and thermal flare integration across 10 assets
+          </p>
         </div>
 
-        <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-300 shadow-inner">
+        {/* View Switcher Tabs */}
+        <div className="flex items-center gap-1 bg-[#F0F2ED] p-1 rounded-lg border border-[#C2CEC2]">
           <button
             onClick={() => setActiveTab('gis_map')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-heading font-extrabold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'gis_map'
-                ? 'bg-slate-900 text-white shadow-md shadow-slate-950/20'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                ? 'bg-[#0A6B63] text-white shadow-xs'
+                : 'text-[#5E7072] hover:text-[#1A2B2D]'
             }`}
           >
-            <Satellite className="w-4 h-4 text-amber-400" />
-            🛰️ Geospatial Intelligence Map
+            <Compass className="w-3.5 h-3.5" />
+            GIS Tactical Map
           </button>
-
           <button
             onClick={() => setActiveTab('matrix')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-heading font-extrabold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'matrix'
-                ? 'bg-slate-900 text-white shadow-md shadow-slate-950/20'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                ? 'bg-[#0A6B63] text-white shadow-xs'
+                : 'text-[#5E7072] hover:text-[#1A2B2D]'
             }`}
           >
-            <Table2 className="w-4 h-4 text-blue-400" />
-            📊 Heatmap Matrix
+            <Layers className="w-3.5 h-3.5" />
+            Asset × Activity Matrix
           </button>
         </div>
       </div>
 
-      {swaToast && (
-        <div className="p-4 rounded-xl bg-red-600 text-white text-xs font-bold flex items-center justify-between shadow-xl shadow-red-950/30 border border-red-400 animate-fadeIn">
-          <div className="flex items-center gap-3">
-            <AlertOctagon className="w-5 h-5 fill-white animate-bounce shrink-0" />
-            <span className="text-sm font-semibold">{swaToast}</span>
+      {/* ── Intelligence Layer Toggle Bar ── */}
+      <div className="bg-white p-3.5 rounded-xl border-2 border-[#C2CEC2] shadow-xs flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-xs font-medium text-[#5E7072] mr-1 flex items-center gap-1">
+            <Layers className="w-3.5 h-3.5 text-[#0A6B63]" /> Layers:
+          </span>
+
+          <button
+            onClick={() => setShowGasPlume(!showGasPlume)}
+            className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-all cursor-pointer flex items-center gap-1.5 ${
+              showGasPlume
+                ? 'bg-[#FDF2F2] border-[#F5C6C6] text-[#D63B3B]'
+                : 'bg-[#F7F8F5] border-[#C2CEC2] text-[#5E7072] hover:text-[#1A2B2D]'
+            }`}
+          >
+            <Wind className="w-3.5 h-3.5" /> Gas Plume
+          </button>
+
+          <button
+            onClick={() => setShowNasaFirms(!showNasaFirms)}
+            className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-all cursor-pointer flex items-center gap-1.5 ${
+              showNasaFirms
+                ? 'bg-[#FEF7EC] border-[#F8DFB6] text-[#D4820A]'
+                : 'bg-[#F7F8F5] border-[#C2CEC2] text-[#5E7072] hover:text-[#1A2B2D]'
+            }`}
+          >
+            <Flame className="w-3.5 h-3.5" /> NASA Thermal
+          </button>
+
+          <button
+            onClick={() => setShowFloodRisk(!showFloodRisk)}
+            className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-all cursor-pointer flex items-center gap-1.5 ${
+              showFloodRisk
+                ? 'bg-[#EDFAF4] border-[#BFEADB] text-[#1B8A6C]'
+                : 'bg-[#F7F8F5] border-[#C2CEC2] text-[#5E7072] hover:text-[#1A2B2D]'
+            }`}
+          >
+            <Droplets className="w-3.5 h-3.5" /> Flood Inundation
+          </button>
+
+          <button
+            onClick={() => setShowPipelines(!showPipelines)}
+            className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-all cursor-pointer flex items-center gap-1.5 ${
+              showPipelines
+                ? 'bg-[#EDFAF4] border-[#BFEADB] text-[#1B8A6C]'
+                : 'bg-[#F7F8F5] border-[#C2CEC2] text-[#5E7072] hover:text-[#1A2B2D]'
+            }`}
+          >
+            <Activity className="w-3.5 h-3.5" /> Trunk Pipelines
+          </button>
+        </div>
+
+        {/* Spatial SWA Radius selector */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-[#5E7072]">SWA Buffer:</span>
+          <div className="flex items-center gap-1 bg-[#F0F2ED] p-0.5 rounded-lg border border-[#C2CEC2]">
+            {[250, 500, 1000].map(r => (
+              <button
+                key={r}
+                onClick={() => setBufferRadiusMeters(r)}
+                className={`px-2 py-0.5 rounded text-xs font-mono font-medium transition-all cursor-pointer ${
+                  bufferRadiusMeters === r
+                    ? 'bg-white text-[#0A6B63] shadow-xs font-bold'
+                    : 'text-[#5E7072] hover:text-[#1A2B2D]'
+                }`}
+              >
+                {r}m
+              </button>
+            ))}
           </div>
-          <button onClick={() => setSwaToast(null)} className="text-white/80 hover:text-white font-bold text-lg cursor-pointer">✕</button>
+        </div>
+      </div>
+
+      {/* SWA Toast Alert */}
+      {swaToast && (
+        <div className="p-3 rounded-lg bg-[#D63B3B] text-white text-xs font-medium flex items-center justify-between shadow-md">
+          <div className="flex items-center gap-2">
+            <AlertOctagon className="w-4 h-4 fill-white shrink-0" />
+            <span>{swaToast}</span>
+          </div>
+          <button onClick={() => setSwaToast(null)} className="text-white font-bold cursor-pointer">✕</button>
         </div>
       )}
 
+      {/* ── TAB 1: GIS TACTICAL MAP ── */}
       {activeTab === 'gis_map' && (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           
-          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-slate-300 shadow-xs">
-            
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[10px] font-mono font-bold uppercase text-slate-400 px-1 flex items-center gap-1">
-                <Layers className="w-3.5 h-3.5" /> Intelligence Layers:
-              </span>
+          {/* Map Column */}
+          <div className={`transition-all duration-300 ${isExpanded ? 'lg:col-span-12' : 'lg:col-span-8'}`}>
+            <div className="bg-white rounded-xl border-2 border-[#C2CEC2] shadow-xs overflow-hidden">
               
-              <button
-                onClick={() => setShowGasPlume(!showGasPlume)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
-                  showGasPlume
-                    ? 'bg-red-600 text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                <Wind className="w-3.5 h-3.5" />
-                💨 Toxic Gas Plume (ALOHA)
-              </button>
-
-              <button
-                onClick={() => setShowNasaFirms(!showNasaFirms)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
-                  showNasaFirms
-                    ? 'bg-amber-600 text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                <FlameKindling className="w-3.5 h-3.5" />
-                🛰️ NASA FIRMS Thermal Flare
-              </button>
-
-              <button
-                onClick={() => setShowFloodRisk(!showFloodRisk)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
-                  showFloodRisk
-                    ? 'bg-blue-600 text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                <Waves className="w-3.5 h-3.5" />
-                🌊 Brahmaputra Flood Sensor
-              </button>
-
-              <button
-                onClick={() => setShowPipelines(!showPipelines)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
-                  showPipelines
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                <Activity className="w-3.5 h-3.5" />
-                🛢️ Trunk Pipelines
-              </button>
-            </div>
-
-            <div className="flex items-center gap-3 bg-slate-50 px-3.5 py-1.5 rounded-xl border border-slate-200">
-              <span className="text-[10px] font-mono font-bold uppercase text-slate-500 flex items-center gap-1">
-                <SlidersHorizontal className="w-3.5 h-3.5 text-blue-600" /> SWA Buffer:
-              </span>
-              <div className="flex items-center gap-1">
-                {[
-                  { label: '100m (SWA)', val: 100 },
-                  { label: '500m (Evac)', val: 500 },
-                  { label: '2.0km (Warning)', val: 2000 },
-                  { label: '5.0km (Eco-Zone)', val: 5000 },
-                ].map(b => (
-                  <button
-                    key={b.val}
-                    onClick={() => setBufferRadiusMeters(b.val)}
-                    className={`px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer ${
-                      bufferRadiusMeters === b.val
-                        ? 'bg-red-600 text-white shadow-2xs'
-                        : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-200'
-                    }`}
-                  >
-                    {b.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            
-            <div className={`bg-white rounded-2xl border-2 border-slate-300 shadow-md overflow-hidden relative transition-all duration-300 ${
-              isExpanded ? 'lg:col-span-12' : 'lg:col-span-8'
-            }`}>
-              
-              <div className="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <LocateFixed className="w-4 h-4 text-emerald-400 animate-pulse" />
-                    <h3 className="font-heading font-extrabold text-xs uppercase tracking-wider text-white">
-                      Live Upper Assam Geospatial Tactical Canvas
-                    </h3>
-                  </div>
-
-                  <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-slate-800 border border-slate-700 text-[10px] font-mono text-cyan-300">
-                    <Wind className="w-3 h-3 text-cyan-400" />
-                    <span>Wind: {windVector.speedKmh} km/h ({windVector.directionText})</span>
-                  </div>
+              {/* Map Top Bar */}
+              <div className="px-4 py-2.5 bg-[#F0F2ED] flex items-center justify-between border-b border-[#C2CEC2]">
+                <div className="flex items-center gap-2 text-xs font-medium text-[#1A2B2D]">
+                  <MapPin className="w-4 h-4 text-[#0A6B63]" />
+                  <span>Assam Operational Basin (27.47° N, 95.35° E)</span>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setMapType(mapType === 'satellite' ? 'street' : 'satellite')}
-                    className="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[10px] font-mono font-bold transition-all border border-slate-700 cursor-pointer"
-                  >
-                    {mapType === 'satellite' ? '🗺️ Street Map' : '🛰️ Satellite'}
-                  </button>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 bg-white p-0.5 rounded-md border border-[#C2CEC2]">
+                    <button
+                      onClick={() => setMapType('satellite')}
+                      className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all ${
+                        mapType === 'satellite' ? 'bg-[#0A6B63] text-white font-semibold' : 'text-[#5E7072]'
+                      }`}
+                    >
+                      Satellite
+                    </button>
+                    <button
+                      onClick={() => setMapType('street')}
+                      className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all ${
+                        mapType === 'street' ? 'bg-[#0A6B63] text-white font-semibold' : 'text-[#5E7072]'
+                      }`}
+                    >
+                      Street
+                    </button>
+                  </div>
 
                   <button
                     onClick={() => setIsExpanded(!isExpanded)}
-                    className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold font-mono transition-all border border-slate-700 shadow-xs cursor-pointer"
-                    title={isExpanded ? "Collapse to Split View" : "Enlarge Map to Full Width"}
+                    className="p-1 rounded-md bg-white border border-[#C2CEC2] text-[#5E7072] hover:text-[#1A2B2D]"
+                    title={isExpanded ? "Collapse Map" : "Expand Fullscreen"}
                   >
-                    {isExpanded ? (
-                      <>
-                        <Minimize2 className="w-3.5 h-3.5 text-amber-400" />
-                        <span>Split View</span>
-                      </>
-                    ) : (
-                      <>
-                        <Maximize2 className="w-3.5 h-3.5 text-blue-400" />
-                        <span>⛶ Enlarge Map</span>
-                      </>
-                    )}
+                    {isExpanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
                   </button>
                 </div>
               </div>
 
-              <div 
-                ref={mapContainerRef} 
-                className="w-full relative z-0" 
-                style={{ height: isExpanded ? 740 : 580 }}
-              />
+              {/* Map Leaflet Container */}
+              <div className="relative">
+                <div 
+                  ref={mapContainerRef} 
+                  className="w-full relative z-0" 
+                  style={{ height: isExpanded ? 740 : 580 }}
+                />
 
-              {isExpanded && selectedAsset && (
-                <div className="absolute top-16 right-4 z-10 w-96 bg-white/95 backdrop-blur-md rounded-2xl border-2 border-slate-300 shadow-2xl overflow-hidden animate-fadeIn">
-                  <div className="px-4 py-2.5 bg-slate-900 text-white flex items-center justify-between shadow-xs">
-                    <div className="flex items-center gap-1.5 text-xs font-heading font-extrabold uppercase tracking-wide">
-                      <Radio className="w-3.5 h-3.5 text-red-400 animate-pulse" />
-                      <span>{selectedAsset.name}</span>
+                {isExpanded && selectedAsset && (
+                  <div className="absolute top-16 right-4 z-10 w-96 bg-white/95 backdrop-blur-md rounded-xl border border-[#C2CEC2] shadow-lg overflow-hidden animate-fadeIn">
+                    <div className="px-3.5 py-2 bg-[#0A6B63] text-white flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold">
+                        <Radio className="w-3.5 h-3.5 text-white" />
+                        <span>{selectedAsset.name}</span>
+                      </div>
+                      <span className="text-[10px] font-mono text-white/90 font-bold">{selectedAsset.sif_label} RISK</span>
                     </div>
-                    <span className="text-[10px] font-mono text-slate-300 font-bold">{selectedAsset.sif_label} RISK</span>
+
+                    <div className="p-3.5 space-y-2.5 text-xs">
+                      <div className="flex justify-between items-center bg-[#F7F8F5] p-2 rounded-lg border border-[#C2CEC2]">
+                        <div>
+                          <div className="text-[10px] text-[#5E7072] uppercase font-semibold">SIF Density</div>
+                          <div className="font-heading text-base font-bold text-[#D63B3B]">{selectedAsset.sif_density.toFixed(1)}%</div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] text-[#5E7072] uppercase font-semibold">Workers in {bufferRadiusMeters}m</div>
+                          <div className="font-heading text-sm font-bold text-[#1A2B2D]">{selectedAsset.workers_on_site} Persons</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-[10px] text-[#5E7072] uppercase font-semibold">NASA Flare Temp</div>
+                          <div className="font-mono text-xs text-[#D4820A] font-bold">{selectedAsset.flare_temp_c}°C</div>
+                        </div>
+                      </div>
+
+                      <div className="p-2 bg-[#FEF7EC] rounded-lg border border-[#F8DFB6]">
+                        <div className="text-[10px] uppercase font-semibold text-[#D4820A] mb-0.5 flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3 text-[#D4820A]" /> Latest Hazard Observation:
+                        </div>
+                        <p className="text-xs text-[#1A2B2D] leading-relaxed line-clamp-2">
+                          "{selectedAsset.latest_hazard}"
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-[10px] text-[#5E7072]">
+                          Toolpusher: <span className="font-semibold text-[#1A2B2D]">{selectedAsset.toolpusher}</span>
+                        </div>
+                        <a
+                          href={`tel:${selectedAsset.phone}`}
+                          className="px-2.5 py-1 bg-[#0A6B63] text-white rounded-md font-semibold text-xs hover:bg-[#085B54] flex items-center gap-1 shadow-xs"
+                        >
+                          <Phone className="w-3 h-3" /> Call
+                        </a>
+                      </div>
+
+                      {selectedAsset.sif_label === 'HIGH' && (
+                        <button
+                          onClick={() => handleTriggerSWA(selectedAsset)}
+                          className="w-full py-2 px-3 rounded-lg bg-[#D63B3B] hover:bg-[#B92525] text-white font-semibold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                        >
+                          <AlertOctagon className="w-3.5 h-3.5" />
+                          Freeze {selectedAsset.active_permits} Permits (SWA {bufferRadiusMeters}m)
+                        </button>
+                      )}
+                    </div>
                   </div>
-
-                  <div className="p-4 space-y-3 text-xs bg-slate-50/70">
-                    <div className="flex justify-between items-center bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
-                      <div>
-                        <div className="text-[10px] font-mono text-slate-400 font-bold uppercase">SIF Density</div>
-                        <div className="font-mono text-base font-black text-red-600">{selectedAsset.sif_density.toFixed(1)}%</div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] font-mono text-slate-400 font-bold uppercase">Workers in {bufferRadiusMeters}m</div>
-                        <div className="font-mono text-sm font-black text-slate-800">{selectedAsset.workers_on_site} Persons</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-[10px] font-mono text-slate-400 font-bold uppercase">NASA Flare Temp</div>
-                        <div className="font-mono text-[11px] text-amber-600 font-bold">{selectedAsset.flare_temp_c}°C</div>
-                      </div>
-                    </div>
-
-                    <div className="p-2.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
-                      <div className="text-[10px] font-mono uppercase font-bold text-slate-500 mb-1 flex items-center gap-1">
-                        <AlertTriangle className="w-3 h-3 text-amber-500" /> Latest Hazard Observation:
-                      </div>
-                      <p className="text-[11px] text-slate-900 font-bold leading-relaxed line-clamp-2">
-                        "{selectedAsset.latest_hazard}"
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="text-[10px] text-slate-600 font-medium">
-                        Toolpusher: <span className="font-bold text-slate-900">{selectedAsset.toolpusher}</span>
-                      </div>
-                      <a
-                        href={`tel:${selectedAsset.phone}`}
-                        className="px-3 py-1 bg-blue-600 text-white rounded-lg font-bold text-[11px] hover:bg-blue-700 flex items-center gap-1 shadow-xs cursor-pointer"
-                      >
-                        <Phone className="w-3 h-3" /> Call
-                      </a>
-                    </div>
-
-                    {selectedAsset.sif_label === 'HIGH' && (
-                      <button
-                        onClick={() => handleTriggerSWA(selectedAsset)}
-                        className="w-full py-2 px-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-heading font-extrabold text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-red-950/30 cursor-pointer"
-                      >
-                        <AlertOctagon className="w-3.5 h-3.5 fill-white" />
-                        🛑 Freeze {selectedAsset.active_permits} Permits (SWA {bufferRadiusMeters}m)
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
+                )}
+              </div>
             </div>
+          </div>
 
-            <div className={`bg-white rounded-2xl border-2 border-slate-300 shadow-md overflow-hidden transition-all duration-300 ${
-              isExpanded ? 'hidden' : 'lg:col-span-4'
-            }`}>
+          {/* Right Column: Asset Telemetry Drawer */}
+          <div className={`transition-all duration-300 ${isExpanded ? 'hidden' : 'lg:col-span-4'}`}>
+            <div className="bg-white rounded-xl border-2 border-[#C2CEC2] shadow-xs overflow-hidden">
               
-              <div className="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between shadow-sm">
+              <div className="px-4 py-2.5 bg-[#F0F2ED] flex items-center justify-between border-b border-[#C2CEC2]">
                 <div className="flex items-center gap-2">
-                  <Radio className="w-4 h-4 text-red-400" />
-                  <h3 className="font-heading font-extrabold text-xs uppercase tracking-wider text-white">
+                  <Radio className="w-4 h-4 text-[#0A6B63]" />
+                  <h3 className="font-heading font-semibold text-xs uppercase tracking-wider text-[#1A2B2D]">
                     Asset Geospatial Telemetry
                   </h3>
                 </div>
-                <span className="text-[10px] font-mono text-slate-400">REAL GPS</span>
+                <span className="text-[10px] font-mono text-[#5E7072]">REAL GPS</span>
               </div>
 
-              <div className="p-5 space-y-4 bg-slate-50/50">
+              <div className="p-4 space-y-3">
                 {selectedAsset ? (
-                  <div className="space-y-4 animate-fadeIn">
+                  <div className="space-y-3 animate-fadeIn">
                     
                     {/* Section 1: Asset Identity Card */}
-                    <div className="p-4 rounded-xl bg-white border-2 border-slate-300 shadow-sm space-y-2">
+                    <div className="p-3.5 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2] space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <span className={`px-2.5 py-0.5 rounded text-[10px] font-mono font-black uppercase text-white shadow-xs ${
-                          selectedAsset.sif_label === 'HIGH' ? 'bg-red-600' : selectedAsset.sif_label === 'MEDIUM' ? 'bg-amber-500' : 'bg-emerald-600'
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${
+                          selectedAsset.sif_label === 'HIGH' ? 'bg-[#FDF2F2] text-[#D63B3B] border border-[#F5C6C6]' : selectedAsset.sif_label === 'MEDIUM' ? 'bg-[#FEF7EC] text-[#D4820A] border border-[#F8DFB6]' : 'bg-[#EDFAF4] text-[#1B8A6C] border border-[#BFEADB]'
                         }`}>
                           {selectedAsset.sif_label} SIF RISK
                         </span>
-                        <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                        <span className="text-[10px] font-mono text-[#5E7072] bg-white px-2 py-0.5 rounded border border-[#C2CEC2]">
                           {selectedAsset.id}
                         </span>
                       </div>
 
-                      <h4 className="font-heading font-black text-xl text-slate-900 mt-1">
+                      <h4 className="font-heading font-bold text-base text-[#1A2B2D] mt-1">
                         {selectedAsset.name}
                       </h4>
-                      <p className="text-xs text-slate-500 font-semibold">
+                      <p className="text-xs text-[#5E7072]">
                         📍 {selectedAsset.district}
                       </p>
 
-                      <div className="text-[11px] font-mono text-slate-700 pt-1 font-bold flex items-center justify-between border-t border-slate-100 mt-2">
+                      <div className="text-[11px] font-mono text-[#5E7072] pt-1.5 flex items-center justify-between border-t border-[#C2CEC2] mt-1.5">
                         <span>GPS Coordinates:</span>
-                        <span className="text-blue-700">{selectedAsset.lat.toFixed(4)}° N, {selectedAsset.lng.toFixed(4)}° E</span>
+                        <span className="text-[#0A6B63] font-semibold">{selectedAsset.lat.toFixed(4)}° N, {selectedAsset.lng.toFixed(4)}° E</span>
                       </div>
                     </div>
 
-                    {/* Section 2: Structured Risk & Personnel Metrics */}
+                    {/* Section 2: Risk Metrics */}
                     <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-2xs flex flex-col justify-between">
-                        <div className="text-[10px] font-mono text-slate-400 uppercase font-bold">SIF Density (D_sif)</div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <div className="font-mono text-xl font-black text-red-600">
-                            {selectedAsset.sif_density.toFixed(1)}%
-                          </div>
-                          <span className="text-[9px] font-mono font-bold bg-red-100 text-red-800 px-1.5 py-0.2 rounded">
-                            HIGH
-                          </span>
+                      <div className="p-3 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2]">
+                        <div className="text-[10px] text-[#5E7072] uppercase font-semibold">SIF Density (D_sif)</div>
+                        <div className="font-heading text-xl font-bold text-[#D63B3B] mt-0.5">
+                          {selectedAsset.sif_density.toFixed(1)}%
                         </div>
                       </div>
-                      <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-2xs flex flex-col justify-between">
-                        <div className="text-[10px] font-mono text-slate-400 uppercase font-bold">Workers in {bufferRadiusMeters}m</div>
-                        <div className="font-mono text-xl font-black text-slate-900 mt-1">
+                      <div className="p-3 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2]">
+                        <div className="text-[10px] text-[#5E7072] uppercase font-semibold">Workers in {bufferRadiusMeters}m</div>
+                        <div className="font-heading text-base font-bold text-[#1A2B2D] mt-0.5">
                           {selectedAsset.workers_on_site} Persons
                         </div>
                       </div>
                     </div>
 
-                    {/* Section 3: Environmental Telemetry Rows */}
-                    <div className="p-3.5 rounded-xl bg-white border border-slate-200 space-y-2.5 text-xs shadow-2xs">
-                      <div className="text-[10px] font-mono text-slate-400 uppercase font-bold flex items-center justify-between border-b border-slate-100 pb-1.5">
-                        <span className="flex items-center gap-1"><Satellite className="w-3 h-3 text-blue-600" /> Environmental Telemetry</span>
-                        <span className="text-emerald-700 font-mono font-bold text-[9px] bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">LIVE FEED</span>
+                    {/* Section 3: Environmental Telemetry */}
+                    <div className="p-3 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2] space-y-1.5 text-xs">
+                      <div className="text-[10px] font-semibold text-[#5E7072] uppercase flex items-center justify-between border-b border-[#C2CEC2] pb-1">
+                        <span>Environmental Telemetry</span>
+                        <span className="text-[#1B8A6C] font-mono text-[9px] bg-[#EDFAF4] px-1.5 py-0.2 rounded border border-[#BFEADB]">LIVE</span>
                       </div>
 
-                      <div className="flex justify-between items-center text-[11px] p-1.5 rounded-lg bg-slate-50 border border-slate-100">
-                        <span className="text-slate-600 flex items-center gap-1 font-medium">💨 Gas Type:</span>
-                        <span className="font-mono font-bold text-red-700">{selectedAsset.gas_type}</span>
+                      <div className="flex justify-between items-center text-[11px]">
+                        <span className="text-[#5E7072]">💨 Gas Type:</span>
+                        <span className="font-semibold text-[#D63B3B]">{selectedAsset.gas_type}</span>
                       </div>
-                      <div className="flex justify-between items-center text-[11px] p-1.5 rounded-lg bg-slate-50 border border-slate-100">
-                        <span className="text-slate-600 flex items-center gap-1 font-medium">🔥 NASA Flare Temp:</span>
-                        <span className="font-mono font-bold text-amber-600">{selectedAsset.flare_temp_c}°C</span>
+                      <div className="flex justify-between items-center text-[11px]">
+                        <span className="text-[#5E7072]">🔥 NASA Flare Temp:</span>
+                        <span className="font-semibold text-[#D4820A]">{selectedAsset.flare_temp_c}°C</span>
                       </div>
-                      <div className="flex justify-between items-center text-[11px] p-1.5 rounded-lg bg-slate-50 border border-slate-100">
-                        <span className="text-slate-600 flex items-center gap-1 font-medium">🌊 Flood Threat:</span>
-                        <span className={`font-mono font-bold px-2 py-0.5 rounded text-[10px] ${
-                          selectedAsset.flood_risk === 'SEVERE' ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'
+                      <div className="flex justify-between items-center text-[11px]">
+                        <span className="text-[#5E7072]">🌊 Flood Threat:</span>
+                        <span className={`font-semibold px-1.5 py-0.2 rounded text-[10px] ${
+                          selectedAsset.flood_risk === 'SEVERE' ? 'bg-[#FDF2F2] text-[#D63B3B]' : 'bg-[#EDFAF4] text-[#1B8A6C]'
                         }`}>{selectedAsset.flood_risk}</span>
                       </div>
                     </div>
 
-                    <div className="p-4 rounded-xl bg-white border border-slate-300 space-y-1.5 shadow-2xs">
-                      <div className="text-[10px] font-mono uppercase font-bold text-slate-500 flex items-center gap-1.5">
-                        <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                        Latest Unresolved Hazard Observation:
+                    {/* Section 4: Latest Hazard */}
+                    <div className="p-3 rounded-lg bg-[#FEF7EC] border border-[#F8DFB6] space-y-1">
+                      <div className="text-[10px] font-semibold text-[#D4820A] flex items-center gap-1">
+                        <AlertTriangle className="w-3.5 h-3.5 text-[#D4820A]" />
+                        Latest Hazard Observation:
                       </div>
-                      <p className="text-xs text-slate-900 font-bold leading-relaxed">
+                      <p className="text-xs text-[#1A2B2D] leading-relaxed">
                         "{selectedAsset.latest_hazard}"
                       </p>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-white border border-slate-200 flex items-center justify-between text-xs shadow-2xs">
+                    {/* Section 5: Toolpusher CTA */}
+                    <div className="p-2.5 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2] flex items-center justify-between text-xs">
                       <div>
-                        <div className="text-[10px] text-slate-400 font-bold">On-Duty Toolpusher</div>
-                        <div className="font-bold text-slate-800">{selectedAsset.toolpusher}</div>
-                        <div className="text-[10px] font-mono text-blue-600 font-bold">{selectedAsset.phone}</div>
+                        <div className="text-[10px] text-[#5E7072]">Toolpusher</div>
+                        <div className="font-semibold text-[#1A2B2D]">{selectedAsset.toolpusher}</div>
+                        <div className="text-[10px] font-mono text-[#0A6B63]">{selectedAsset.phone}</div>
                       </div>
                       <a
                         href={`tel:${selectedAsset.phone}`}
-                        className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg font-bold hover:bg-blue-100 flex items-center gap-1 border border-blue-200 cursor-pointer"
+                        className="px-2.5 py-1 bg-[#0A6B63] text-white rounded-md font-semibold text-xs hover:bg-[#085B54] flex items-center gap-1 shadow-xs"
                       >
                         <Phone className="w-3 h-3" />
                         Call
                       </a>
                     </div>
 
+                    {/* Section 6: SWA Lockout Button */}
                     {selectedAsset.sif_label === 'HIGH' && (
                       <button
                         onClick={() => handleTriggerSWA(selectedAsset)}
-                        className="w-full py-3 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white font-heading font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md shadow-red-950/30 transition-all hover:scale-[1.01] cursor-pointer"
+                        className="w-full py-2 px-3 rounded-lg bg-[#D63B3B] hover:bg-[#B92525] text-white font-semibold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer"
                       >
-                        <AlertOctagon className="w-4 h-4 fill-white" />
-                        🛑 Freeze {selectedAsset.active_permits} Hot Work Permits (SWA {bufferRadiusMeters}m)
+                        <AlertOctagon className="w-4 h-4" />
+                        Freeze {selectedAsset.active_permits} Hot Work Permits (SWA {bufferRadiusMeters}m)
                       </button>
                     )}
 
-                    <div className="p-3 rounded-xl bg-white border border-slate-200 space-y-1.5">
-                      <div className="text-[10px] font-mono uppercase font-bold text-slate-400">Jump to Asset Pin:</div>
+                    {/* Section 7: Jump to Pin Quick Selector */}
+                    <div className="p-2.5 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2] space-y-1">
+                      <div className="text-[10px] font-medium text-[#5E7072]">Jump to Asset Pin:</div>
                       <div className="flex flex-wrap gap-1">
                         {GEO_ASSETS.map(a => (
                           <button
                             key={a.id}
                             onClick={() => flyToAsset(a)}
-                            className={`px-2 py-1 rounded text-[10px] font-bold font-mono transition-all cursor-pointer ${
-                              selectedAsset.id === a.id ? 'bg-slate-900 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                            className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all cursor-pointer ${
+                              selectedAsset.id === a.id ? 'bg-[#0A6B63] text-white' : 'bg-white hover:bg-[#E2E8E2] text-[#5E7072] border border-[#C2CEC2]'
                             }`}
                           >
                             {a.name.split(' ')[0]}
@@ -1027,79 +992,79 @@ export default function DualHeatmapAndMapPage() {
 
                   </div>
                 ) : (
-                  <div className="p-8 text-center text-slate-500 space-y-2 bg-white rounded-xl border border-slate-300">
-                    <Info className="w-6 h-6 text-slate-400 mx-auto" />
-                    <h4 className="text-xs font-bold text-slate-700">Click Any Operational Pin on Map</h4>
-                    <p className="text-[11px] text-slate-400">
-                      View live hazard telemetry, GPS coordinates, and 100m blast perimeter controls.
+                  <div className="p-6 text-center text-[#94A3A5] space-y-1.5 bg-[#F7F8F5] rounded-lg border border-[#C2CEC2]">
+                    <Info className="w-5 h-5 text-[#94A3A5] mx-auto" />
+                    <h4 className="text-xs font-semibold text-[#1A2B2D]">Click Any Operational Pin on Map</h4>
+                    <p className="text-[11px] text-[#5E7072]">
+                      View live hazard telemetry, GPS coordinates, and perimeter controls.
                     </p>
                   </div>
                 )}
               </div>
 
             </div>
-
           </div>
 
         </div>
       )}
 
+      {/* ── TAB 2: ASSET × ACTIVITY RISK MATRIX TABLE ── */}
       {activeTab === 'matrix' && (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-5 animate-fadeIn">
           
-          <div className="bg-red-50/80 border-2 border-red-300 rounded-2xl p-4 flex items-center justify-between shadow-xs">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-red-600 text-white flex items-center justify-center font-bold">
+          <div className="bg-[#FDF2F2] border border-[#F5C6C6] rounded-xl p-3.5 flex items-center justify-between shadow-xs">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-[#D63B3B] text-white flex items-center justify-center font-bold">
                 <Flame className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-xs font-bold text-red-900">
-                  Highest Risk Asset Identified: <span className="underline font-black">Baghjan Well #5</span> (SIF Density: 42.5%)
+                <div className="text-xs font-bold text-[#D63B3B]">
+                  Highest Risk Asset: <span className="underline">Baghjan Well #5</span> (SIF Density: 42.5%)
                 </div>
-                <p className="text-[11px] text-red-700">
+                <p className="text-[11px] text-[#5E7072]">
                   Elevated concentration of energy isolation and barrier failure precursors detected in Upper Assam operations.
                 </p>
               </div>
             </div>
-            <span className="px-3 py-1 bg-red-600 text-white rounded-lg text-xs font-bold font-mono">
+            <span className="px-2.5 py-1 bg-[#D63B3B] text-white rounded-md text-[11px] font-semibold">
               CRITICAL ATTENTION
             </span>
           </div>
 
-          <div className="bg-white rounded-2xl border-2 border-slate-300 shadow-md overflow-hidden p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-              <h3 className="font-heading font-extrabold text-sm text-slate-900 uppercase tracking-wider">
+          <div className="bg-white rounded-xl border-2 border-[#C2CEC2] shadow-xs overflow-hidden p-5 space-y-3.5">
+            <div className="flex items-center justify-between border-b border-[#D8E0D8] pb-2.5">
+              <h3 className="font-heading font-bold text-xs text-[#1A2B2D] uppercase tracking-wider">
                 Operational Asset × Activity Risk Matrix
               </h3>
-              <span className="text-xs font-mono text-slate-500 font-medium">
-                {data?.sites.length || 0} Assets Spanned · {data?.activities.length || 0} Activity Domains
+              <span className="text-[11px] font-mono text-[#94A3A5]">
+                {data?.sites.length || 0} Assets · {data?.activities.length || 0} Domains
               </span>
             </div>
 
             {loading ? (
-              <div className="py-20 text-center text-slate-400 font-medium animate-pulse">
+              <div className="py-16 text-center text-[#94A3A5] font-mono text-xs">
                 Calculating SIF-Precursor density matrix across all sites...
               </div>
             ) : !data || data.sites.length === 0 ? (
-              <div className="py-16 text-center text-slate-500">
-                <Map className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <h3 className="font-bold text-slate-800 text-lg">No Heatmap Data</h3>
-                <p className="text-xs text-slate-400 mt-1">Ingest safety reports to generate risk density calculations.</p>
+              <div className="py-14 text-center text-[#94A3A5]">
+                <Map className="w-10 h-10 text-[#94A3A5] mx-auto mb-2" />
+                <h3 className="font-bold text-[#1A2B2D] text-sm">No Heatmap Data</h3>
+                <p className="text-xs text-[#5E7072] mt-0.5">Ingest safety reports to generate risk density calculations.</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
+                <table className="w-full border-collapse text-xs">
                   <thead>
                     <tr>
-                      <th className="text-left py-3.5 px-4 bg-slate-900 text-white font-extrabold text-xs uppercase font-mono tracking-wider border border-slate-800 rounded-tl-xl w-60">
+                      <th className="text-left py-2.5 px-3 bg-[#F0F2ED] text-[#1A2B2D] font-bold text-xs border border-[#C2CEC2] w-56">
                         Site / Asset Name
                       </th>
                       {data.activities.map((act) => (
-                        <th key={act} className="text-center py-3.5 px-3 bg-slate-900 text-white font-extrabold text-xs uppercase font-mono tracking-wider border border-slate-800">
+                        <th key={act} className="text-center py-2.5 px-2 bg-[#F0F2ED] text-[#1A2B2D] font-bold text-xs border border-[#C2CEC2]">
                           {act}
                         </th>
                       ))}
-                      <th className="text-center py-3.5 px-4 bg-slate-800 text-amber-300 font-black text-xs uppercase font-mono tracking-wider border border-slate-700 rounded-tr-xl w-36">
+                      <th className="text-center py-2.5 px-3 bg-[#E8F4F0] text-[#0A6B63] font-bold text-xs border border-[#BCE3DC] w-32">
                         SIF Density
                       </th>
                     </tr>
@@ -1111,10 +1076,10 @@ export default function DualHeatmapAndMapPage() {
                       const isSiteMed = siteDensity >= 10 && siteDensity < 25;
 
                       return (
-                        <tr key={site} className="hover:bg-slate-50 transition-colors">
-                          <td className="py-3 px-4 font-bold text-slate-900 text-xs border border-slate-200 bg-white">
+                        <tr key={site} className="hover:bg-[#F7F8F5] transition-colors">
+                          <td className="py-2.5 px-3 font-semibold text-[#1A2B2D] text-xs border border-[#C2CEC2] bg-white">
                             <div className="flex items-center gap-2">
-                              <span className={`w-2 h-2 rounded-full ${isSiteHigh ? 'bg-red-500 animate-pulse' : 'bg-slate-400'}`} />
+                              <span className={`w-2 h-2 rounded-full ${isSiteHigh ? 'bg-[#D63B3B]' : 'bg-[#94A3A5]'}`} />
                               {site}
                             </div>
                           </td>
@@ -1131,8 +1096,8 @@ export default function DualHeatmapAndMapPage() {
                             );
                           })}
 
-                          <td className={`py-3 px-4 text-center font-mono font-black text-xs border border-slate-300 ${
-                            isSiteHigh ? 'bg-red-100 text-red-950 font-black' : isSiteMed ? 'bg-amber-100 text-amber-950 font-bold' : 'bg-emerald-100 text-emerald-950'
+                          <td className={`py-2.5 px-3 text-center font-mono font-bold text-xs border border-[#C2CEC2] ${
+                            isSiteHigh ? 'bg-[#FDF2F2] text-[#D63B3B]' : isSiteMed ? 'bg-[#FEF7EC] text-[#D4820A]' : 'bg-[#EDFAF4] text-[#1B8A6C]'
                           }`}>
                             {siteDensity.toFixed(1)}%
                           </td>
