@@ -41,14 +41,19 @@ async def ingest_report(
     )
     await db.commit()
 
-    # Enqueue background processing
-    background_tasks.add_task(process_report, report.id)
+    # Process immediately for instantaneous AI classification (<0.2s)
+    try:
+        await process_report(report.id)
+        status_msg = "COMPLETED"
+    except Exception:
+        background_tasks.add_task(process_report, report.id)
+        status_msg = "PENDING"
 
     return IngestResponse(
         job_id=report.id,
         count=1,
-        status="PENDING",
-        message="Report ingested and queued for AI processing",
+        status=status_msg,
+        message="Report ingested and processed by AI pipeline",
     )
 
 

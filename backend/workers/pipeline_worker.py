@@ -1,6 +1,6 @@
 """
 SANKET · AI — Background Pipeline Worker
-Async worker that runs the 5-stage NLP pipeline for each report.
+Async worker that runs the 7-stage NLP pipeline for each report.
 """
 
 import asyncio
@@ -19,10 +19,12 @@ async def process_report(report_id: str):
 
     Pipeline stages:
         Stage 1: Text Preprocessing
-        Stage 2: SIF Classification
-        Stage 3: Entity Extraction (Phase 2)
-        Stage 4: LSR Mapping (Phase 2)
-        Stage 5: LLM Explanation (Phase 2)
+        Stage 2: SIF Classification (Multilingual E5)
+        Stage 3: Entity Extraction (8 entity types)
+        Stage 4: LSR Mapping (IOGP 9 Life-Saving Rules)
+        Stage 5: LLM Explanation (Conditional: score >= 0.50)
+        Stage 6: Live Signal Knowledge Graph Update
+        Stage 7: Near-Miss Multiplier (7-day / 3-event rolling window escalation)
     """
     async with async_session_factory() as db:
         try:
@@ -62,7 +64,8 @@ async def process_report(report_id: str):
                 language=language,
             )
 
-            # ── Stage 3: Entity Extraction (loaded dynamically) ──
+            # ── Stage 3: Entity Extraction ──
+            entities = []
             try:
                 from ai.entities.extractor import entity_extractor
                 entities = entity_extractor.extract(preprocessed_text)
@@ -88,13 +91,12 @@ async def process_report(report_id: str):
                         eq_entities = [e for e in entities if e["type"] == "EQUIPMENT"]
                         if eq_entities:
                             report.asset_id = eq_entities[0]["value"]
-            except ImportError:
-                pass  # Entity extractor not yet built (Phase 2)
             except Exception as e:
                 print(f"[Pipeline] Entity extraction warning: {e}")
 
-            # ── Stage 4: LSR Mapping (loaded dynamically) ──
+            # ── Stage 4: LSR Mapping ──
             iogp_rule = None
+            lsr_results = []
             try:
                 from ai.lsr.mapper import lsr_mapper
                 lsr_results = lsr_mapper.map_rules(preprocessed_text)
@@ -111,8 +113,6 @@ async def process_report(report_id: str):
                         )
                         db.add(tag)
                     iogp_rule = lsr_results[0]["rule_name"]
-            except ImportError:
-                pass  # LSR mapper not yet built (Phase 2)
             except Exception as e:
                 print(f"[Pipeline] LSR mapping warning: {e}")
 
@@ -127,8 +127,6 @@ async def process_report(report_id: str):
                         sif_score=classification["sif_score"],
                         matched_anchor=classification["matched_anchor_text"],
                     )
-                except ImportError:
-                    pass  # Explainer not yet built (Phase 2)
                 except Exception as e:
                     print(f"[Pipeline] LLM explanation warning: {e}")
 
@@ -138,6 +136,42 @@ async def process_report(report_id: str):
                 explanation=explanation,
                 iogp_rule=iogp_rule,
             )
+
+            # Flush to make entity rows available for cluster check
+            await db.flush()
+
+            # ── Stage 6: Update Live Signal Knowledge Graph (F6) ──
+            try:
+                from graph.graph_store import graph_store
+                graph_store.add_report_entities(
+                    report_id=report_id,
+                    entities=entities,
+                    lsr_rules=lsr_results,
+                    sif_label=classification["sif_label"],
+                    timestamp=report.submitted_at or report.created_at,
+                )
+            except Exception as ge:
+                print(f"[Pipeline] Graph store update warning: {ge}")
+
+            # ── Stage 7: Near-Miss Multiplier & Temporal Cluster Escalation (F7) ──
+            try:
+                from graph.clustering import cluster_detector
+                checked_nodes = set()
+                for ent in entities:
+                    if ent["type"] in ("EQUIPMENT", "LOCATION"):
+                        node_key = f"{ent['type']}:{ent['value']}"
+                        if node_key not in checked_nodes:
+                            checked_nodes.add(node_key)
+                            cluster_info = await cluster_detector.check_clusters(
+                                db, entity_type=ent["type"], entity_value=ent["value"]
+                            )
+                            if cluster_info.get("cluster_alert"):
+                                print(f"[Multiplier] 🚨 CLUSTER DETECTED for {node_key} ({cluster_info['event_count']} events)! Escalating...")
+                                alert = await cluster_detector.escalate_cluster(db, cluster_info)
+                                if alert:
+                                    print(f"[Multiplier] Created SystemicAlert ID: {alert.id} for {alert.cluster_node}")
+            except Exception as ce:
+                print(f"[Pipeline] Multiplier cluster check warning: {ce}")
 
             await db.commit()
             print(f"[Pipeline] [OK] Report {report_id[:8]}... completed -> {classification['sif_label']} ({classification['sif_score']})")
