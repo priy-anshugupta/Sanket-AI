@@ -189,7 +189,7 @@ export default function BaghjanReplayPage() {
             }`}
           >
             {isPlaying ? <Pause className="w-3.5 h-3.5 fill-white" /> : <Play className="w-3.5 h-3.5 fill-white" />}
-            {isPlaying ? 'Pause Timeline' : '▶ Auto-Play 14-Day Replay'}
+            {isPlaying ? 'Pause Timeline' : 'Auto-Play 14-Day Replay'}
           </button>
 
           <button
