@@ -3,6 +3,25 @@
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { 
+  ArrowLeft, 
+  Download, 
+  AlertTriangle, 
+  Flame, 
+  ShieldCheck, 
+  CheckCircle2, 
+  Clock, 
+  MapPin, 
+  Activity, 
+  FileText, 
+  Tag, 
+  Scale, 
+  Wrench, 
+  Check, 
+  ArrowUp, 
+  ArrowDown, 
+  Send 
+} from 'lucide-react';
 
 interface Entity {
   id: string;
@@ -56,13 +75,13 @@ interface ReportDetail {
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 const ENTITY_BADGE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  EQUIPMENT: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
+  EQUIPMENT: { bg: 'bg-[#E8F4F0]', text: 'text-[#0A6B63]', border: 'border-[#BCE3DC]' },
   LOCATION: { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
-  BARRIER_FAILURE: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
-  ENERGY_SOURCE: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
-  SHIFT_TIME: { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-300' },
+  BARRIER_FAILURE: { bg: 'bg-[#FDF2F2]', text: 'text-[#D63B3B]', border: 'border-[#F5C6C6]' },
+  ENERGY_SOURCE: { bg: 'bg-[#FEF7EC]', text: 'text-[#D4820A]', border: 'border-[#F8DFB6]' },
+  SHIFT_TIME: { bg: 'bg-[#F0F2ED]', text: 'text-[#5E7072]', border: 'border-[#C2CEC2]' },
   WEATHER_CONDITION: { bg: 'bg-cyan-50', text: 'text-cyan-700', border: 'border-cyan-200' },
-  PPE_STATUS: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+  PPE_STATUS: { bg: 'bg-[#EDFAF4]', text: 'text-[#1B8A6C]', border: 'border-[#BFEADB]' },
   BODY_PART: { bg: 'bg-pink-50', text: 'text-pink-700', border: 'border-pink-200' },
 };
 
@@ -78,13 +97,10 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [isCreatingAction, setIsCreatingAction] = useState(false);
 
-  // Action form state
   const [actionType, setActionType] = useState('INVESTIGATION');
   const [actionPriority, setActionPriority] = useState('HIGH');
   const [actionAssignee, setActionAssignee] = useState('Field Safety Lead');
   const [actionNotes, setActionNotes] = useState('');
-
-  // Feedback reason
   const [feedbackReason, setFeedbackReason] = useState('');
 
   const fetchReport = async () => {
@@ -164,14 +180,14 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
 
   if (loading) {
     return (
-      <div className="p-8 max-w-6xl mx-auto">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-gray-200 rounded w-1/4" />
-          <div className="h-40 bg-gray-200 rounded-xl" />
-          <div className="grid grid-cols-3 gap-6">
-            <div className="h-60 bg-gray-200 rounded-xl" />
-            <div className="h-60 bg-gray-200 rounded-xl" />
-            <div className="h-60 bg-gray-200 rounded-xl" />
+      <div className="dashboard-page max-w-6xl space-y-5 p-6 bg-[#F7F8F5] min-h-screen text-[#1A2B2D]">
+        <div className="animate-pulse space-y-5">
+          <div className="h-6 bg-[#E2E8E2] rounded w-1/4" />
+          <div className="h-32 bg-[#E2E8E2] rounded-xl" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="h-48 bg-[#E2E8E2] rounded-xl" />
+            <div className="h-48 bg-[#E2E8E2] rounded-xl" />
+            <div className="h-48 bg-[#E2E8E2] rounded-xl" />
           </div>
         </div>
       </div>
@@ -180,12 +196,12 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
 
   if (!report) {
     return (
-      <div className="p-8 max-w-xl mx-auto text-center">
-        <div className="text-4xl mb-4">⚠️</div>
-        <h2 className="text-xl font-bold text-gray-900 mb-2">Report Not Found</h2>
-        <p className="text-gray-500 mb-6">The requested safety report ID does not exist or has been archived.</p>
-        <Link href="/dashboard" className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm">
-          Return to Triage Queue
+      <div className="dashboard-page max-w-xl mx-auto p-8 text-center space-y-4">
+        <AlertTriangle className="w-12 h-12 text-[#D4820A] mx-auto" />
+        <h2 className="text-lg font-bold text-[#1A2B2D]">Report Not Found</h2>
+        <p className="text-xs text-[#5E7072]">The requested safety report ID does not exist or has been archived.</p>
+        <Link href="/dashboard" className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#0A6B63] hover:bg-[#085B54] text-white rounded-lg text-xs font-semibold shadow-xs">
+          <ArrowLeft className="w-3.5 h-3.5" /> Return to Triage Queue
         </Link>
       </div>
     );
@@ -195,88 +211,98 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
   const sifLabel = report.sif_label ?? 'LOW';
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6">
+    <div className="dashboard-page max-w-6xl space-y-5 p-6 bg-[#F7F8F5] min-h-screen text-[#1A2B2D]">
+      
       {/* Top Breadcrumb & Actions Bar */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <Link href="/dashboard" className="hover:text-gray-900 flex items-center gap-1 font-medium">
-            ← Triage Queue
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-xs text-[#5E7072]">
+          <Link href="/dashboard" className="hover:text-[#1A2B2D] flex items-center gap-1 font-semibold text-[#0A6B63]">
+            <ArrowLeft className="w-3.5 h-3.5" /> Triage Queue
           </Link>
           <span>/</span>
-          <span className="font-mono text-gray-700">{report.id.substring(0, 13)}...</span>
+          <span className="font-mono text-[#1A2B2D]">{report.id}</span>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
             onClick={handleDownloadPDF}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 shadow-sm transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#C2CEC2] hover:bg-[#F0F2ED] rounded-lg text-xs font-semibold text-[#1A2B2D] shadow-xs transition-colors cursor-pointer"
           >
-            <span>📄</span> Download Executive PDF Brief
+            <Download className="w-3.5 h-3.5 text-[#0A6B63]" /> Download Executive PDF Brief
           </button>
         </div>
       </div>
 
       {/* SIF Severity Banner */}
-      <div className={`p-6 rounded-2xl border ${
-        sifLabel === 'HIGH' ? 'bg-red-50/70 border-red-200' :
-        sifLabel === 'MEDIUM' ? 'bg-amber-50/70 border-amber-200' :
-        'bg-emerald-50/70 border-emerald-200'
+      <div className={`p-5 rounded-xl border shadow-xs ${
+        sifLabel === 'HIGH' ? 'bg-[#FDF2F2] border-[#F5C6C6]' :
+        sifLabel === 'MEDIUM' ? 'bg-[#FEF7EC] border-[#F8DFB6]' :
+        'bg-[#EDFAF4] border-[#BFEADB]'
       }`}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center font-display font-black text-2xl shadow-inner ${
-              sifLabel === 'HIGH' ? 'bg-red-600 text-white animate-pulse-red' :
-              sifLabel === 'MEDIUM' ? 'bg-amber-500 text-white' :
-              'bg-emerald-600 text-white'
+          <div className="flex items-center gap-3.5">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg text-white shadow-xs ${
+              sifLabel === 'HIGH' ? 'bg-[#D63B3B]' :
+              sifLabel === 'MEDIUM' ? 'bg-[#D4820A]' :
+              'bg-[#1B8A6C]'
             }`}>
-              {sifLabel === 'HIGH' ? '🔴' : sifLabel === 'MEDIUM' ? '🟡' : '🟢'}
+              {sifLabel === 'HIGH' ? <Flame className="w-6 h-6" /> : sifLabel === 'MEDIUM' ? <AlertTriangle className="w-6 h-6" /> : <ShieldCheck className="w-6 h-6" />}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono font-bold tracking-wider uppercase px-2 py-0.5 rounded bg-white/80 border text-gray-800">
-                  SIF PRECURSOR POTENTIAL
+                <span className="text-[10px] font-mono font-bold tracking-wider uppercase px-2 py-0.5 rounded bg-white border border-[#C2CEC2] text-[#1A2B2D]">
+                  SIF Precursor Potential
                 </span>
-                <span className="text-xs text-gray-500 font-mono">
+                <span className="text-xs text-[#5E7072] font-mono">
                   {new Date(report.created_at).toLocaleString()}
                 </span>
               </div>
-              <h1 className="text-2xl font-display font-extrabold text-gray-900 mt-1">
-                {sifLabel} RISK LEVEL ({ (sifScore * 100).toFixed(1) }%)
+              <h1 className="text-xl font-heading font-bold text-[#1A2B2D] mt-0.5">
+                {sifLabel} Risk Level ({ (sifScore * 100).toFixed(1) }%)
               </h1>
             </div>
           </div>
 
           {/* Quick Stats in Banner */}
-          <div className="flex items-center gap-6 bg-white/80 backdrop-blur px-5 py-3 rounded-xl border border-gray-200/60 shadow-sm">
+          <div className="flex items-center gap-4 bg-white px-4 py-2.5 rounded-lg border border-[#C2CEC2] shadow-xs">
             <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Location</div>
-              <div className="font-semibold text-gray-900 text-sm">{report.location || 'Unassigned'}</div>
+              <div className="text-[10px] uppercase font-semibold text-[#5E7072]">Location</div>
+              <div className="font-semibold text-[#1A2B2D] text-xs flex items-center gap-1">
+                <MapPin className="w-3 h-3 text-[#0A6B63]" />
+                {report.location || 'Unassigned'}
+              </div>
             </div>
-            <div className="h-8 w-px bg-gray-200" />
+            <div className="h-6 w-px bg-[#C2CEC2]" />
             <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Activity</div>
-              <div className="font-semibold text-gray-900 text-sm">{report.activity_type || 'General Ops'}</div>
+              <div className="text-[10px] uppercase font-semibold text-[#5E7072]">Activity</div>
+              <div className="font-semibold text-[#1A2B2D] text-xs flex items-center gap-1">
+                <Activity className="w-3 h-3 text-[#0A6B63]" />
+                {report.activity_type || 'General Ops'}
+              </div>
             </div>
-            <div className="h-8 w-px bg-gray-200" />
+            <div className="h-6 w-px bg-[#C2CEC2]" />
             <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Shift</div>
-              <div className="font-semibold text-gray-900 text-sm">{report.shift || 'DAY'}</div>
+              <div className="text-[10px] uppercase font-semibold text-[#5E7072]">Shift</div>
+              <div className="font-semibold text-[#1A2B2D] text-xs flex items-center gap-1">
+                <Clock className="w-3 h-3 text-[#0A6B63]" />
+                {report.shift || 'DAY'}
+              </div>
             </div>
           </div>
         </div>
 
         {/* Score Meter */}
-        <div className="mt-4 pt-4 border-t border-gray-200/60">
-          <div className="flex justify-between text-xs font-medium text-gray-600 mb-1">
+        <div className="mt-3.5 pt-3.5 border-t border-[#C2CEC2]/70">
+          <div className="flex justify-between text-xs font-medium text-[#5E7072] mb-1">
             <span>Deterministic Anchor Cosine Similarity + Negation-Aware Keyword Boost</span>
-            <span className="font-mono font-bold">{sifScore.toFixed(4)} / 1.0000</span>
+            <span className="font-mono font-bold text-[#1A2B2D]">{sifScore.toFixed(4)} / 1.0000</span>
           </div>
-          <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-2 bg-white/80 rounded-full overflow-hidden border border-[#C2CEC2]">
             <div
               className={`h-full rounded-full transition-all duration-700 ${
-                sifLabel === 'HIGH' ? 'bg-red-600' :
-                sifLabel === 'MEDIUM' ? 'bg-amber-500' :
-                'bg-emerald-500'
+                sifLabel === 'HIGH' ? 'bg-[#D63B3B]' :
+                sifLabel === 'MEDIUM' ? 'bg-[#D4820A]' :
+                'bg-[#1B8A6C]'
               }`}
               style={{ width: `${Math.max(5, sifScore * 100)}%` }}
             />
@@ -285,30 +311,32 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
       </div>
 
       {/* Main Grid: Narrative + Stage 5 Explanation */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        
         {/* Left Column (2 spans): Raw Narrative & Linguistic/NER Breakdown */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-5">
+          
           {/* Incident Narrative Card */}
-          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+          <div className="bg-white p-5 rounded-xl border-2 border-[#C2CEC2] shadow-xs space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="font-display font-bold text-gray-900 flex items-center gap-2">
-                <span>📝</span> Unstructured Incident Narrative
+              <h2 className="font-heading font-bold text-xs uppercase tracking-wider text-[#1A2B2D] flex items-center gap-1.5">
+                <FileText className="w-4 h-4 text-[#0A6B63]" /> Unstructured Incident Narrative
               </h2>
-              <span className="text-xs font-mono px-2.5 py-1 rounded bg-gray-100 text-gray-600 border">
-                Lang: {report.language?.toUpperCase() || 'EN'} · Stage 1 Preprocessed
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#F0F2ED] text-[#5E7072] border border-[#C2CEC2]">
+                Lang: {report.language?.toUpperCase() || 'EN'} · Preprocessed
               </span>
             </div>
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 text-gray-800 text-base leading-relaxed font-normal">
+            <div className="p-3.5 bg-[#F7F8F5] rounded-lg border border-[#C2CEC2] text-[#1A2B2D] text-sm leading-relaxed font-medium">
               &ldquo;{report.raw_text}&rdquo;
             </div>
 
             {/* Matched SIF Reference Anchor */}
             {report.matched_anchor_text && (
-              <div className="p-4 rounded-xl bg-blue-50/60 border border-blue-200 space-y-1">
-                <div className="flex items-center gap-2 text-xs font-bold text-blue-900 uppercase">
-                  <span>🎯</span> Nearest Precomputed SIF Anchor Reference ({report.matched_anchor_id})
+              <div className="p-3 rounded-lg bg-[#E8F4F0] border border-[#BCE3DC] space-y-1">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#0A6B63] uppercase">
+                  <span>🎯</span> Nearest SIF Precomputed Anchor ({report.matched_anchor_id})
                 </div>
-                <p className="text-sm text-blue-950 font-medium">
+                <p className="text-xs text-[#1A2B2D] font-normal leading-relaxed">
                   {report.matched_anchor_text}
                 </p>
               </div>
@@ -316,80 +344,81 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
           </div>
 
           {/* Stage 3: Extracted Industrial Entities */}
-          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+          <div className="bg-white p-5 rounded-xl border-2 border-[#C2CEC2] shadow-xs space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="font-display font-bold text-gray-900 flex items-center gap-2">
-                <span>🏷️</span> Stage 3 Extracted Industrial Entities ({report.entities?.length || 0})
+              <h2 className="font-heading font-bold text-xs uppercase tracking-wider text-[#1A2B2D] flex items-center gap-1.5">
+                <Tag className="w-4 h-4 text-[#0A6B63]" /> Extracted Industrial Entities ({report.entities?.length || 0})
               </h2>
-              <span className="text-xs text-gray-400">Zero-Shot NER & Spatial Normalization</span>
+              <span className="text-[11px] text-[#5E7072]">Zero-Shot NER & Normalization</span>
             </div>
 
             {report.entities && report.entities.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {report.entities.map((ent, idx) => {
-                  const style = ENTITY_BADGE_COLORS[ent.entity_type] || { bg: 'bg-gray-100', text: 'text-gray-800', border: 'border-gray-300' };
+                  const style = ENTITY_BADGE_COLORS[ent.entity_type] || { bg: 'bg-[#F0F2ED]', text: 'text-[#1A2B2D]', border: 'border-[#C2CEC2]' };
                   return (
                     <span
                       key={idx}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border ${style.bg} ${style.text} ${style.border}`}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border ${style.bg} ${style.text} ${style.border}`}
                     >
                       <span className="text-[10px] uppercase opacity-75 font-mono">{ent.entity_type}:</span>
-                      <span>{ent.entity_value}</span>
+                      <span className="font-semibold">{ent.entity_value}</span>
                     </span>
                   );
                 })}
               </div>
             ) : (
-              <p className="text-sm text-gray-400 italic">No specific industrial entities flagged in this narrative.</p>
+              <p className="text-xs text-[#5E7072] italic">No specific industrial entities flagged in this narrative.</p>
             )}
           </div>
 
           {/* Stage 4: IOGP Life-Saving Rules Tagging */}
-          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+          <div className="bg-white p-5 rounded-xl border-2 border-[#C2CEC2] shadow-xs space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="font-display font-bold text-gray-900 flex items-center gap-2">
-                <span>🛡️</span> Stage 4 IOGP Life-Saving Rules Mapping
+              <h2 className="font-heading font-bold text-xs uppercase tracking-wider text-[#1A2B2D] flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-[#0A6B63]" /> IOGP Life-Saving Rules Mapping
               </h2>
-              <span className="text-xs text-gray-400">IOGP 9 Life-Saving Rules Framework</span>
+              <span className="text-[11px] text-[#5E7072]">IOGP 9 Life-Saving Rules Framework</span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
               {report.lsr_tags && report.lsr_tags.length > 0 ? (
                 report.lsr_tags.map((tag, idx) => (
-                  <div key={idx} className="p-3.5 rounded-xl border border-blue-200 bg-blue-50/40 flex items-center justify-between">
+                  <div key={idx} className="p-3 rounded-lg border border-[#BCE3DC] bg-[#E8F4F0]/60 flex items-center justify-between">
                     <div>
-                      <div className="text-xs font-bold text-blue-900">{tag.rule_name}</div>
-                      <div className="text-[11px] text-blue-700 font-mono">Rule ID: {tag.rule_id}</div>
+                      <div className="text-xs font-semibold text-[#0A6B63]">{tag.rule_name}</div>
+                      <div className="text-[10px] text-[#5E7072] font-mono">Rule ID: {tag.rule_id}</div>
                     </div>
                     <div className="text-right">
-                      <span className="text-xs font-mono font-bold text-blue-800 bg-white px-2 py-1 rounded border border-blue-200">
+                      <span className="text-xs font-mono font-bold text-[#0A6B63] bg-white px-2 py-0.5 rounded border border-[#BCE3DC]">
                         {(tag.similarity * 100).toFixed(0)}% Match
                       </span>
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-gray-400 italic col-span-2">No direct IOGP Life-Saving Rule violation triggered.</p>
+                <p className="text-xs text-[#5E7072] italic col-span-2">No direct IOGP Life-Saving Rule violation triggered.</p>
               )}
             </div>
           </div>
         </div>
 
         {/* Right Column (1 span): AI Explanation, Human Feedback & CAPA Action */}
-        <div className="space-y-6">
+        <div className="space-y-5">
+          
           {/* Stage 5: Grounded Plain-English AI Explanation */}
-          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-3">
+          <div className="bg-white p-5 rounded-xl border-2 border-[#C2CEC2] shadow-xs space-y-2.5">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
-              <h2 className="font-display font-bold text-gray-900 text-sm uppercase tracking-wide">
-                Stage 5 Grounded AI Explanation
+              <span className="w-2 h-2 rounded-full bg-[#D63B3B] animate-pulse" />
+              <h2 className="font-heading font-bold text-xs uppercase tracking-wider text-[#1A2B2D]">
+                Grounded AI Precursor Explanation
               </h2>
             </div>
-            <div className="p-4 rounded-xl bg-gray-900 text-gray-100 text-sm leading-relaxed font-sans shadow-inner">
+            <div className="p-3.5 rounded-lg bg-[#0F1B1D] text-[#F7F8F5] text-xs leading-relaxed font-sans">
               {report.explanation ? (
                 <p>{report.explanation}</p>
               ) : (
-                <p className="text-gray-400 italic">
+                <p className="text-[#8BA4A7] italic">
                   {sifScore >= 0.50
                     ? 'AI Explanation is being generated in sovereign background queue...'
                     : 'Report SIF score is below 0.50 threshold; automatic executive explanation omitted to preserve local compute.'}
@@ -399,11 +428,11 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
           </div>
 
           {/* Human-in-the-Loop Feedback Widget */}
-          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-            <h2 className="font-display font-bold text-gray-900 text-sm uppercase tracking-wide flex items-center gap-2">
-              <span>⚖️</span> Officer Review (Human-in-the-Loop)
+          <div className="bg-white p-5 rounded-xl border-2 border-[#C2CEC2] shadow-xs space-y-3">
+            <h2 className="font-heading font-bold text-xs uppercase tracking-wider text-[#1A2B2D] flex items-center gap-1.5">
+              <Scale className="w-4 h-4 text-[#0A6B63]" /> Officer Review (Human-in-the-Loop)
             </h2>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-[#5E7072]">
               Validate or override AI classification. Decisions are logged with officer timestamp for continuous audit.
             </p>
 
@@ -413,52 +442,52 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
                 value={feedbackReason}
                 onChange={(e) => setFeedbackReason(e.target.value)}
                 placeholder="Optional justification note..."
-                className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-red-500"
+                className="w-full px-3 py-2 text-xs border border-[#C2CEC2] rounded-lg focus:outline-none focus:border-[#0A6B63] bg-[#F7F8F5]"
               />
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-1.5">
                 <button
                   disabled={isSubmittingFeedback}
                   onClick={() => handleFeedback('AGREE', sifLabel as any)}
-                  className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors disabled:opacity-50"
+                  className="px-2.5 py-1.5 bg-[#0A6B63] hover:bg-[#085B54] text-white rounded-lg text-xs font-semibold shadow-xs transition-colors disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
                 >
-                  ✓ Confirm
+                  <Check className="w-3 h-3" /> Confirm
                 </button>
                 <button
                   disabled={isSubmittingFeedback}
                   onClick={() => handleFeedback('UPGRADE', 'HIGH')}
-                  className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors disabled:opacity-50"
+                  className="px-2.5 py-1.5 bg-[#D63B3B] hover:bg-[#B92525] text-white rounded-lg text-xs font-semibold shadow-xs transition-colors disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
                 >
-                  ▲ Upgrade
+                  <ArrowUp className="w-3 h-3" /> Upgrade
                 </button>
                 <button
                   disabled={isSubmittingFeedback}
                   onClick={() => handleFeedback('DOWNGRADE', 'LOW')}
-                  className="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors disabled:opacity-50"
+                  className="px-2.5 py-1.5 bg-[#5E7072] hover:bg-[#475759] text-white rounded-lg text-xs font-semibold shadow-xs transition-colors disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
                 >
-                  ▼ Downgrade
+                  <ArrowDown className="w-3 h-3" /> Downgrade
                 </button>
               </div>
             </div>
 
             {feedbackSuccess && (
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800 font-medium">
+              <div className="p-2.5 bg-[#EDFAF4] border border-[#BFEADB] rounded-lg text-xs text-[#1B8A6C] font-semibold">
                 {feedbackSuccess}
               </div>
             )}
           </div>
 
           {/* CAPA Work Order Dispatch */}
-          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-            <h2 className="font-display font-bold text-gray-900 text-sm uppercase tracking-wide flex items-center gap-2">
-              <span>🔧</span> Dispatch CAPA Work Order
+          <div className="bg-white p-5 rounded-xl border-2 border-[#C2CEC2] shadow-xs space-y-3">
+            <h2 className="font-heading font-bold text-xs uppercase tracking-wider text-[#1A2B2D] flex items-center gap-1.5">
+              <Wrench className="w-4 h-4 text-[#0A6B63]" /> Dispatch CAPA Work Order
             </h2>
-            <form onSubmit={handleCreateAction} className="space-y-3">
+            <form onSubmit={handleCreateAction} className="space-y-2.5">
               <div>
-                <label className="text-[11px] font-bold text-gray-500 uppercase">Action Type</label>
+                <label className="text-[10px] font-semibold text-[#5E7072] uppercase">Action Type</label>
                 <select
                   value={actionType}
                   onChange={(e) => setActionType(e.target.value)}
-                  className="w-full mt-1 px-3 py-2 text-xs border border-gray-200 rounded-lg bg-white"
+                  className="w-full mt-1 px-2.5 py-1.5 text-xs border border-[#C2CEC2] rounded-lg bg-white text-[#1A2B2D]"
                 >
                   <option value="INVESTIGATION">Root Cause Investigation</option>
                   <option value="REPAIR">Immediate Equipment Repair</option>
@@ -469,11 +498,11 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[11px] font-bold text-gray-500 uppercase">Priority</label>
+                  <label className="text-[10px] font-semibold text-[#5E7072] uppercase">Priority</label>
                   <select
                     value={actionPriority}
                     onChange={(e) => setActionPriority(e.target.value)}
-                    className="w-full mt-1 px-3 py-2 text-xs border border-gray-200 rounded-lg bg-white"
+                    className="w-full mt-1 px-2.5 py-1.5 text-xs border border-[#C2CEC2] rounded-lg bg-white text-[#1A2B2D]"
                   >
                     <option value="CRITICAL">Critical (24h SLA)</option>
                     <option value="HIGH">High (48h SLA)</option>
@@ -481,38 +510,39 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
                   </select>
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold text-gray-500 uppercase">Assignee</label>
+                  <label className="text-[10px] font-semibold text-[#5E7072] uppercase">Assignee</label>
                   <input
                     type="text"
                     value={actionAssignee}
                     onChange={(e) => setActionAssignee(e.target.value)}
-                    className="w-full mt-1 px-3 py-2 text-xs border border-gray-200 rounded-lg"
+                    className="w-full mt-1 px-2.5 py-1.5 text-xs border border-[#C2CEC2] rounded-lg bg-white text-[#1A2B2D]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-[11px] font-bold text-gray-500 uppercase">Action Instructions / SLA Notes</label>
+                <label className="text-[10px] font-semibold text-[#5E7072] uppercase">Instructions / SLA Notes</label>
                 <textarea
                   value={actionNotes}
                   onChange={(e) => setActionNotes(e.target.value)}
                   placeholder="e.g. Inspect flange seal, calibrate detector, re-tag LOTO..."
                   rows={2}
-                  className="w-full mt-1 px-3 py-2 text-xs border border-gray-200 rounded-lg"
+                  className="w-full mt-1 px-2.5 py-1.5 text-xs border border-[#C2CEC2] rounded-lg bg-white text-[#1A2B2D]"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={isCreatingAction}
-                className="w-full py-2.5 bg-gray-900 hover:bg-black text-white rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
+                className="w-full py-2 bg-[#0A6B63] hover:bg-[#085B54] text-white rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
               >
-                {isCreatingAction ? 'Dispatching...' : '⚡ Generate CAPA Work Order'}
+                <Send className="w-3.5 h-3.5" />
+                {isCreatingAction ? 'Dispatching...' : 'Generate CAPA Work Order'}
               </button>
             </form>
 
             {actionSuccess && (
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800 font-medium">
+              <div className="p-2.5 bg-[#EDFAF4] border border-[#BFEADB] rounded-lg text-xs text-[#1B8A6C] font-semibold">
                 {actionSuccess}
               </div>
             )}
