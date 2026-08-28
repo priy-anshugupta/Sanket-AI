@@ -1,16 +1,17 @@
 'use client';
 
+import Image from 'next/image';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Shield, Lock, User, Mic, ArrowLeft, ArrowRight, CheckCircle, Radio, Sparkles } from 'lucide-react';
+import { Shield, Lock, User, ArrowLeft, ArrowRight, Sparkles, HardHat } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'manager' | 'worker'>('manager');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [badgeId, setBadgeId] = useState('1042');
+  const [badgeId, setBadgeId] = useState('4491');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [error, setError] = useState('');
 
@@ -34,7 +35,12 @@ export default function LoginPage() {
       const data = await res.json();
       localStorage.setItem('sanket_token', data.token);
       localStorage.setItem('sanket_user', JSON.stringify(data));
-      router.push('/dashboard');
+      
+      if (data.role === 'field_worker') {
+        router.push('/worker');
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Login failed. Is backend running on localhost:8000?');
     } finally {
@@ -42,11 +48,14 @@ export default function LoginPage() {
     }
   };
 
-  const quickLogin = async (u: string, p: string, targetPath = '/dashboard') => {
+  const quickLogin = async (u: string, p: string, targetPath?: string) => {
     setUsername(u);
     setPassword(p);
     setIsLoggingIn(true);
     setError('');
+
+    const defaultPath = u === 'bikash' || u === 'horen' ? '/worker' : '/dashboard';
+    const destination = targetPath || defaultPath;
 
     try {
       const res = await fetch('http://localhost:8000/api/auth/login', {
@@ -56,143 +65,148 @@ export default function LoginPage() {
       });
 
       if (!res.ok) {
-        // Fallback for offline demo mode
         const mockUser = {
           token: 'mock-jwt-token-demo',
           username: u,
-          role: u === 'bikash' ? 'field_worker' : 'hse_manager',
-          full_name: u === 'rajesh' ? 'Rajesh Kumar (HSE GM)' : u === 'priya' ? 'Priya Singh (Site Officer)' : u === 'bikash' ? 'Bikash (Rig Floor Tech)' : 'Admin'
+          role: (u === 'bikash' || u === 'horen') ? 'field_worker' : 'hse_manager',
+          full_name: u === 'rajesh' ? 'Rajesh Kumar (HSE GM)' : u === 'priya' ? 'Priya Singh (Site Officer)' : u === 'horen' ? 'Horen Gogoi (Toolpusher)' : 'Bikash Das (Rig Floor Operator)'
         };
         localStorage.setItem('sanket_token', mockUser.token);
         localStorage.setItem('sanket_user', JSON.stringify(mockUser));
-        router.push(targetPath);
+        router.push(destination);
         return;
       }
 
       const data = await res.json();
       localStorage.setItem('sanket_token', data.token);
       localStorage.setItem('sanket_user', JSON.stringify(data));
-      router.push(targetPath);
+      router.push(destination);
     } catch {
-      // Offline fallback for smooth demo presentation
       const mockUser = {
         token: 'mock-jwt-token-demo',
         username: u,
-        role: u === 'bikash' ? 'field_worker' : 'hse_manager',
-        full_name: u === 'rajesh' ? 'Rajesh Kumar (HSE GM)' : u === 'bikash' ? 'Bikash (Rig Floor Tech)' : 'Site Officer'
+        role: (u === 'bikash' || u === 'horen') ? 'field_worker' : 'hse_manager',
+        full_name: u === 'rajesh' ? 'Rajesh Kumar (HSE GM)' : u === 'priya' ? 'Priya Singh (Site Officer)' : u === 'horen' ? 'Horen Gogoi (Toolpusher)' : 'Bikash Das (Rig Floor Operator)'
       };
       localStorage.setItem('sanket_token', mockUser.token);
       localStorage.setItem('sanket_user', JSON.stringify(mockUser));
-      router.push(targetPath);
+      router.push(destination);
     } finally {
       setIsLoggingIn(false);
     }
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-[#05080E] text-white flex flex-col justify-between selection:bg-red-500 selection:text-white">
+    <div className="min-h-screen relative overflow-hidden bg-[#0F1B1D] text-white flex flex-col justify-between selection:bg-[#0A6B63] selection:text-white font-sans">
       {/* Background Image Container */}
       <div 
-        className="absolute inset-0 z-0 bg-no-repeat bg-cover bg-center opacity-40 filter blur-[1px]"
+        className="absolute inset-0 z-0 bg-no-repeat bg-cover bg-center opacity-30"
         style={{
           backgroundImage: 'url(/assets/hero_refinery_bg.png), url(/hero_refinery_bg.png)',
         }}
       >
-        <div className="absolute inset-0 bg-[#05080E]/80" />
+        <div className="absolute inset-0 bg-[#0F1B1D]/85" />
       </div>
 
       {/* Top Header */}
-      <header className="relative z-10 w-full px-6 lg:px-16 py-6 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2.5 text-gray-400 hover:text-white transition-colors text-sm font-medium">
-          <ArrowLeft className="w-4 h-4" />
+      <header className="relative z-10 w-full px-6 lg:px-16 py-5 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-2 text-[#8BA4A7] hover:text-white transition-colors text-xs font-medium">
+          <ArrowLeft className="w-3.5 h-3.5" />
           Back to Overview
         </Link>
 
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10">
-          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+        <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           <span className="font-mono text-emerald-400 text-xs font-semibold">AIR-GAP ACTIVE</span>
         </div>
       </header>
 
       {/* Main Login Card */}
-      <main className="relative z-10 flex items-center justify-center px-4 py-8">
-        <div className="w-full max-w-xl rounded-2xl border border-white/10 bg-[#0A0D14]/90 backdrop-blur-xl p-8 shadow-2xl shadow-black/80">
+      <main className="relative z-10 flex items-center justify-center px-4 py-6">
+        <div className="w-full max-w-lg rounded-2xl border border-[#264245] bg-[#162829]/95 backdrop-blur-xl p-7 shadow-2xl">
+          
           {/* Logo & Heading */}
-          <div className="text-center mb-8">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center mx-auto mb-3 shadow-lg shadow-red-950/60 border border-red-500/40">
-              <Shield className="w-6 h-6 text-white" />
+          <div className="text-center mb-6">
+            <div className="relative w-12 h-12 mx-auto mb-2 flex items-center justify-center">
+              <Image
+                src="/assets/sanket_logo_derrick.png"
+                alt="SANKET AI Logo"
+                width={48}
+                height={48}
+                className="object-contain"
+                priority
+              />
             </div>
-            <h1 className="font-display font-black text-2xl tracking-tight text-white">
-              SANKET <span className="text-red-500">· AI</span>
+            <h1 className="font-heading font-bold text-xl tracking-tight text-white">
+              SANKET <span className="text-[#1B8A6C]">· AI</span>
             </h1>
-            <p className="text-xs font-mono uppercase tracking-widest text-gray-400 mt-1">
+            <p className="text-[11px] font-mono uppercase tracking-wider text-[#8BA4A7] mt-0.5">
               Oil India Limited — Safety Authentication Portal
             </p>
           </div>
 
           {/* 2-Portal Tab Switcher */}
-          <div className="grid grid-cols-2 gap-2 p-1.5 rounded-xl bg-white/5 border border-white/10 mb-8">
+          <div className="grid grid-cols-2 gap-1.5 p-1 rounded-lg bg-[#0F1B1D] border border-[#264245] mb-6">
             <button
               onClick={() => { setActiveTab('manager'); setError(''); }}
-              className={`py-3 rounded-lg text-xs font-bold font-mono uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+              className={`py-2 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                 activeTab === 'manager'
-                  ? 'bg-red-600 text-white shadow-lg shadow-red-950/50'
-                  : 'text-gray-400 hover:text-white'
+                  ? 'bg-[#0A6B63] text-white shadow-xs'
+                  : 'text-[#8BA4A7] hover:text-white'
               }`}
             >
-              <User className="w-4 h-4" />
-              👔 Safety Manager
+              <Shield className="w-3.5 h-3.5" />
+              Safety Manager (HQ)
             </button>
-
             <button
               onClick={() => { setActiveTab('worker'); setError(''); }}
-              className={`py-3 rounded-lg text-xs font-bold font-mono uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+              className={`py-2 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                 activeTab === 'worker'
-                  ? 'bg-red-600 text-white shadow-lg shadow-red-950/50'
-                  : 'text-gray-400 hover:text-white'
+                  ? 'bg-[#0A6B63] text-white shadow-xs'
+                  : 'text-[#8BA4A7] hover:text-white'
               }`}
             >
-              <Mic className="w-4 h-4" />
-              👷 Field Worker
+              <HardHat className="w-3.5 h-3.5" />
+              Field Worker / Rig Floor
             </button>
           </div>
 
-          {/* ── PORTAL 1: SAFETY MANAGER / OFFICER ── */}
+          {/* ── PORTAL 1: SAFETY MANAGER LOGIN ── */}
           {activeTab === 'manager' && (
-            <div>
-              <form onSubmit={handleManagerLogin} className="space-y-4">
+            <div className="space-y-5">
+              <form onSubmit={handleManagerLogin} className="space-y-3.5">
                 <div>
-                  <label className="block text-xs font-mono uppercase text-gray-400 mb-1.5">Username / Employee ID</label>
+                  <label className="block text-[11px] font-medium uppercase text-[#8BA4A7] mb-1">Username / Employee ID</label>
                   <div className="relative">
-                    <User className="w-4 h-4 absolute left-3.5 top-3.5 text-gray-500" />
+                    <User className="w-4 h-4 absolute left-3 top-3 text-[#5E7072]" />
                     <input
                       type="text"
-                      placeholder="e.g. rajesh or priya"
+                      placeholder="e.g. rajesh.kumar"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.15] text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500 transition-all text-sm shadow-inner"
+                      className="w-full pl-9 pr-3.5 py-2.5 rounded-lg bg-[#1D3234] border border-[#264245] text-[#F7F8F5] placeholder-[#5E7072] focus:outline-none focus:ring-1 focus:ring-[#0A6B63] focus:border-[#0A6B63] transition-all text-xs"
                       required
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-mono uppercase text-gray-400 mb-1.5">Password</label>
+                  <label className="block text-[11px] font-medium uppercase text-[#8BA4A7] mb-1">Password</label>
                   <div className="relative">
-                    <Lock className="w-4 h-4 absolute left-3.5 top-3.5 text-gray-500" />
+                    <Lock className="w-4 h-4 absolute left-3 top-3 text-[#5E7072]" />
                     <input
                       type="password"
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.15] text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500 transition-all text-sm shadow-inner"
+                      className="w-full pl-9 pr-3.5 py-2.5 rounded-lg bg-[#1D3234] border border-[#264245] text-[#F7F8F5] placeholder-[#5E7072] focus:outline-none focus:ring-1 focus:ring-[#0A6B63] focus:border-[#0A6B63] transition-all text-xs"
                       required
                     />
                   </div>
                 </div>
 
                 {error && (
-                  <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-mono">
+                  <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-mono">
                     {error}
                   </div>
                 )}
@@ -200,44 +214,36 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={isLoggingIn}
-                  className="w-full py-3.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold text-sm tracking-wider uppercase rounded-xl transition-all shadow-lg shadow-red-950/60 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full py-2.5 bg-[#0A6B63] hover:bg-[#085B54] text-white font-semibold text-xs tracking-wider uppercase rounded-lg transition-all shadow-xs disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isLoggingIn ? 'Authenticating...' : 'Sign In to Command Center'}
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </form>
 
               {/* Demo 1-Click Quick Access Pills for Evaluators */}
-              <div className="mt-8 pt-6 border-t border-white/10">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[11px] font-mono text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                    Demo 1-Click Judge Profiles:
+              <div className="pt-4 border-t border-[#264245]">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-medium text-[#8BA4A7] flex items-center gap-1.5">
+                    <Sparkles className="w-3 h-3 text-amber-400" />
+                    Evaluator 1-Click Quick Access:
                   </span>
                 </div>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => quickLogin('rajesh', 'rajesh123', '/dashboard')}
-                    className="p-2.5 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] hover:border-red-500/40 text-left transition-all group"
+                    className="p-2.5 rounded-lg border border-[#264245] bg-[#1D3234] hover:bg-[#233D3F] hover:border-[#0A6B63] text-left transition-all cursor-pointer"
                   >
-                    <div className="text-xs font-bold text-white group-hover:text-red-400">Rajesh Kumar</div>
-                    <div className="text-[10px] text-gray-500 font-mono mt-0.5">HSE GM (HQ)</div>
+                    <div className="text-xs font-semibold text-white">Rajesh Kumar</div>
+                    <div className="text-[10px] text-[#8BA4A7] font-mono mt-0.5">HSE GM (HQ Duliajan)</div>
                   </button>
 
                   <button
                     onClick={() => quickLogin('priya', 'priya123', '/dashboard')}
-                    className="p-2.5 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] hover:border-red-500/40 text-left transition-all group"
+                    className="p-2.5 rounded-lg border border-[#264245] bg-[#1D3234] hover:bg-[#233D3F] hover:border-[#0A6B63] text-left transition-all cursor-pointer"
                   >
-                    <div className="text-xs font-bold text-white group-hover:text-red-400">Priya Singh</div>
-                    <div className="text-[10px] text-gray-500 font-mono mt-0.5">Site Safety Officer</div>
-                  </button>
-
-                  <button
-                    onClick={() => quickLogin('admin', 'admin123', '/dashboard')}
-                    className="p-2.5 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] hover:border-red-500/40 text-left transition-all group"
-                  >
-                    <div className="text-xs font-bold text-white group-hover:text-red-400">Administrator</div>
-                    <div className="text-[10px] text-gray-500 font-mono mt-0.5">Full System Access</div>
+                    <div className="text-xs font-semibold text-white">Priya Singh</div>
+                    <div className="text-[10px] text-[#8BA4A7] font-mono mt-0.5">Site Safety Officer</div>
                   </button>
                 </div>
               </div>
@@ -246,45 +252,64 @@ export default function LoginPage() {
 
           {/* ── PORTAL 2: FIELD WORKER QUICK-ACCESS ── */}
           {activeTab === 'worker' && (
-            <div className="space-y-6">
-              <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs leading-relaxed">
-                👷 <strong>Field Reporting Mode:</strong> Simplified, touch-optimized interface for rig floor technicians. Instant multilingual voice recording (Hindi / Assamese / English) and quick text fallback.
+            <div className="space-y-5">
+              <div className="p-3 rounded-lg bg-[#FEF7EC]/10 border border-[#F8DFB6]/20 text-[#F8DFB6] text-xs leading-relaxed">
+                <strong>ATEX Zone 1/2 Field Terminal:</strong> Simplified, high-contrast mobile interface for rig floor operators and toolpushers with giant PTT voice logging.
               </div>
 
               <div>
-                <label className="block text-xs font-mono uppercase text-gray-400 mb-1.5">Enter 4-Digit Rig Badge ID</label>
+                <label className="block text-[11px] font-medium uppercase text-[#8BA4A7] mb-1">Enter 4-Digit Rig Badge ID</label>
                 <input
                   type="text"
                   maxLength={4}
                   value={badgeId}
                   onChange={(e) => setBadgeId(e.target.value)}
-                  className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-center font-mono text-2xl tracking-[0.5em] text-white focus:outline-none focus:border-red-500 transition-colors"
+                  className="w-full px-4 py-2.5 rounded-lg bg-[#1D3234] border border-[#264245] text-center font-mono text-xl tracking-[0.4em] text-white focus:outline-none focus:border-[#0A6B63] transition-colors"
                 />
               </div>
 
               <button
-                onClick={() => quickLogin('bikash', 'bikash123', '/dashboard/voice')}
+                onClick={() => quickLogin('bikash', 'bikash123', '/worker')}
                 disabled={isLoggingIn}
-                className="w-full py-4 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-bold text-sm tracking-wider uppercase rounded-xl transition-all shadow-lg shadow-emerald-950/60 flex items-center justify-center gap-2.5"
+                className="w-full py-2.5 bg-[#0A6B63] hover:bg-[#085B54] text-white font-semibold text-xs tracking-wider uppercase rounded-lg transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
               >
-                <Mic className="w-5 h-5 animate-pulse" />
-                Start Voice / Text Field Report
-                <ArrowRight className="w-4 h-4" />
+                <HardHat className="w-4 h-4" />
+                Open Rugged Field Terminal (/worker)
               </button>
 
-              <div className="text-center pt-2">
-                <span className="text-xs text-gray-500 font-mono">
-                  Default Worker: Bikash (Upper Assam Well Pad 7)
-                </span>
+              <div className="pt-4 border-t border-[#264245]">
+                <div className="text-[11px] font-medium text-[#8BA4A7] mb-2 flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3 text-amber-400" />
+                  Select Field Crew Profile:
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => quickLogin('bikash', 'bikash123', '/worker')}
+                    className="p-2.5 rounded-lg border border-[#264245] bg-[#1D3234] hover:bg-[#233D3F] hover:border-[#1B8A6C] text-left transition-all cursor-pointer"
+                  >
+                    <div className="text-xs font-semibold text-white">Bikash Das</div>
+                    <div className="text-[10px] text-[#8BA4A7] font-mono mt-0.5">Rig Floor Operator (Well Pad 7)</div>
+                  </button>
+
+                  <button
+                    onClick={() => quickLogin('horen', 'horen123', '/worker')}
+                    className="p-2.5 rounded-lg border border-[#264245] bg-[#1D3234] hover:bg-[#233D3F] hover:border-[#1B8A6C] text-left transition-all cursor-pointer"
+                  >
+                    <div className="text-xs font-semibold text-white">Horen Gogoi</div>
+                    <div className="text-[10px] text-[#8BA4A7] font-mono mt-0.5">Drilling Toolpusher (Rig #4)</div>
+                  </button>
+                </div>
               </div>
+
             </div>
           )}
+
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 w-full px-6 py-4 text-center text-xs text-gray-500 font-mono">
-        © 2026 SANKET · AI | Oil India Limited Industrial Safety Intelligence
+      <footer className="relative z-10 w-full px-6 py-3 text-center text-[11px] font-mono text-[#5E7072] border-t border-white/5">
+        SANKET · AI Safety Intelligence Platform • Compliant with OISD-STD-149 & DGMS Regulations
       </footer>
     </div>
   );
