@@ -15,19 +15,19 @@ import {
   Radio, 
   Layers, 
   Phone, 
-  AlertOctagon,
-  Eye,
-  SlidersHorizontal,
-  Sparkles,
-  LocateFixed,
-  Satellite,
-  Maximize2,
-  Minimize2,
-  Wind,
-  Droplets,
-  FlameKindling,
-  Activity,
-  Waves
+  AlertOctagon, 
+  Eye, 
+  SlidersHorizontal, 
+  Sparkles, 
+  LocateFixed, 
+  Satellite, 
+  Maximize2, 
+  Minimize2, 
+  Wind, 
+  Droplets, 
+  FlameKindling, 
+  Activity, 
+  Waves 
 } from 'lucide-react';
 
 const API = 'http://localhost:8000';
@@ -265,7 +265,6 @@ const GEO_ASSETS: GeoAsset[] = [
   },
 ];
 
-// Trunk Pipelines linking Upper Assam fields
 const TRUNK_PIPELINES = [
   { name: 'Moran-Naharkatia 16" Gas Trunk', points: [[27.1824, 94.9218], [27.2831, 95.2546]], pressure: '68 Bar' },
   { name: 'Naharkatia-Duliajan 24" Crude Main', points: [[27.2831, 95.2546], [27.3582, 95.3197]], pressure: '82 Bar' },
@@ -313,14 +312,12 @@ export default function DualHeatmapAndMapPage() {
   const [mapType, setMapType] = useState<'satellite' | 'street'>('satellite');
   const [isExpanded, setIsExpanded] = useState(false);
   
-  // Geospatial Intelligence Layer States
-  const [bufferRadiusMeters, setBufferRadiusMeters] = useState<number>(500); // 100, 500, 2000, 5000
+  const [bufferRadiusMeters, setBufferRadiusMeters] = useState<number>(500);
   const [showGasPlume, setShowGasPlume] = useState<boolean>(true);
   const [showNasaFirms, setShowNasaFirms] = useState<boolean>(true);
   const [showFloodRisk, setShowFloodRisk] = useState<boolean>(true);
   const [showPipelines, setShowPipelines] = useState<boolean>(true);
   
-  // Weather & Dispersion Simulation Vector (Upper Assam Live Telemetry)
   const windVector = { speedKmh: 14, directionDeg: 65, directionText: 'ENE → WSW' };
 
   const [data, setData] = useState<{
@@ -335,6 +332,16 @@ export default function DualHeatmapAndMapPage() {
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
+  const LRef = useRef<any>(null);
+
+  const baseTileLayerRef = useRef<any>(null);
+  const labelsTileLayerRef = useRef<any>(null);
+  const pipelinesGroupRef = useRef<any>(null);
+  const floodGroupRef = useRef<any>(null);
+  const gasPlumeGroupRef = useRef<any>(null);
+  const bufferGroupRef = useRef<any>(null);
+  const thermalGroupRef = useRef<any>(null);
+  const markersGroupRef = useRef<any>(null);
 
   useEffect(() => {
     fetch(`${API}/api/analytics/heatmap`)
@@ -343,7 +350,6 @@ export default function DualHeatmapAndMapPage() {
       .catch(() => setLoading(false));
   }, []);
 
-  // Handle map invalidation on resize
   useEffect(() => {
     if (mapInstanceRef.current) {
       setTimeout(() => {
@@ -352,16 +358,16 @@ export default function DualHeatmapAndMapPage() {
     }
   }, [isExpanded]);
 
-  // Render Full Geospatial Intelligence Satellite Map with Leaflet
   useEffect(() => {
     if (activeTab !== 'gis_map' || !mapContainerRef.current) return;
+    if (mapInstanceRef.current) return;
 
     let isMounted = true;
 
-    const initMap = async () => {
+    const initBaseMap = async () => {
       const L = (await import('leaflet')).default;
+      LRef.current = L;
 
-      // Import Leaflet CSS dynamically
       if (!document.getElementById('leaflet-css')) {
         const link = document.createElement('link');
         link.id = 'leaflet-css';
@@ -372,146 +378,35 @@ export default function DualHeatmapAndMapPage() {
 
       if (!isMounted || !mapContainerRef.current) return;
 
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-      }
-
-      // Center on Upper Assam Basin
       const map = L.map(mapContainerRef.current, {
         center: [27.35, 95.30],
         zoom: 10,
         zoomControl: true,
       });
 
-      // 1. High-Resolution Photographic Satellite Imagery (Esri World Imagery)
-      const satelliteLayer = L.tileLayer(
+      const satTile = L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        {
-          attribution: 'Tiles &copy; Esri &mdash; NASA, USGS, Maxar, GeoEye',
-          maxZoom: 18,
-        }
-      );
+        { attribution: 'Tiles &copy; Esri &mdash; NASA, USGS, Maxar', maxZoom: 18 }
+      ).addTo(map);
+      baseTileLayerRef.current = satTile;
 
-      // Satellite Hybrid Place / Road Labels
-      const labelsLayer = L.tileLayer(
+      const labelTile = L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-        {
-          maxZoom: 18,
-          opacity: 0.85,
-        }
-      );
+        { maxZoom: 18, opacity: 0.85 }
+      ).addTo(map);
+      labelsTileLayerRef.current = labelTile;
 
-      // Street layer
-      const streetLayer = L.tileLayer(
-        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        {
-          attribution: '&copy; OpenStreetMap contributors',
-          maxZoom: 19,
-        }
-      );
+      pipelinesGroupRef.current = L.featureGroup().addTo(map);
+      floodGroupRef.current = L.featureGroup().addTo(map);
+      gasPlumeGroupRef.current = L.featureGroup().addTo(map);
+      bufferGroupRef.current = L.featureGroup().addTo(map);
+      thermalGroupRef.current = L.featureGroup().addTo(map);
+      markersGroupRef.current = L.featureGroup().addTo(map);
 
-      if (mapType === 'satellite') {
-        satelliteLayer.addTo(map);
-        labelsLayer.addTo(map);
-      } else {
-        streetLayer.addTo(map);
-      }
-
-      const layersGroup = L.featureGroup().addTo(map);
-
-      // ── 1. Render Trunk Pipeline Corridors ──
-      if (showPipelines) {
-        TRUNK_PIPELINES.forEach(pipe => {
-          L.polyline(pipe.points as any, {
-            color: '#38BDF8',
-            weight: 3.5,
-            dashArray: '8, 8',
-            opacity: 0.85,
-          }).bindTooltip(`🛢️ ${pipe.name} (${pipe.pressure})`, { sticky: true }).addTo(layersGroup);
-        });
-      }
-
-      // ── 2. Render Brahmaputra Flood Inundation Threat Buffer Zones ──
-      if (showFloodRisk) {
-        // High moisture flood plane near Dibru-Saikhowa / Baghjan & Naharkatia
-        L.polygon([
-          [27.64, 95.30],
-          [27.68, 95.45],
-          [27.56, 95.55],
-          [27.52, 95.35]
-        ], {
-          color: '#0284C7',
-          weight: 1.5,
-          fillColor: '#0284C7',
-          fillOpacity: 0.22,
-          dashArray: '4, 4'
-        }).bindTooltip("🌊 Brahmaputra Flood Hazard Basin (NASA Hydrological Inundation Risk: Severe)", { sticky: true }).addTo(layersGroup);
-      }
-
-      // ── 3. Render Gaussian Gas Dispersion Plume Cone for Active High SIF Hazards (e.g. Baghjan & Moran) ──
-      if (showGasPlume) {
-        GEO_ASSETS.filter(a => a.sif_label === 'HIGH').forEach(asset => {
-          // Calculate downwind plume cone points based on wind direction (ENE to WSW ~ 245 deg)
-          const angleRad = (245 * Math.PI) / 180;
-          const plumeLength = 0.045; // ~5km
-          const coneSpread = 0.015;
-
-          const tipLat = asset.lat + Math.cos(angleRad) * plumeLength;
-          const tipLng = asset.lng + Math.sin(angleRad) * plumeLength;
-
-          const leftLat = asset.lat + Math.cos(angleRad - 0.25) * plumeLength * 0.7;
-          const leftLng = asset.lng + Math.sin(angleRad - 0.25) * plumeLength * 0.7;
-
-          const rightLat = asset.lat + Math.cos(angleRad + 0.25) * plumeLength * 0.7;
-          const rightLng = asset.lng + Math.sin(angleRad + 0.25) * plumeLength * 0.7;
-
-          // Toxic Plume Cone Polygon (ALOHA Gaussian Dispersion)
-          L.polygon([
-            [asset.lat, asset.lng],
-            [leftLat, leftLng],
-            [tipLat, tipLng],
-            [rightLat, rightLng],
-          ], {
-            color: '#DC2626',
-            weight: 1.5,
-            fillColor: '#EF4444',
-            fillOpacity: 0.35,
-          }).bindTooltip(`💨 TOXIC ${asset.gas_type} DISPERSION PLUME<br>• Wind: ${windVector.speedKmh} km/h ${windVector.directionText}<br>• Downwind Hazard Zone: 5.2 km<br>• Immediate Action: Downwind Evacuation Required`, { sticky: true }).addTo(layersGroup);
-        });
-      }
-
-      // ── 4. Render Interactive Dynamic Spatial Buffer Query Radius Circles ──
       GEO_ASSETS.forEach(asset => {
         const isHigh = asset.sif_label === 'HIGH';
         const isMed = asset.sif_label === 'MEDIUM';
 
-        // Draw Multi-Tier Dynamic Radius Buffer
-        if (selectedAsset?.id === asset.id || isHigh) {
-          L.circle([asset.lat, asset.lng], {
-            radius: bufferRadiusMeters,
-            color: isHigh ? '#EF4444' : '#F59E0B',
-            weight: 2,
-            dashArray: '6, 6',
-            fillColor: isHigh ? '#EF4444' : '#F59E0B',
-            fillOpacity: selectedAsset?.id === asset.id ? 0.22 : 0.12,
-          }).addTo(layersGroup);
-        }
-
-        // NASA FIRMS Thermal Hotspot Flaring Icon (if enabled & high temperature)
-        if (showNasaFirms && asset.flare_temp_c >= 400) {
-          const thermalHtml = `
-            <div class="flex items-center justify-center -translate-x-1/2 -translate-y-1/2">
-              <span class="w-4 h-4 rounded-full bg-amber-500/80 animate-ping absolute"></span>
-              <span class="text-xs">🔥</span>
-            </div>
-          `;
-          L.marker([asset.lat + 0.006, asset.lng + 0.006], {
-            icon: L.divIcon({ html: thermalHtml, className: 'thermal-pin', iconSize: [16, 16] })
-          }).bindTooltip(`🛰️ NASA FIRMS Thermal Anomaly Detected: ${asset.flare_temp_c}°C Flare Stack`, { sticky: true }).addTo(layersGroup);
-        }
-
-        // Custom HTML Marker Icon
         const iconHtml = `
           <div class="relative flex items-center justify-center -translate-x-1/2 -translate-y-1/2 cursor-pointer group">
             ${isHigh ? '<div class="absolute w-10 h-10 rounded-full bg-red-500/40 animate-ping"></div>' : ''}
@@ -535,7 +430,7 @@ export default function DualHeatmapAndMapPage() {
           iconAnchor: [16, 16],
         });
 
-        const marker = L.marker([asset.lat, asset.lng], { icon: customIcon }).addTo(layersGroup);
+        const marker = L.marker([asset.lat, asset.lng], { icon: customIcon }).addTo(markersGroupRef.current);
         marker.on('click', () => {
           setSelectedAsset(asset);
           map.flyTo([asset.lat, asset.lng], 12, { duration: 1.2 });
@@ -543,12 +438,10 @@ export default function DualHeatmapAndMapPage() {
       });
 
       mapInstanceRef.current = map;
-      setTimeout(() => {
-        if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
-      }, 100);
+      setTimeout(() => map.invalidateSize(), 150);
     };
 
-    initMap();
+    initBaseMap();
 
     return () => {
       isMounted = false;
@@ -557,7 +450,150 @@ export default function DualHeatmapAndMapPage() {
         mapInstanceRef.current = null;
       }
     };
-  }, [activeTab, mapType, bufferRadiusMeters, showGasPlume, showNasaFirms, showFloodRisk, showPipelines, selectedAsset]);
+  }, [activeTab]);
+
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const L = LRef.current;
+    if (!map || !L) return;
+
+    if (baseTileLayerRef.current) map.removeLayer(baseTileLayerRef.current);
+    if (labelsTileLayerRef.current) map.removeLayer(labelsTileLayerRef.current);
+
+    if (mapType === 'satellite') {
+      baseTileLayerRef.current = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        { attribution: 'Tiles &copy; Esri &mdash; NASA, USGS, Maxar', maxZoom: 18 }
+      ).addTo(map);
+
+      labelsTileLayerRef.current = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+        { maxZoom: 18, opacity: 0.85 }
+      ).addTo(map);
+    } else {
+      baseTileLayerRef.current = L.tileLayer(
+        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        { attribution: '&copy; OpenStreetMap contributors', maxZoom: 19 }
+      ).addTo(map);
+    }
+  }, [mapType]);
+
+  useEffect(() => {
+    const L = LRef.current;
+    const group = pipelinesGroupRef.current;
+    if (!L || !group) return;
+
+    group.clearLayers();
+    if (showPipelines) {
+      TRUNK_PIPELINES.forEach(pipe => {
+        L.polyline(pipe.points as any, {
+          color: '#38BDF8',
+          weight: 3.5,
+          dashArray: '8, 8',
+          opacity: 0.85,
+        }).bindTooltip(`🛢️ ${pipe.name} (${pipe.pressure})`, { sticky: true }).addTo(group);
+      });
+    }
+  }, [showPipelines]);
+
+  useEffect(() => {
+    const L = LRef.current;
+    const group = floodGroupRef.current;
+    if (!L || !group) return;
+
+    group.clearLayers();
+    if (showFloodRisk) {
+      L.polygon([
+        [27.64, 95.30],
+        [27.68, 95.45],
+        [27.56, 95.55],
+        [27.52, 95.35]
+      ], {
+        color: '#0284C7',
+        weight: 2,
+        fillColor: '#0284C7',
+        fillOpacity: 0.22,
+        dashArray: '5, 5'
+      }).bindTooltip("🌊 Brahmaputra Flood Hazard Basin (NASA Hydrological Inundation Risk: Severe)", { sticky: true }).addTo(group);
+    }
+  }, [showFloodRisk]);
+
+  useEffect(() => {
+    const L = LRef.current;
+    const group = gasPlumeGroupRef.current;
+    if (!L || !group) return;
+
+    group.clearLayers();
+    if (showGasPlume) {
+      GEO_ASSETS.filter(a => a.sif_label === 'HIGH').forEach(asset => {
+        const angleRad = (245 * Math.PI) / 180;
+        const plumeLength = 0.045;
+
+        const tipLat = asset.lat + Math.cos(angleRad) * plumeLength;
+        const tipLng = asset.lng + Math.sin(angleRad) * plumeLength;
+
+        const leftLat = asset.lat + Math.cos(angleRad - 0.25) * plumeLength * 0.7;
+        const leftLng = asset.lng + Math.sin(angleRad - 0.25) * plumeLength * 0.7;
+
+        const rightLat = asset.lat + Math.cos(angleRad + 0.25) * plumeLength * 0.7;
+        const rightLng = asset.lng + Math.sin(angleRad + 0.25) * plumeLength * 0.7;
+
+        L.polygon([
+          [asset.lat, asset.lng],
+          [leftLat, leftLng],
+          [tipLat, tipLng],
+          [rightLat, rightLng],
+        ], {
+          color: '#DC2626',
+          weight: 2,
+          fillColor: '#EF4444',
+          fillOpacity: 0.35,
+        }).bindTooltip(`💨 TOXIC ${asset.gas_type} DISPERSION PLUME<br>• Wind: ${windVector.speedKmh} km/h ${windVector.directionText}<br>• Downwind Hazard Zone: 5.2 km<br>• Immediate Action: Downwind Evacuation Required`, { sticky: true }).addTo(group);
+      });
+    }
+  }, [showGasPlume]);
+
+  useEffect(() => {
+    const L = LRef.current;
+    const group = thermalGroupRef.current;
+    if (!L || !group) return;
+
+    group.clearLayers();
+    if (showNasaFirms) {
+      GEO_ASSETS.filter(a => a.flare_temp_c >= 400).forEach(asset => {
+        const thermalHtml = `
+          <div class="flex items-center justify-center -translate-x-1/2 -translate-y-1/2 cursor-pointer">
+            <span class="w-5 h-5 rounded-full bg-amber-500/80 animate-ping absolute"></span>
+            <span style="font-size: 16px;">🔥</span>
+          </div>
+        `;
+        L.marker([asset.lat + 0.006, asset.lng + 0.006], {
+          icon: L.divIcon({ html: thermalHtml, className: 'thermal-pin', iconSize: [18, 18] })
+        }).bindTooltip(`🛰️ NASA FIRMS Thermal Anomaly Detected: ${asset.flare_temp_c}°C Flare Stack`, { sticky: true }).addTo(group);
+      });
+    }
+  }, [showNasaFirms]);
+
+  useEffect(() => {
+    const L = LRef.current;
+    const group = bufferGroupRef.current;
+    if (!L || !group) return;
+
+    group.clearLayers();
+    GEO_ASSETS.forEach(asset => {
+      const isHigh = asset.sif_label === 'HIGH';
+      if (selectedAsset?.id === asset.id || isHigh) {
+        L.circle([asset.lat, asset.lng], {
+          radius: bufferRadiusMeters,
+          color: isHigh ? '#EF4444' : '#F59E0B',
+          weight: 2,
+          dashArray: '6, 6',
+          fillColor: isHigh ? '#EF4444' : '#F59E0B',
+          fillOpacity: selectedAsset?.id === asset.id ? 0.22 : 0.12,
+        }).addTo(group);
+      }
+    });
+  }, [bufferRadiusMeters, selectedAsset]);
 
   const getCellData = (site: string, activity: string): HeatmapCell | null => {
     return data?.cells?.find(c => c.site === site && c.activity === activity) || null;
@@ -578,7 +614,6 @@ export default function DualHeatmapAndMapPage() {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6 bg-[#F1F5F9]/70 min-h-screen">
       
-      {/* ── Header Bar with 2-Tab View Switcher ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-300 shadow-sm">
         <div>
           <div className="flex items-center gap-2.5">
@@ -609,7 +644,6 @@ export default function DualHeatmapAndMapPage() {
           </div>
         </div>
 
-        {/* ── 2-TAB VIEW SWITCHER ── */}
         <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-300 shadow-inner">
           <button
             onClick={() => setActiveTab('gis_map')}
@@ -637,7 +671,6 @@ export default function DualHeatmapAndMapPage() {
         </div>
       </div>
 
-      {/* SWA Notification Toast */}
       {swaToast && (
         <div className="p-4 rounded-xl bg-red-600 text-white text-xs font-bold flex items-center justify-between shadow-xl shadow-red-950/30 border border-red-400 animate-fadeIn">
           <div className="flex items-center gap-3">
@@ -648,16 +681,11 @@ export default function DualHeatmapAndMapPage() {
         </div>
       )}
 
-      {/* ════════════════════════════════════════════════════════════════════════
-          TAB 1: GEOSPATIAL INTELLIGENCE & SATELLITE DEFENSE MAP
-          ════════════════════════════════════════════════════════════════════════ */}
       {activeTab === 'gis_map' && (
         <div className="space-y-4">
           
-          {/* Geospatial Intelligence Layer Control Bar */}
           <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-slate-300 shadow-xs">
             
-            {/* Environmental Layer Toggles */}
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-[10px] font-mono font-bold uppercase text-slate-400 px-1 flex items-center gap-1">
                 <Layers className="w-3.5 h-3.5" /> Intelligence Layers:
@@ -712,7 +740,6 @@ export default function DualHeatmapAndMapPage() {
               </button>
             </div>
 
-            {/* Dynamic Multi-Tier Spatial Buffer Slider */}
             <div className="flex items-center gap-3 bg-slate-50 px-3.5 py-1.5 rounded-xl border border-slate-200">
               <span className="text-[10px] font-mono font-bold uppercase text-slate-500 flex items-center gap-1">
                 <SlidersHorizontal className="w-3.5 h-3.5 text-blue-600" /> SWA Buffer:
@@ -741,15 +768,12 @@ export default function DualHeatmapAndMapPage() {
 
           </div>
 
-          {/* Map & Detail Flyout 2-Column Grid / Full Width Mode */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             
-            {/* ── Satellite Map Canvas (Full 12 cols when expanded, else 8 cols) ── */}
             <div className={`bg-white rounded-2xl border-2 border-slate-300 shadow-md overflow-hidden relative transition-all duration-300 ${
               isExpanded ? 'lg:col-span-12' : 'lg:col-span-8'
             }`}>
               
-              {/* Header Bar with Live Wind Telemetry */}
               <div className="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2">
@@ -759,7 +783,6 @@ export default function DualHeatmapAndMapPage() {
                     </h3>
                   </div>
 
-                  {/* Live Wind Vector Tag */}
                   <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-slate-800 border border-slate-700 text-[10px] font-mono text-cyan-300">
                     <Wind className="w-3 h-3 text-cyan-400" />
                     <span>Wind: {windVector.speedKmh} km/h ({windVector.directionText})</span>
@@ -794,14 +817,12 @@ export default function DualHeatmapAndMapPage() {
                 </div>
               </div>
 
-              {/* Real Leaflet Map Container */}
               <div 
                 ref={mapContainerRef} 
                 className="w-full relative z-0" 
                 style={{ height: isExpanded ? 740 : 580 }}
               />
 
-              {/* Floating Tactical HUD Overlay when Map is Enlarge/Fullscreen Mode */}
               {isExpanded && selectedAsset && (
                 <div className="absolute top-16 right-4 z-10 w-96 bg-white/95 backdrop-blur-md rounded-2xl border-2 border-slate-300 shadow-2xl overflow-hidden animate-fadeIn">
                   <div className="px-4 py-2.5 bg-slate-900 text-white flex items-center justify-between shadow-xs">
@@ -864,7 +885,6 @@ export default function DualHeatmapAndMapPage() {
 
             </div>
 
-            {/* ── Right Asset Telemetry Inspector (4 Cols or Hidden in Enlarge Mode) ── */}
             <div className={`bg-white rounded-2xl border-2 border-slate-300 shadow-md overflow-hidden transition-all duration-300 ${
               isExpanded ? 'hidden' : 'lg:col-span-4'
             }`}>
@@ -883,7 +903,6 @@ export default function DualHeatmapAndMapPage() {
                 {selectedAsset ? (
                   <div className="space-y-4 animate-fadeIn">
                     
-                    {/* Identity & Status */}
                     <div className="p-4 rounded-xl bg-white border-2 border-slate-300 shadow-sm space-y-2">
                       <div className="flex items-center justify-between">
                         <span className={`px-2.5 py-0.5 rounded text-[10px] font-mono font-black uppercase text-white shadow-xs ${
@@ -908,7 +927,6 @@ export default function DualHeatmapAndMapPage() {
                       </div>
                     </div>
 
-                    {/* KPI Metrics */}
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-2xs">
                         <div className="text-[10px] font-mono text-slate-400 uppercase font-bold">SIF Density (D_sif)</div>
@@ -924,7 +942,6 @@ export default function DualHeatmapAndMapPage() {
                       </div>
                     </div>
 
-                    {/* Environmental & NASA Telemetry Card */}
                     <div className="p-3.5 rounded-xl bg-white border border-slate-200 space-y-2 text-xs shadow-2xs">
                       <div className="text-[10px] font-mono text-slate-400 uppercase font-bold flex items-center justify-between">
                         <span>Environmental Telemetry</span>
@@ -947,7 +964,6 @@ export default function DualHeatmapAndMapPage() {
                       </div>
                     </div>
 
-                    {/* Latest Hazard Field Observation */}
                     <div className="p-4 rounded-xl bg-white border border-slate-300 space-y-1.5 shadow-2xs">
                       <div className="text-[10px] font-mono uppercase font-bold text-slate-500 flex items-center gap-1.5">
                         <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
@@ -958,7 +974,6 @@ export default function DualHeatmapAndMapPage() {
                       </p>
                     </div>
 
-                    {/* On-Duty Toolpusher Card */}
                     <div className="p-3 rounded-xl bg-white border border-slate-200 flex items-center justify-between text-xs shadow-2xs">
                       <div>
                         <div className="text-[10px] text-slate-400 font-bold">On-Duty Toolpusher</div>
@@ -974,7 +989,6 @@ export default function DualHeatmapAndMapPage() {
                       </a>
                     </div>
 
-                    {/* Emergency 1-Click SWA Trigger */}
                     {selectedAsset.sif_label === 'HIGH' && (
                       <button
                         onClick={() => handleTriggerSWA(selectedAsset)}
@@ -985,7 +999,6 @@ export default function DualHeatmapAndMapPage() {
                       </button>
                     )}
 
-                    {/* Quick Jump List to Other Assets */}
                     <div className="p-3 rounded-xl bg-white border border-slate-200 space-y-1.5">
                       <div className="text-[10px] font-mono uppercase font-bold text-slate-400">Jump to Asset Pin:</div>
                       <div className="flex flex-wrap gap-1">
@@ -1022,13 +1035,9 @@ export default function DualHeatmapAndMapPage() {
         </div>
       )}
 
-      {/* ════════════════════════════════════════════════════════════════════════
-          TAB 2: SIF-PRECURSOR DENSITY HEATMAP MATRIX
-          ════════════════════════════════════════════════════════════════════════ */}
       {activeTab === 'matrix' && (
         <div className="space-y-6 animate-fadeIn">
           
-          {/* Top High-Risk Asset Callout */}
           <div className="bg-red-50/80 border-2 border-red-300 rounded-2xl p-4 flex items-center justify-between shadow-xs">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-xl bg-red-600 text-white flex items-center justify-center font-bold">
@@ -1048,7 +1057,6 @@ export default function DualHeatmapAndMapPage() {
             </span>
           </div>
 
-          {/* Matrix Card */}
           <div className="bg-white rounded-2xl border-2 border-slate-300 shadow-md overflow-hidden p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <h3 className="font-heading font-extrabold text-sm text-slate-900 uppercase tracking-wider">
