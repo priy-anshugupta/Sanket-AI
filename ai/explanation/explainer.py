@@ -49,12 +49,41 @@ Be concise, factual, and cite specific hazards from the report text. Do not hall
         )
 
         if settings.AI_MODE == "online":
-            if not settings.GROQ_API_KEY:
-                print("[Explainer] Groq API key is not configured; explanation skipped")
-                return None
-            return await self._explain_groq(prompt)
+            if settings.OPENAI_API_KEY:
+                return await self._explain_openai(prompt)
+            if settings.GROQ_API_KEY:
+                return await self._explain_groq(prompt)
+            print("[Explainer] No online API key (OpenAI or Groq) configured; explanation skipped")
+            return None
 
         return await self._explain_ollama(prompt)
+
+    async def _explain_openai(self, prompt: str) -> str | None:
+        """Call OpenAI API for grounded explanation."""
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                response = await client.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": settings.OPENAI_MODEL or "gpt-4o-mini",
+                        "messages": [
+                            {"role": "system", "content": "You are a senior Oil & Gas industrial safety analyst. Answer in exactly 2 concise sentences."},
+                            {"role": "user", "content": prompt},
+                        ],
+                        "temperature": 0.2,
+                        "max_tokens": 150,
+                    },
+                )
+                response.raise_for_status()
+                data = response.json()
+                return data["choices"][0]["message"]["content"].strip()
+        except Exception as e:
+            print(f"[Explainer] OpenAI API error: {e}")
+            return None
 
     async def _explain_groq(self, prompt: str) -> str | None:
         """Call Groq API for explanation."""
@@ -81,7 +110,6 @@ Be concise, factual, and cite specific hazards from the report text. Do not hall
                 return data["choices"][0]["message"]["content"].strip()
         except Exception as e:
             print(f"[Explainer] Groq API error: {e}")
-            # Do NOT silently fall back to Ollama — per spec Section 15
             return None
 
     async def _explain_ollama(self, prompt: str) -> str | None:
