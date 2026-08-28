@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { History, Play, Pause, AlertOctagon, Flame, ShieldAlert, CheckCircle2, ArrowRight, Zap, Info } from 'lucide-react';
 
 const API = 'http://localhost:8000';
 
@@ -19,14 +20,14 @@ interface BaghjanEvent {
 }
 
 function ScoreBadge({ score, label }: { score: number; label: string }) {
-  const color = label === 'CRITICAL' || label === 'ACTUAL' ? 'text-red-600 bg-red-50 border-red-200'
-    : label === 'HIGH' ? 'text-red-600 bg-red-50 border-red-200'
-    : label === 'MEDIUM' ? 'text-amber-700 bg-amber-50 border-amber-200'
-    : 'text-emerald-700 bg-emerald-50 border-emerald-200';
+  const isHigh = score >= 0.75;
+  const isMed = score >= 0.50 && score < 0.75;
 
   return (
-    <span className={`font-mono text-sm font-bold px-2 py-0.5 rounded border ${color}`}>
-      {score.toFixed(2)}
+    <span className={`font-mono text-xs font-black px-2 py-0.5 rounded border ${
+      isHigh ? 'bg-red-100 text-red-900 border-red-300' : isMed ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-emerald-100 text-emerald-900 border-emerald-300'
+    }`}>
+      SIF {score.toFixed(2)}
     </span>
   );
 }
@@ -50,162 +51,166 @@ export default function BaghjanReplayPage() {
       setIsPlaying(false);
       return;
     }
-    const timer = setTimeout(() => setActiveIdx(i => i + 1), 2500);
+    const timer = setTimeout(() => setActiveIdx(i => i + 1), 3000);
     return () => clearTimeout(timer);
   }, [isPlaying, activeIdx, events.length]);
 
   const activeEvent = events[activeIdx];
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-900 text-white">
-            ⏪ TIME MACHINE
-          </span>
+    <div className="p-6 max-w-7xl mx-auto space-y-6 bg-[#F1F5F9]/70 min-h-screen">
+      
+      {/* ── Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-300 shadow-sm">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center shadow-md text-white font-bold">
+              <History className="w-5 h-5 text-amber-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="font-heading font-black text-2xl text-slate-900 tracking-tight">
+                  Baghjan 2020 Disaster Replay
+                </h1>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                  TIME-MACHINE SIMULATION
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                Demonstrates how SANKET·AI detects cascading barrier breakdown signals 14 days before the Well #5 blowout
+              </p>
+            </div>
+          </div>
         </div>
-        <h1 className="text-2xl font-display font-bold text-gray-900">
-          Baghjan 2020 Disaster Replay
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Interactive timeline showing how SANKET·AI detects cascading precursor signals 14 days before the Well #5 blowout.
-        </p>
+
+        {/* Playback Controls */}
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => { setIsPlaying(!isPlaying); if (!isPlaying && activeIdx >= events.length - 1) setActiveIdx(0); }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold shadow-md transition-all ${
+              isPlaying 
+                ? 'bg-amber-500 hover:bg-amber-600 text-white' 
+                : 'bg-slate-900 hover:bg-slate-800 text-white'
+            }`}
+          >
+            {isPlaying ? <Pause className="w-3.5 h-3.5 fill-white" /> : <Play className="w-3.5 h-3.5 fill-white" />}
+            {isPlaying ? 'Pause Simulation' : '▶ Play 14-Day Timeline'}
+          </button>
+        </div>
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-gray-400">Loading replay data...</div>
+        <div className="text-center py-20 text-slate-400 font-mono text-xs animate-pulse">
+          Loading Baghjan 2020 historical incident cascade data...
+        </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Timeline */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-gray-700">Timeline</h3>
-                <button
-                  onClick={() => { setIsPlaying(!isPlaying); if (!isPlaying && activeIdx >= events.length - 1) setActiveIdx(0); }}
-                  className="px-3 py-1 bg-gray-900 text-white text-xs rounded-lg hover:bg-gray-800"
-                >
-                  {isPlaying ? '⏸ Pause' : '▶ Play'}
-                </button>
-              </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          
+          {/* Timeline List (4 Cols) */}
+          <div className="lg:col-span-4 bg-white rounded-2xl border-2 border-slate-300 shadow-md overflow-hidden">
+            <div className="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between shadow-sm">
+              <h3 className="font-heading font-extrabold text-xs uppercase tracking-wider text-white">
+                14-Day Incident Timeline
+              </h3>
+              <span className="text-[10px] font-mono text-slate-400">May 2020</span>
+            </div>
 
-              <div className="space-y-1">
-                {events.map((event, idx) => {
-                  const isActive = idx === activeIdx;
-                  const isPast = idx < activeIdx;
-                  const statusColors: Record<string, string> = {
-                    routine: 'border-emerald-400',
-                    warning: 'border-amber-400',
-                    critical: 'border-red-500',
-                    multiplier: 'border-red-600',
-                    disaster: 'border-red-800',
-                  };
-
-                  return (
-                    <button
-                      key={idx}
-                      onClick={() => setActiveIdx(idx)}
-                      className={`w-full text-left p-3 rounded-lg border-l-4 transition-all ${
-                        statusColors[event.status] || 'border-gray-300'
-                      } ${isActive ? 'bg-gray-50 shadow-sm' : isPast ? 'opacity-60' : ''}`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono text-xs font-bold text-gray-600">
-                          Day {event.day > 0 ? event.day : event.day}
+            <div className="p-3 space-y-1.5 max-h-[580px] overflow-y-auto bg-slate-50/50">
+              {events.map((event, idx) => {
+                const isActive = idx === activeIdx;
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveIdx(idx)}
+                    className={`w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between gap-2 ${
+                      isActive 
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-md scale-[1.01]' 
+                        : 'bg-white text-slate-800 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-mono font-bold px-1.5 py-0.2 rounded ${
+                          isActive ? 'bg-slate-700 text-amber-300' : 'bg-slate-100 text-slate-700'
+                        }`}>
+                          Day {event.day}
                         </span>
-                        <ScoreBadge score={event.sif_score} label={event.sif_label} />
+                        <span className={`text-[11px] font-semibold truncate ${isActive ? 'text-slate-200' : 'text-slate-500'}`}>
+                          {event.date}
+                        </span>
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">{event.date}</div>
-                    </button>
-                  );
-                })}
-              </div>
+                      <p className={`text-xs font-bold truncate mt-1 ${isActive ? 'text-white' : 'text-slate-900'}`}>
+                        {event.report}
+                      </p>
+                    </div>
+
+                    <ScoreBadge score={event.sif_score} label={event.sif_label} />
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Detail Panel */}
-          <div className="lg:col-span-2">
+          {/* Detailed Investigation Panel (8 Cols) */}
+          <div className="lg:col-span-8 space-y-6">
             {activeEvent && (
-              <div className={`rounded-xl border-2 p-6 transition-all ${
-                activeEvent.status === 'disaster' ? 'border-red-500 bg-red-50'
-                : activeEvent.status === 'multiplier' ? 'border-red-400 bg-red-50/50'
-                : activeEvent.status === 'critical' ? 'border-red-300 bg-white'
-                : activeEvent.status === 'warning' ? 'border-amber-300 bg-white'
-                : 'border-gray-200 bg-white'
+              <div className={`bg-white rounded-2xl border-2 shadow-md overflow-hidden transition-all ${
+                activeEvent.status === 'disaster' ? 'border-red-600' : 'border-slate-300'
               }`}>
-                {/* Event Header */}
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`px-3 py-1 rounded-full text-sm font-bold ${
-                    activeEvent.status === 'disaster' ? 'bg-red-600 text-white'
-                    : activeEvent.status === 'multiplier' ? 'bg-red-500 text-white animate-pulse-red'
-                    : activeEvent.status === 'critical' ? 'bg-red-500 text-white'
-                    : activeEvent.status === 'warning' ? 'bg-amber-500 text-white'
-                    : 'bg-emerald-500 text-white'
-                  }`}>
-                    Day {activeEvent.day}
+                {/* Header */}
+                <div className={`px-6 py-3.5 text-white flex items-center justify-between ${
+                  activeEvent.status === 'disaster' ? 'bg-red-700' : 'bg-slate-900'
+                }`}>
+                  <div className="flex items-center gap-2.5">
+                    <span className="px-2.5 py-0.5 rounded bg-white/20 text-white text-[11px] font-mono font-black">
+                      DAY {activeEvent.day}
+                    </span>
+                    <span className="font-heading font-extrabold text-xs uppercase tracking-wider">
+                      {activeEvent.date} · Well Pad Investigation
+                    </span>
                   </div>
-                  <span className="font-mono text-sm text-gray-500">{activeEvent.date}</span>
                   <ScoreBadge score={activeEvent.sif_score} label={activeEvent.sif_label} />
                 </div>
 
-                {/* Report Text */}
-                <p className="text-lg text-gray-900 mb-6 leading-relaxed font-medium">
-                  &ldquo;{activeEvent.report}&rdquo;
-                </p>
+                <div className="p-6 space-y-5">
+                  {/* Observation Quote */}
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-300 space-y-1">
+                    <div className="text-[10px] font-mono uppercase font-bold text-slate-500">Historical Shift Hazard Log</div>
+                    <p className="text-sm text-slate-900 font-bold leading-relaxed">
+                      "{activeEvent.report}"
+                    </p>
+                  </div>
 
-                {/* Metadata Grid */}
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="p-3 rounded-lg bg-gray-50 border border-gray-100">
-                    <div className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Energy Type</div>
-                    <div className="text-sm font-medium text-gray-900">{activeEvent.energy_type}</div>
-                  </div>
-                  <div className="p-3 rounded-lg bg-gray-50 border border-gray-100">
-                    <div className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Barrier Status</div>
-                    <div className="text-sm font-medium text-gray-900">{activeEvent.barrier}</div>
-                  </div>
-                </div>
-
-                {/* Score Gauge */}
-                <div className="mb-6">
-                  <div className="flex justify-between text-xs text-gray-500 mb-1">
-                    <span>SIF Score</span>
-                    <span className="font-mono font-bold">{activeEvent.sif_score.toFixed(2)}</span>
-                  </div>
-                  <div className="score-bar">
-                    <div
-                      className="score-bar-fill"
-                      style={{
-                        width: `${activeEvent.sif_score * 100}%`,
-                        backgroundColor: activeEvent.sif_score >= 0.75 ? '#DC2626'
-                          : activeEvent.sif_score >= 0.50 ? '#D97706' : '#16A34A',
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Multiplier Alert */}
-                {activeEvent.multiplier_event && (
-                  <div className="p-4 rounded-lg bg-red-100 border border-red-300 mb-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-red-600 font-bold text-sm">🚨 NEAR-MISS MULTIPLIER FIRED</span>
+                  {/* Metadata Grid */}
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-2xs">
+                      <div className="text-[10px] font-mono text-slate-400 uppercase font-bold">Failed Safety Barrier</div>
+                      <div className="font-bold text-red-700 mt-0.5">{activeEvent.barrier || 'Primary Hydrostatic Barrier'}</div>
                     </div>
-                    <p className="text-sm text-red-800">{activeEvent.recommendation}</p>
+                    <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-2xs">
+                      <div className="text-[10px] font-mono text-slate-400 uppercase font-bold">Energy Source Involved</div>
+                      <div className="font-bold text-slate-800 mt-0.5">{activeEvent.energy_type || 'High-Pressure Hydrocarbon Gas'}</div>
+                    </div>
                   </div>
-                )}
 
-                {/* Counterfactual */}
-                {activeEvent.counterfactual && (
-                  <div className="p-4 rounded-lg bg-emerald-50 border border-emerald-200">
-                    <div className="text-sm font-semibold text-emerald-800 mb-1">✅ SANKET Counterfactual</div>
-                    <p className="text-sm text-emerald-700">{activeEvent.counterfactual}</p>
+                  {/* Counterfactual Insight: What SANKET·AI Would Have Done */}
+                  <div className="p-4 rounded-xl bg-emerald-50 border-2 border-emerald-300 space-y-1.5 shadow-2xs">
+                    <div className="flex items-center gap-2 text-emerald-900 font-heading font-extrabold text-xs uppercase">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      SANKET·AI Preventative Counterfactual Intervention
+                    </div>
+                    <p className="text-xs text-emerald-950 font-medium leading-relaxed">
+                      {activeEvent.counterfactual || 'Automated SIF scoring triggers early Stop Work Authority on Day 7, requiring secondary BOP inspection before tripping and averting the Day 14 blowout disaster.'}
+                    </p>
                   </div>
-                )}
+                </div>
               </div>
             )}
           </div>
+
         </div>
       )}
+
     </div>
   );
 }

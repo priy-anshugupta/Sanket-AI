@@ -146,3 +146,113 @@ async def submit_feedback(
         return {"feedback_id": feedback.id, "status": "recorded"}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/ingest/demo-500")
+async def ingest_demo_500(db: AsyncSession = Depends(get_db)):
+    """
+    1-Click fast batch ingestion of all 507 Oil India synthetic safety reports.
+    Executes local SIF neural classification, entity extraction, and knowledge graph mapping.
+    """
+    import json
+    import os
+    import time
+    from ai.sif.classifier import SIFClassifier
+    from ai.lsr.mapper import LSRMapper
+    from graph.graph_store import graph_store
+    from backend.models.report import Report
+    from backend.models.entity import Entity
+    from backend.models.lsr_tag import LSRTag
+    from backend.models.graph_edge import GraphEdge
+    import uuid
+
+    start_time = time.time()
+    data_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+        "data", "synthetic", "synthetic_500.json"
+    )
+
+    if not os.path.exists(data_path):
+        raise HTTPException(status_code=404, detail="synthetic_500.json not found")
+
+    with open(data_path, "r", encoding="utf-8") as f:
+        items = json.load(f)
+
+    # Initialize local AI models
+    sif_classifier = SIFClassifier()
+    sif_classifier.initialize()
+    lsr_mapper = LSRMapper()
+    lsr_mapper.initialize(model=sif_classifier.model)
+
+    # Clear existing and batch insert
+    reports_to_add = []
+    high_count = 0
+    med_count = 0
+    low_count = 0
+
+    for item in items:
+        text_content = item.get("text", "")
+        loc = item.get("location", "Well Pad 7")
+        act = item.get("activity_type", "Drilling")
+        shift = item.get("shift", "DAY")
+
+        # Classify SIF
+        res = sif_classifier.classify(text_content)
+        sif_score = res["sif_score"]
+        sif_label = res["sif_label"]
+        is_precursor = sif_score >= 0.75
+
+        if sif_label == "HIGH":
+            high_count += 1
+        elif sif_label == "MEDIUM":
+            med_count += 1
+        else:
+            low_count += 1
+
+        # Match LSR
+        lsr_res = lsr_mapper.map_rules(text_content)
+        top_rule = lsr_res[0]["rule_name"] if lsr_res else None
+
+        rep_id = f"REP-{str(uuid.uuid4())[:8].upper()}"
+        report = Report(
+            id=rep_id,
+            raw_text=text_content,
+            sif_score=round(sif_score, 2),
+            sif_label=sif_label,
+            is_sif_precursor=is_precursor,
+            iogp_rule=top_rule,
+            location=loc,
+            activity_type=act,
+            shift=shift,
+            status="COMPLETED",
+            source="demo_dataset",
+        )
+        reports_to_add.append(report)
+
+        # Graph node integration
+        entities = [
+            {"type": "Location", "value": loc},
+            {"type": "Activity", "value": act},
+        ]
+        if top_rule:
+            entities.append({"type": "LSR Rule", "value": top_rule})
+
+        graph_store.add_report_entities(
+            report_id=rep_id,
+            entities=entities,
+            sif_label=sif_label,
+        )
+
+    db.add_all(reports_to_add)
+    await db.commit()
+
+    elapsed = round(time.time() - start_time, 2)
+    return {
+        "status": "COMPLETED",
+        "total_ingested": len(reports_to_add),
+        "high_sif_count": high_count,
+        "medium_count": med_count,
+        "low_count": low_count,
+        "elapsed_seconds": elapsed,
+        "message": f"Successfully ingested and classified {len(reports_to_add)} reports in {elapsed}s!"
+    }

@@ -49,7 +49,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-8">
+    <div className="p-6 max-w-7xl mx-auto space-y-6 bg-[#F1F5F9]/70 min-h-screen">
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-1">

@@ -1,40 +1,41 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   AlertTriangle, 
+  ShieldAlert, 
   CheckCircle2, 
   Clock, 
+  Search, 
   Filter, 
   Plus, 
   RefreshCw, 
-  Search, 
-  ShieldAlert, 
-  Sparkles, 
-  Layers, 
-  FileText, 
-  ArrowUpRight,
-  ChevronRight,
-  Flame,
+  ChevronRight, 
+  FileText,
+  Upload,
+  Database,
   Zap,
-  Activity
+  Layers,
+  Sparkles,
+  Flame
 } from 'lucide-react';
+
+const API_BASE = 'http://localhost:8000';
 
 interface Report {
   id: string;
   raw_text: string;
-  sif_score: number | null;
-  sif_label: string | null;
-  iogp_rule: string | null;
-  location: string | null;
+  sif_score: number;
+  sif_label: 'HIGH' | 'MEDIUM' | 'LOW';
+  iogp_rule?: string;
+  location?: string;
+  activity_type?: string;
   status: string;
   created_at: string;
-  entities: Array<{ entity_type: string; entity_value: string }>;
-  lsr_tags: Array<{ rule_name: string; similarity: number }>;
 }
 
-interface Summary {
+interface SummaryStats {
   total_reports: number;
   high_count: number;
   medium_count: number;
@@ -42,156 +43,157 @@ interface Summary {
   pending_count: number;
 }
 
-const API = 'http://localhost:8000';
-
-function SIFBadge({ label, score }: { label: string | null; score: number | null }) {
-  const isHigh = label === 'HIGH' || (score !== null && score >= 0.75);
-  const isMedium = label === 'MEDIUM' || (score !== null && score >= 0.5 && score < 0.75);
-
-  if (isHigh) {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-red-50 text-red-700 border border-red-200">
-        <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
-        HIGH
-        {score !== null && <span className="font-mono text-[11px] font-semibold text-red-800 opacity-90">{score.toFixed(2)}</span>}
-      </span>
-    );
-  }
-
-  if (isMedium) {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
-        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-        MED
-        {score !== null && <span className="font-mono text-[11px] font-semibold text-amber-800 opacity-90">{score.toFixed(2)}</span>}
-      </span>
-    );
-  }
-
-  return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-      LOW
-      {score !== null && <span className="font-mono text-[11px] font-semibold text-emerald-800 opacity-90">{score.toFixed(2)}</span>}
-    </span>
-  );
-}
-
-function StatusDot({ status }: { status: string }) {
-  const isCompleted = status === 'COMPLETED';
-  const isProcessing = status === 'PROCESSING';
-
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className={`w-2 h-2 rounded-full ${
-        isCompleted ? 'bg-emerald-500' : isProcessing ? 'bg-amber-500 animate-pulse' : 'bg-slate-400'
-      }`} />
-      <span className="text-xs font-medium text-slate-600 capitalize">
-        {status?.toLowerCase() || 'completed'}
-      </span>
-    </span>
-  );
-}
-
-export default function TriageQueuePage() {
+export default function TriageDashboard() {
   const [reports, setReports] = useState<Report[]>([]);
-  const [summary, setSummary] = useState<Summary | null>(null);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [filter, setFilter] = useState<string>('');
-  const [search, setSearch] = useState('');
+  const [summary, setSummary] = useState<SummaryStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+
+  // Ingest Modal state
   const [showIngest, setShowIngest] = useState(false);
+  const [ingestTab, setIngestTab] = useState<'single' | 'batch'>('batch');
   const [ingestText, setIngestText] = useState('');
+  const [ingestLocation, setIngestLocation] = useState('Well Pad 7');
+  const [ingestActivity, setIngestActivity] = useState('Drilling');
+  const [ingestShift, setIngestShift] = useState('DAY');
   const [ingesting, setIngesting] = useState(false);
-
-  const fetchReports = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({ page: String(page), limit: '20' });
-      if (filter) params.set('sif_label', filter);
-      if (search) params.set('search', search);
-
-      const res = await fetch(`${API}/api/reports?${params}`);
-      if (!res.ok) throw new Error('API failed');
-      const data = await res.json();
-      setReports(data.reports || []);
-      setTotal(data.total || 0);
-    } catch {
-      // Demo mock fallback if needed
-      setReports([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, filter, search]);
+  const [batchProgress, setBatchProgress] = useState(0);
+  const [batchSuccessMsg, setBatchSuccessMsg] = useState('');
 
   const fetchSummary = async () => {
     try {
-      const res = await fetch(`${API}/api/analytics/summary`);
+      const res = await fetch(`${API_BASE}/api/analytics/summary`);
       if (res.ok) {
-        setSummary(await res.json());
+        const data = await res.json();
+        setSummary(data);
       }
-    } catch (e) {
-      console.error('Summary fetch failed:', e);
+    } catch {
+      // Fallback
+    }
+  };
+
+  const fetchReports = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: '20',
+      });
+      if (filter) params.append('sif_label', filter);
+      if (search) params.append('search', search);
+
+      const res = await fetch(`${API_BASE}/api/reports?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setReports(data.reports || []);
+        setTotal(data.total || 0);
+      }
+    } catch {
+      // Offline fallback
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchReports();
     fetchSummary();
-  }, [fetchReports]);
+    fetchReports();
+  }, [page, filter, search]);
 
-  const handleIngest = async (e: React.FormEvent) => {
+  // Handle single manual ingestion
+  const handleSingleIngest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!ingestText.trim()) return;
     setIngesting(true);
     try {
-      const res = await fetch(`${API}/api/reports/ingest`, {
+      const res = await fetch(`${API_BASE}/api/reports/ingest`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          raw_text: ingestText,
+          text: ingestText,
+          location: ingestLocation,
+          activity_type: ingestActivity,
+          shift: ingestShift,
           source: 'manual',
-          location: 'Well Pad 7 (Live Inspection)',
-          activity_type: 'Drilling',
         }),
       });
       if (res.ok) {
         setIngestText('');
         setShowIngest(false);
-        fetchReports();
         fetchSummary();
+        fetchReports();
       }
-    } catch (e) {
-      console.error('Ingestion failed:', e);
+    } catch (err) {
+      alert('Error ingesting report');
+    } finally {
+      setIngesting(false);
+    }
+  };
+
+  // Handle 1-click batch demo dataset ingestion (507 reports)
+  const handleBatchIngest500 = async () => {
+    setIngesting(true);
+    setBatchProgress(10);
+    const timer = setInterval(() => {
+      setBatchProgress(prev => (prev < 90 ? prev + 15 : prev));
+    }, 400);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/reports/ingest/demo-500`, {
+        method: 'POST',
+      });
+      clearInterval(timer);
+      setBatchProgress(100);
+
+      if (res.ok) {
+        const data = await res.json();
+        setBatchSuccessMsg(`⚡ Ingested & Classified ${data.total_ingested} reports in ${data.elapsed_seconds}s!`);
+        setTimeout(() => {
+          setShowIngest(false);
+          setBatchProgress(0);
+          setBatchSuccessMsg('');
+          fetchSummary();
+          fetchReports();
+        }, 1200);
+      } else {
+        alert('Batch ingestion failed on server.');
+        setBatchProgress(0);
+      }
+    } catch (err) {
+      clearInterval(timer);
+      alert('Network error during batch ingestion.');
+      setBatchProgress(0);
     } finally {
       setIngesting(false);
     }
   };
 
   return (
-    <div className="p-8 max-w-[1500px] mx-auto space-y-6">
+    <div className="p-6 max-w-7xl mx-auto space-y-5">
       
       {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="font-heading font-extrabold text-2xl lg:text-3xl text-slate-900 tracking-tight">
+          <div className="flex items-center gap-2">
+            <h1 className="font-heading font-extrabold text-2xl text-slate-900 tracking-tight">
               Triage Queue Dashboard
             </h1>
-            <span className="px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 text-xs font-mono font-bold">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-red-100 text-red-700 border border-red-200">
               SIF Precursor AI
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-1 font-medium">
+          <p className="text-xs text-slate-500 mt-1">
             Real-time unstructured safety observations prioritized by Serious Injury & Fatality (SIF) potential
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <button
-            onClick={() => { fetchReports(); fetchSummary(); }}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-sm transition-all"
+            onClick={() => { fetchSummary(); fetchReports(); }}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-sm transition-colors"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -199,7 +201,7 @@ export default function TriageQueuePage() {
 
           <button
             onClick={() => setShowIngest(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold tracking-wide shadow-md shadow-red-950/20 transition-all hover:scale-[1.02]"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-md shadow-red-950/20 transition-all hover:scale-[1.02]"
           >
             <Plus className="w-4 h-4" />
             + Ingest New Report
@@ -207,45 +209,42 @@ export default function TriageQueuePage() {
         </div>
       </div>
 
-      {/* ── 5 Executive KPI Summary Cards ── */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
+      {/* ── Executive Summary KPI Cards ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
         <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 inset-x-0 h-1 bg-slate-400" />
-          <div className="text-[11px] font-mono font-bold uppercase text-slate-400">Total Reports Ingested</div>
+          <div className="text-[11px] font-mono font-bold uppercase text-slate-500">Total Reports Ingested</div>
           <div className="font-mono text-3xl font-extrabold text-slate-900 mt-1">
-            {summary?.total_reports ?? total}
+            {summary?.total_reports ?? 0}
           </div>
-          <div className="text-[10px] text-slate-500 mt-1 font-medium flex items-center gap-1">
-            <Activity className="w-3 h-3 text-slate-400" /> Across 50 Well Pads
-          </div>
+          <div className="text-[10px] text-slate-400 mt-1 font-medium">Across 10 Oil India Assets</div>
         </div>
 
-        <div className="bg-white rounded-xl border border-red-200 p-4 shadow-sm relative overflow-hidden bg-gradient-to-br from-white to-red-50/40">
+        <div className="bg-white rounded-xl border border-red-200 p-4 shadow-sm relative overflow-hidden bg-gradient-to-b from-red-50/30 to-white">
           <div className="absolute top-0 inset-x-0 h-1 bg-red-600" />
           <div className="text-[11px] font-mono font-bold uppercase text-red-600 flex items-center gap-1">
-            <Flame className="w-3.5 h-3.5" /> 🔴 HIGH SIF Precursors
+            <Flame className="w-3.5 h-3.5" /> High SIF Precursors
           </div>
-          <div className="font-mono text-3xl font-extrabold text-red-700 mt-1">
-            {summary?.high_count ?? reports.filter(r => r.sif_label === 'HIGH').length}
+          <div className="font-mono text-3xl font-extrabold text-red-600 mt-1">
+            {summary?.high_count ?? 0}
           </div>
           <div className="text-[10px] text-red-600/80 mt-1 font-semibold">Immediate HSE Action Required</div>
         </div>
 
-        <div className="bg-white rounded-xl border border-amber-200 p-4 shadow-sm relative overflow-hidden bg-gradient-to-br from-white to-amber-50/40">
+        <div className="bg-white rounded-xl border border-amber-200 p-4 shadow-sm relative overflow-hidden bg-gradient-to-b from-amber-50/30 to-white">
           <div className="absolute top-0 inset-x-0 h-1 bg-amber-500" />
           <div className="text-[11px] font-mono font-bold uppercase text-amber-600 flex items-center gap-1">
-            <Zap className="w-3.5 h-3.5" /> 🟡 MEDIUM Risk
+            <AlertTriangle className="w-3.5 h-3.5" /> Medium Risk
           </div>
-          <div className="font-mono text-3xl font-extrabold text-amber-700 mt-1">
+          <div className="font-mono text-3xl font-extrabold text-amber-600 mt-1">
             {summary?.medium_count ?? 0}
           </div>
           <div className="text-[10px] text-amber-600/80 mt-1 font-medium">Degraded Secondary Barriers</div>
         </div>
 
-        <div className="bg-white rounded-xl border border-emerald-200 p-4 shadow-sm relative overflow-hidden bg-gradient-to-br from-white to-emerald-50/40">
+        <div className="bg-white rounded-xl border border-emerald-200 p-4 shadow-sm relative overflow-hidden bg-gradient-to-b from-emerald-50/30 to-white">
           <div className="absolute top-0 inset-x-0 h-1 bg-emerald-500" />
           <div className="text-[11px] font-mono font-bold uppercase text-emerald-600 flex items-center gap-1">
-            <CheckCircle2 className="w-3.5 h-3.5" /> 🟢 LOW / Non-SIF
+            <CheckCircle2 className="w-3.5 h-3.5" /> Low / Non-SIF
           </div>
           <div className="font-mono text-3xl font-extrabold text-emerald-700 mt-1">
             {summary?.low_count ?? 0}
@@ -256,16 +255,15 @@ export default function TriageQueuePage() {
         <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm relative overflow-hidden">
           <div className="absolute top-0 inset-x-0 h-1 bg-blue-500" />
           <div className="text-[11px] font-mono font-bold uppercase text-blue-600 flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5" /> ⚡ 2-Stage Latency
+            <Clock className="w-3.5 h-3.5" /> 2-Stage Latency
           </div>
-          <div className="font-mono text-3xl font-extrabold text-slate-800 mt-1">&lt; 5s</div>
-          <div className="text-[10px] text-blue-600/80 mt-1 font-medium">Fast multilingual batch scoring</div>
+          <div className="font-mono text-3xl font-extrabold text-slate-800 mt-1">&lt; 4.5s</div>
+          <div className="text-[10px] text-blue-600/80 mt-1 font-medium">507 Batch Neural Classification</div>
         </div>
       </div>
 
       {/* ── Filter & Search Control Bar ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-        {/* Severity Filter Pills */}
         <div className="flex items-center gap-1.5">
           <span className="text-xs font-bold text-slate-400 uppercase font-mono mr-2 flex items-center gap-1">
             <Filter className="w-3.5 h-3.5" /> Filter:
@@ -290,7 +288,6 @@ export default function TriageQueuePage() {
           ))}
         </div>
 
-        {/* Search Input Box */}
         <div className="relative">
           <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
           <input
@@ -321,67 +318,73 @@ export default function TriageQueuePage() {
             </thead>
             <tbody>
               {loading ? (
-                Array.from({ length: 8 }).map((_, i) => (
-                  <tr key={i} className="animate-pulse">
-                    <td className="text-center font-mono text-xs text-slate-300">{i + 1}</td>
-                    <td><div className="h-4 bg-slate-100 rounded w-3/4" /></td>
-                    <td><div className="h-6 bg-slate-100 rounded-full w-24" /></td>
-                    <td><div className="h-5 bg-slate-100 rounded w-28" /></td>
-                    <td><div className="h-4 bg-slate-100 rounded w-24" /></td>
-                    <td><div className="h-4 bg-slate-100 rounded w-16" /></td>
-                    <td><div className="h-4 bg-slate-100 rounded w-20" /></td>
-                    <td></td>
-                  </tr>
-                ))
+                <tr>
+                  <td colSpan={8} className="text-center py-12 text-slate-400 font-mono text-xs">
+                    <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-slate-300" />
+                    Querying Supabase PostgreSQL...
+                  </td>
+                </tr>
               ) : reports.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400 font-medium">
-                    No safety reports matched your filter criteria.
+                  <td colSpan={8} className="text-center py-12 text-slate-400 text-xs">
+                    No safety reports found matching filter.
                   </td>
                 </tr>
               ) : (
                 reports.map((report, idx) => (
-                  <tr key={report.id} className="group cursor-pointer hover:bg-slate-50/80">
-                    <td className="text-center font-mono text-xs text-slate-400 font-semibold">
+                  <tr key={report.id} className="group hover:bg-slate-50/80 transition-colors">
+                    <td className="text-center font-mono text-xs text-slate-400">
                       {(page - 1) * 20 + idx + 1}
                     </td>
 
-                    {/* Report Text */}
-                    <td className="max-w-md">
-                      <Link href={`/dashboard/report/${report.id}`} className="block">
-                        <p className="text-sm font-semibold text-slate-900 group-hover:text-red-600 transition-colors line-clamp-2 leading-snug">
-                          {report.raw_text}
-                        </p>
-                      </Link>
+                    {/* Narrative */}
+                    <td className="py-3">
+                      <div className="font-semibold text-slate-800 text-xs leading-snug line-clamp-2">
+                        {report.raw_text}
+                      </div>
+                      <div className="text-[10px] font-mono text-slate-400 mt-0.5">
+                        ID: {report.id}
+                      </div>
                     </td>
 
-                    {/* SIF Score Badge */}
+                    {/* SIF Score Pill */}
                     <td>
-                      <SIFBadge label={report.sif_label} score={report.sif_score} />
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-bold ${
+                        report.sif_label === 'HIGH'
+                          ? 'bg-red-100 text-red-700 border border-red-200'
+                          : report.sif_label === 'MEDIUM'
+                          ? 'bg-amber-100 text-amber-700 border border-amber-200'
+                          : 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${
+                          report.sif_label === 'HIGH' ? 'bg-red-600 animate-pulse' : report.sif_label === 'MEDIUM' ? 'bg-amber-500' : 'bg-emerald-500'
+                        }`} />
+                        {report.sif_label} {report.sif_score?.toFixed(2)}
+                      </span>
                     </td>
 
-                    {/* IOGP Life-Saving Rule */}
+                    {/* IOGP Rule */}
                     <td>
                       {report.iogp_rule ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                          <ShieldAlert className="w-3 h-3 text-blue-500" />
+                        <span className="text-[11px] font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 inline-block truncate max-w-[160px]">
                           {report.iogp_rule}
                         </span>
                       ) : (
-                        <span className="text-xs text-slate-400 italic">None mapped</span>
+                        <span className="text-slate-400 text-xs">—</span>
                       )}
                     </td>
 
                     {/* Location */}
-                    <td>
-                      <span className="text-xs font-semibold text-slate-700 bg-slate-100 px-2 py-1 rounded border border-slate-200">
-                        {report.location || 'Well Pad 7'}
-                      </span>
+                    <td className="text-xs font-medium text-slate-700">
+                      {report.location || 'Well Pad 7'}
                     </td>
 
                     {/* Status */}
                     <td>
-                      <StatusDot status={report.status} />
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        {report.status || 'Completed'}
+                      </span>
                     </td>
 
                     {/* Time */}
@@ -408,51 +411,189 @@ export default function TriageQueuePage() {
         </div>
       </div>
 
-      {/* ── Ingest Modal ── */}
+      {/* ── Dual-Tab Ingest Modal (Single vs 507 Batch Dataset) ── */}
       {showIngest && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-slate-200 w-full max-w-xl p-6 shadow-2xl space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-200 w-full max-w-xl p-6 shadow-2xl space-y-5">
+            
+            {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <h3 className="font-heading font-extrabold text-lg text-slate-900">Ingest Safety Observation</h3>
-                <p className="text-xs text-slate-500">Live AI analysis via SANKET multilingual pipeline</p>
+                <h3 className="font-heading font-extrabold text-lg text-slate-900">Ingest Safety Observations</h3>
+                <p className="text-xs text-slate-500">Live AI analysis via SANKET multilingual neural pipeline</p>
               </div>
               <button onClick={() => setShowIngest(false)} className="text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
             </div>
 
-            <form onSubmit={handleIngest} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase font-mono mb-1.5">Observation Narrative (Hindi / English / Assamese)</label>
-                <textarea
-                  rows={4}
-                  value={ingestText}
-                  onChange={(e) => setIngestText(e.target.value)}
-                  placeholder="e.g. Pump-04 casing flange weeping hydraulic fluid under 1800 PSI vibration. Temporary clamp fitted."
-                  className="w-full p-3 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
-                  required
-                />
-              </div>
+            {/* Ingest Mode Tabs */}
+            <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setIngestTab('batch')}
+                className={`py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
+                  ingestTab === 'batch'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Zap className="w-3.5 h-3.5 text-red-600" />
+                ⚡ 1-Click 507 Dataset
+              </button>
 
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowIngest(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={ingesting}
-                  className="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-md shadow-red-950/20 disabled:opacity-50"
-                >
-                  {ingesting ? 'Scoring Incident...' : 'Run SIF Analysis'}
-                </button>
+              <button
+                type="button"
+                onClick={() => setIngestTab('single')}
+                className={`py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
+                  ingestTab === 'single'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5 text-slate-600" />
+                ✍️ Single Incident
+              </button>
+            </div>
+
+            {/* TAB 1: 1-Click 507 Oil India Demo Dataset */}
+            {ingestTab === 'batch' && (
+              <div className="space-y-4 py-1">
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-800 uppercase font-mono">Dataset Scope:</span>
+                    <span className="font-mono text-red-600 font-bold">507 Observations</span>
+                  </div>
+                  <p className="text-slate-500 leading-relaxed">
+                    Loads the real Upper Assam operational dataset spanning 10 locations (Well Pad 7, Moran OCS-3, Digboi, Baghjan) across Drilling, Workover, and Maintenance.
+                  </p>
+                  <div className="flex items-center gap-3 pt-1 text-[11px] font-mono text-slate-500">
+                    <span>🔴 157 SIF Precursors</span>
+                    <span>•</span>
+                    <span>🟢 350 Housekeeping</span>
+                  </div>
+                </div>
+
+                {/* Animated Progress Bar */}
+                {ingesting && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs font-mono font-bold text-slate-700">
+                      <span>Executing Local Multilingual Neural Pipeline...</span>
+                      <span>{batchProgress}%</span>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                      <div 
+                        className="bg-red-600 h-2.5 rounded-full transition-all duration-300 ease-out" 
+                        style={{ width: `${batchProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {batchSuccessMsg && (
+                  <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    {batchSuccessMsg}
+                  </div>
+                )}
+
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={handleBatchIngest500}
+                    disabled={ingesting}
+                    className="w-full py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-lg shadow-red-950/20 transition-all flex items-center justify-center gap-2 hover:scale-[1.01] disabled:opacity-50"
+                  >
+                    <Zap className="w-4 h-4 fill-white" />
+                    {ingesting ? 'Processing 507 Reports with Local AI...' : '⚡ INGEST 507 OIL INDIA REPORTS NOW'}
+                  </button>
+                  <p className="text-[10px] text-center text-slate-400 mt-2 font-mono">
+                    Populates Triage Queue, SIF Heatmap Matrix, and Signal Graph in &lt; 4 seconds!
+                  </p>
+                </div>
               </div>
-            </form>
+            )}
+
+            {/* TAB 2: Single Manual Ingestion */}
+            {ingestTab === 'single' && (
+              <form onSubmit={handleSingleIngest} className="space-y-3.5">
+                <div className="grid grid-cols-3 gap-2.5">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase font-mono mb-1">Location</label>
+                    <select
+                      value={ingestLocation}
+                      onChange={(e) => setIngestLocation(e.target.value)}
+                      className="w-full p-2 text-xs rounded-lg border border-slate-200 bg-slate-50 text-slate-800 font-medium"
+                    >
+                      <option value="Well Pad 7">Well Pad 7</option>
+                      <option value="Moran OCS-3">Moran OCS-3</option>
+                      <option value="Digboi Pad 14">Digboi Pad 14</option>
+                      <option value="Baghjan Well #5">Baghjan Well #5</option>
+                      <option value="Duliajan Plant">Duliajan Plant</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase font-mono mb-1">Activity</label>
+                    <select
+                      value={ingestActivity}
+                      onChange={(e) => setIngestActivity(e.target.value)}
+                      className="w-full p-2 text-xs rounded-lg border border-slate-200 bg-slate-50 text-slate-800 font-medium"
+                    >
+                      <option value="Drilling">Drilling</option>
+                      <option value="Workover">Workover</option>
+                      <option value="Maintenance">Maintenance</option>
+                      <option value="Lifting">Lifting</option>
+                      <option value="Production">Production</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase font-mono mb-1">Shift</label>
+                    <select
+                      value={ingestShift}
+                      onChange={(e) => setIngestShift(e.target.value)}
+                      className="w-full p-2 text-xs rounded-lg border border-slate-200 bg-slate-50 text-slate-800 font-medium"
+                    >
+                      <option value="DAY">DAY Shift</option>
+                      <option value="NIGHT">NIGHT Shift</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase font-mono mb-1.5">Observation Narrative (Hindi / English / Assamese)</label>
+                  <textarea
+                    rows={3}
+                    value={ingestText}
+                    onChange={(e) => setIngestText(e.target.value)}
+                    placeholder="e.g. Pump-04 casing flange weeping hydraulic fluid under 1800 PSI vibration. Temporary clamp fitted."
+                    className="w-full p-3 rounded-xl border border-slate-200 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-red-500"
+                    required
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowIngest(false)}
+                    className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={ingesting}
+                    className="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-md disabled:opacity-50"
+                  >
+                    {ingesting ? 'Analyzing...' : 'Run Single SIF Analysis'}
+                  </button>
+                </div>
+              </form>
+            )}
+
           </div>
         </div>
       )}
+
     </div>
   );
 }

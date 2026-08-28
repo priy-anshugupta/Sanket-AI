@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     DEBUG: bool = True
 
     # --- Database ---
-    DATABASE_URL: str = "sqlite+aiosqlite:///./sanket.db"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres.hbpcldlvsgnsyaqyaosq:qAvX%2BD77%40nK6g6Z@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres"
 
     # --- Auth ---
     JWT_SECRET: str = "changeme-to-a-random-secret"

@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from backend.db.engine import get_db
 from backend.models.alert import SystemicAlert
+from backend.models.report import Report
 from graph.graph_store import graph_store
 
 router = APIRouter(prefix="/api/graph", tags=["Knowledge Graph"])
@@ -18,7 +19,34 @@ async def get_graph_signals(db: AsyncSession = Depends(get_db)):
     """
     Returns Cytoscape.js-compatible {nodes[], edges[]} for the
     Safety Signal Knowledge Graph visualization.
+    Auto-populates from database if in-memory store is empty.
     """
+    if graph_store.node_count == 0:
+        # Load high-risk reports to build initial graph
+        result = await db.execute(select(Report).limit(60))
+        reports = result.scalars().all()
+        for r in reports:
+            entities = []
+            if r.location:
+                entities.append({"type": "Location", "value": r.location})
+            if r.activity_type:
+                entities.append({"type": "Activity", "value": r.activity_type})
+            if r.iogp_rule:
+                entities.append({"type": "LSR Rule", "value": r.iogp_rule})
+            
+            # Simple keyword extraction for equipment
+            for eq in ["BOP", "Pump", "Valve", "Crane", "Compressor", "Flange", "Scaffolding", "Generator", "Wellhead", "Tank"]:
+                if eq.lower() in (r.raw_text or "").lower():
+                    entities.append({"type": "Equipment", "value": eq})
+
+            if entities:
+                graph_store.add_report_entities(
+                    report_id=r.id,
+                    entities=entities,
+                    sif_label=r.sif_label or "LOW",
+                    timestamp=r.created_at.isoformat() if r.created_at else None
+                )
+
     return graph_store.to_cytoscape_json()
 
 
