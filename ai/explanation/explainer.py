@@ -48,10 +48,13 @@ Be concise, factual, and cite specific hazards from the report text. Do not hall
             matched_anchor=matched_anchor,
         )
 
-        if settings.AI_MODE == "online" and settings.GROQ_API_KEY:
+        if settings.AI_MODE == "online":
+            if not settings.GROQ_API_KEY:
+                print("[Explainer] Groq API key is not configured; explanation skipped")
+                return None
             return await self._explain_groq(prompt)
-        else:
-            return await self._explain_ollama(prompt)
+
+        return await self._explain_ollama(prompt)
 
     async def _explain_groq(self, prompt: str) -> str | None:
         """Call Groq API for explanation."""

@@ -16,6 +16,8 @@ env/
 *.pt
 *.onnx
 models/
+!backend/models/
+!backend/models/*.py
 
 # Database
 *.db
