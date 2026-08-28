@@ -201,10 +201,10 @@ export default function TriageDashboard() {
 
           <button
             onClick={() => setShowIngest(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-md shadow-red-950/20 transition-all hover:scale-[1.02]"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-md shadow-slate-950/20 transition-all hover:scale-[1.02] cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            + Ingest New Report
+            + Ingest Safety Observation
           </button>
         </div>
       </div>
@@ -437,7 +437,7 @@ export default function TriageDashboard() {
                 }`}
               >
                 <Zap className="w-3.5 h-3.5 text-red-600" />
-                ⚡ 1-Click 507 Dataset
+                ⚡ Batch Import Dataset
               </button>
 
               <button
@@ -500,10 +500,10 @@ export default function TriageDashboard() {
                     type="button"
                     onClick={handleBatchIngest500}
                     disabled={ingesting}
-                    className="w-full py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-lg shadow-red-950/20 transition-all flex items-center justify-center gap-2 hover:scale-[1.01] disabled:opacity-50"
+                    className="w-full py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-heading font-extrabold text-xs uppercase tracking-wider shadow-lg shadow-slate-950/20 transition-all flex items-center justify-center gap-2 hover:scale-[1.01] disabled:opacity-50 cursor-pointer border border-slate-700"
                   >
-                    <Zap className="w-4 h-4 fill-white" />
-                    {ingesting ? 'Processing 507 Reports with Local AI...' : '⚡ INGEST 507 OIL INDIA REPORTS NOW'}
+                    <Zap className="w-4 h-4 text-blue-400 fill-blue-400" />
+                    {ingesting ? 'Processing & Classifying Safety Dataset via Neural AI...' : '⚡ INGEST ENTERPRISE SAFETY DATASET'}
                   </button>
                   <p className="text-[10px] text-center text-slate-400 mt-2 font-mono">
                     Populates Triage Queue, SIF Heatmap Matrix, and Signal Graph in &lt; 4 seconds!
@@ -582,7 +582,7 @@ export default function TriageDashboard() {
                   <button
                     type="submit"
                     disabled={ingesting}
-                    className="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-md disabled:opacity-50"
+                    className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-heading font-bold shadow-md disabled:opacity-50 cursor-pointer"
                   >
                     {ingesting ? 'Analyzing...' : 'Run Single SIF Analysis'}
                   </button>
