@@ -141,38 +141,27 @@ export default function BaghjanReplayPage() {
         return prev + 1;
       });
     }, playbackSpeed);
-    return () => clearTimeout(timer);
   }, [isPlaying, activeIdx, playbackSpeed]);
 
   const activeEvent = HISTORIC_BAGHJAN_TIMELINE[activeIdx];
-  const isInterventionDay = activeEvent.day === -3;
-  const isBlowoutDay = activeEvent.day === 0;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 bg-[#F1F5F9]/70 min-h-screen">
+    <div className="dashboard-page space-y-5 p-6 bg-[#F7F8F5] min-h-screen text-[#1A2B2D]">
       
       {/* ── Header Bar ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-300 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center shadow-md text-white font-bold">
-              <History className="w-5 h-5 text-amber-400" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="font-heading font-black text-2xl text-slate-900 tracking-tight">
-                  Baghjan 2020 Disaster Replay & Counterfactual AI
-                </h1>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-red-100 text-red-800 border border-red-300 flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-red-600 animate-ping" />
-                  REAL PSU DISASTER REPLAY
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
-                Proves how SANKET·AI detects cascading barrier breakdown signals 14 days before the Well #5 blowout
-              </p>
-            </div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="font-heading font-bold text-xl text-[#1A2B2D] tracking-tight">
+              Baghjan 2020 Disaster Replay & Counterfactual AI
+            </h1>
+            <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#FDF2F2] text-[#D63B3B] border border-[#F5C6C6]">
+              Real Incident Simulation
+            </span>
           </div>
+          <p className="text-[13px] text-[#5E7072] mt-0.5 font-normal">
+            Proves how SANKET AI detects cascading barrier breakdown signals 14 days before the Well #5 blowout
+          </p>
         </div>
 
         {/* Playback Controls */}
@@ -182,10 +171,10 @@ export default function BaghjanReplayPage() {
               if (activeIdx >= HISTORIC_BAGHJAN_TIMELINE.length - 1) setActiveIdx(0);
               setIsPlaying(!isPlaying);
             }}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-heading font-extrabold shadow-md transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition-all cursor-pointer ${
               isPlaying 
-                ? 'bg-amber-500 hover:bg-amber-600 text-white' 
-                : 'bg-slate-900 hover:bg-slate-800 text-white'
+                ? 'bg-[#D4820A] text-white' 
+                : 'bg-[#0A6B63] hover:bg-[#085B54] text-white'
             }`}
           >
             {isPlaying ? <Pause className="w-3.5 h-3.5 fill-white" /> : <Play className="w-3.5 h-3.5 fill-white" />}
@@ -194,7 +183,7 @@ export default function BaghjanReplayPage() {
 
           <button
             onClick={() => { setIsPlaying(false); setActiveIdx(0); }}
-            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg bg-white hover:bg-[#F0F2ED] text-[#5E7072] border border-[#C2CEC2] transition-colors cursor-pointer"
             title="Reset Timeline to Day -14"
           >
             <RotateCcw className="w-4 h-4" />
@@ -202,17 +191,17 @@ export default function BaghjanReplayPage() {
         </div>
       </div>
 
-      {/* ── HERO TIMELINE SCRUBBER RIBBON (Interactive Horizontal Bar) ── */}
-      <div className="bg-white p-5 rounded-2xl border-2 border-slate-300 shadow-md space-y-4">
+      {/* ── HERO TIMELINE SCRUBBER RIBBON ── */}
+      <div className="bg-white p-4 rounded-xl border-2 border-[#C2CEC2] shadow-xs space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-blue-600" />
-            <span className="text-xs font-heading font-extrabold uppercase tracking-wider text-slate-900">
-              14-Day Precursor Progression Scrubber (May 13 – May 27, 2020)
+            <Clock className="w-4 h-4 text-[#0A6B63]" />
+            <span className="text-xs font-heading font-bold uppercase tracking-wider text-[#1A2B2D]">
+              14-Day Precursor Progression (May 13 – May 27, 2020)
             </span>
           </div>
-          <span className="text-xs font-mono font-bold bg-slate-100 text-slate-700 px-3 py-1 rounded-lg border border-slate-200">
-            Selected: <strong className="text-slate-900 font-mono">Day {activeEvent.day} ({activeEvent.date})</strong>
+          <span className="text-xs font-mono font-semibold bg-[#F0F2ED] text-[#1A2B2D] px-2.5 py-0.5 rounded-md border border-[#C2CEC2]">
+            Selected: Day {activeEvent.day} ({activeEvent.date})
           </span>
         </div>
 
@@ -227,44 +216,44 @@ export default function BaghjanReplayPage() {
               <button
                 key={idx}
                 onClick={() => { setIsPlaying(false); setActiveIdx(idx); }}
-                className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer relative ${
+                className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative ${
                   isSelected
-                    ? 'bg-slate-900 text-white border-slate-900 shadow-xl scale-[1.03] z-10 ring-4 ring-blue-500/20'
+                    ? 'bg-[#0A6B63] text-white border-[#0A6B63] shadow-xs'
                     : isHigh
-                    ? 'bg-red-50/70 border-red-200 hover:bg-red-100 text-red-950'
+                    ? 'bg-[#FDF2F2] border-[#F5C6C6] text-[#D63B3B]'
                     : isMed
-                    ? 'bg-amber-50/70 border-amber-200 hover:bg-amber-100 text-amber-950'
-                    : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'
+                    ? 'bg-[#FEF7EC] border-[#F8DFB6] text-[#D4820A]'
+                    : 'bg-[#F7F8F5] border-[#C2CEC2] hover:bg-[#F0F2ED] text-[#1A2B2D]'
                 }`}
               >
                 {evt.day === -3 && (
-                  <span className="absolute -top-2.5 right-2 px-1.5 py-0.2 bg-red-600 text-white text-[8px] font-mono font-black rounded-full uppercase tracking-tight shadow-xs animate-bounce">
+                  <span className="absolute -top-2 right-2 px-1.5 py-0.2 bg-[#D63B3B] text-white text-[8px] font-mono font-bold rounded-md uppercase tracking-tight shadow-xs">
                     AI SWA LOCKOUT
                   </span>
                 )}
 
                 <div className="flex items-center justify-between text-[10px] font-mono font-bold">
-                  <span className={isSelected ? 'text-amber-400' : 'text-slate-500'}>
+                  <span className={isSelected ? 'text-[#E8F4F0]' : 'text-[#5E7072]'}>
                     DAY {evt.day === 0 ? '0 (BLOWOUT)' : evt.day}
                   </span>
-                  <span className={`px-1.5 py-0.2 rounded font-mono font-black ${
+                  <span className={`px-1.5 py-0.2 rounded font-mono font-bold ${
                     isSelected
                       ? 'bg-white/20 text-white'
                       : isHigh
-                      ? 'bg-red-200 text-red-900'
+                      ? 'bg-[#F5C6C6] text-[#D63B3B]'
                       : isMed
-                      ? 'bg-amber-200 text-amber-900'
-                      : 'bg-emerald-200 text-emerald-900'
+                      ? 'bg-[#F8DFB6] text-[#D4820A]'
+                      : 'bg-[#BFEADB] text-[#1B8A6C]'
                   }`}>
                     SIF {evt.sif_score.toFixed(2)}
                   </span>
                 </div>
 
-                <div className={`text-xs font-extrabold truncate mt-1 ${isSelected ? 'text-white' : 'text-slate-900'}`}>
+                <div className={`text-xs font-bold truncate mt-1 ${isSelected ? 'text-white' : 'text-[#1A2B2D]'}`}>
                   {evt.barrier.split(' ')[0]} {evt.barrier.split(' ')[1] || ''}
                 </div>
 
-                <div className={`text-[10px] font-mono truncate mt-0.5 ${isSelected ? 'text-slate-300' : 'text-slate-500'}`}>
+                <div className={`text-[10px] font-mono truncate mt-0.5 ${isSelected ? 'text-[#E8F4F0]' : 'text-[#5E7072]'}`}>
                   {evt.date}
                 </div>
               </button>
@@ -273,57 +262,57 @@ export default function BaghjanReplayPage() {
         </div>
       </div>
 
-      {/* ── DUAL REALITY COMPARISON GRID (The Heart of the Demonstration) ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+      {/* ── DUAL REALITY COMPARISON GRID ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
         
-        {/* LEFT COLUMN: REALITY IN 2020 WITHOUT SANKET (DISASTER OCCURRED) */}
-        <div className="lg:col-span-6 bg-white rounded-2xl border-2 border-red-300 shadow-lg overflow-hidden flex flex-col justify-between">
+        {/* LEFT COLUMN: REALITY IN 2020 WITHOUT SANKET */}
+        <div className="lg:col-span-6 bg-white rounded-xl border border-[#F5C6C6] shadow-xs overflow-hidden flex flex-col justify-between">
           <div>
             {/* Top Red Header */}
-            <div className="px-5 py-3.5 bg-red-600 text-white flex items-center justify-between shadow-sm">
+            <div className="px-4 py-2.5 bg-[#D63B3B] text-white flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <AlertOctagon className="w-4 h-4 fill-white" />
-                <h3 className="font-heading font-black text-xs uppercase tracking-wider">
+                <AlertOctagon className="w-4 h-4" />
+                <h3 className="font-heading font-bold text-xs uppercase tracking-wider">
                   Reality in May 2020: Legacy System (No AI)
                 </h3>
               </div>
-              <span className="text-[10px] font-mono font-bold bg-red-950/40 px-2 py-0.5 rounded text-red-100">
+              <span className="text-[10px] font-mono font-semibold bg-white/20 px-2 py-0.5 rounded text-white">
                 PAPER & EXCEL LOGS
               </span>
             </div>
 
-            <div className="p-5 space-y-4">
+            <div className="p-4 space-y-3">
               
               {/* Historical Incident Shift Log */}
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
-                <div className="text-[10px] font-mono font-bold uppercase text-slate-500 flex items-center gap-1.5">
-                  <FileText className="w-3.5 h-3.5 text-slate-400" />
+              <div className="p-3 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2] space-y-1">
+                <div className="text-[10px] font-semibold uppercase text-[#5E7072] flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-[#5E7072]" />
                   Historical Shift Observation (Day {activeEvent.day} · {activeEvent.date}):
                 </div>
-                <p className="text-sm font-bold text-slate-900 leading-relaxed italic">
+                <p className="text-xs font-semibold text-[#1A2B2D] leading-relaxed italic">
                   "{activeEvent.report}"
                 </p>
               </div>
 
               {/* Barrier Breakdown Meta */}
-              <div className="grid grid-cols-2 gap-2.5 text-xs">
-                <div className="p-3 rounded-xl bg-red-50/60 border border-red-200">
-                  <div className="text-[10px] font-mono text-red-700 font-bold uppercase">Degraded Physical Barrier</div>
-                  <div className="font-extrabold text-red-950 mt-1">{activeEvent.barrier}</div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-2.5 rounded-lg bg-[#FDF2F2] border border-[#F5C6C6]">
+                  <div className="text-[10px] text-[#D63B3B] font-semibold uppercase">Degraded Barrier</div>
+                  <div className="font-semibold text-[#1A2B2D] mt-0.5">{activeEvent.barrier}</div>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                  <div className="text-[10px] font-mono text-slate-500 font-bold uppercase">Energy Source Involved</div>
-                  <div className="font-extrabold text-slate-900 mt-1">{activeEvent.energy_type}</div>
+                <div className="p-2.5 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2]">
+                  <div className="text-[10px] text-[#5E7072] font-semibold uppercase">Energy Source</div>
+                  <div className="font-semibold text-[#1A2B2D] mt-0.5">{activeEvent.energy_type}</div>
                 </div>
               </div>
 
               {/* What Legacy Management Did */}
-              <div className="p-4 rounded-xl bg-red-50 border-2 border-red-200 space-y-1.5">
-                <div className="text-[10px] font-mono font-black uppercase text-red-800 flex items-center gap-1.5">
-                  <AlertTriangle className="w-4 h-4 text-red-600" />
+              <div className="p-3 rounded-lg bg-[#FDF2F2] border border-[#F5C6C6] space-y-1">
+                <div className="text-[10px] font-bold uppercase text-[#D63B3B] flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-[#D63B3B]" />
                   What Actually Happened in 2020:
                 </div>
-                <p className="text-xs text-red-950 font-bold leading-relaxed">
+                <p className="text-xs text-[#1A2B2D] leading-relaxed">
                   {activeEvent.legacy_action}
                 </p>
               </div>
@@ -332,68 +321,68 @@ export default function BaghjanReplayPage() {
           </div>
 
           {/* Bottom Reality Footer */}
-          <div className="px-5 py-3 bg-red-100/70 border-t border-red-200 text-xs font-bold text-red-900 flex items-center justify-between">
+          <div className="px-4 py-2.5 bg-[#FDF2F2] border-t border-[#F5C6C6] text-xs font-semibold text-[#D63B3B] flex items-center justify-between">
             <span>Historical Result:</span>
-            <span className="font-mono font-black text-red-950">BLOWOUT & EXPLOSION ON MAY 27 (14-DAY FIRE)</span>
+            <span className="font-mono font-bold">BLOWOUT & EXPLOSION (14-DAY FIRE)</span>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: SANKET·AI REVOLUTION (DISASTER PREVENTED) */}
-        <div className="lg:col-span-6 bg-white rounded-2xl border-2 border-emerald-400 shadow-xl overflow-hidden flex flex-col justify-between">
+        {/* RIGHT COLUMN: SANKET AI REVOLUTION */}
+        <div className="lg:col-span-6 bg-white rounded-xl border border-[#BCE3DC] shadow-xs overflow-hidden flex flex-col justify-between">
           <div>
             {/* Top Emerald Header */}
-            <div className="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between shadow-sm">
+            <div className="px-4 py-2.5 bg-[#0A6B63] text-white flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                <h3 className="font-heading font-black text-xs uppercase tracking-wider text-white">
-                  Counterfactual Reality: With SANKET·AI
+                <ShieldCheck className="w-4 h-4 text-white" />
+                <h3 className="font-heading font-bold text-xs uppercase tracking-wider text-white">
+                  Counterfactual Reality: With SANKET AI
                 </h3>
               </div>
-              <span className="text-[10px] font-mono font-bold bg-emerald-950/80 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/40">
+              <span className="text-[10px] font-mono font-semibold bg-white/20 text-white px-2 py-0.5 rounded">
                 AUTONOMOUS SAFETY DEFENSE
               </span>
             </div>
 
-            <div className="p-5 space-y-4">
+            <div className="p-4 space-y-3">
               
-              {/* AI SIF Score & Multiplier Badge */}
-              <div className="flex items-center justify-between p-4 rounded-xl bg-slate-900 text-white shadow-md">
+              {/* AI SIF Score */}
+              <div className="flex items-center justify-between p-3 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2]">
                 <div>
-                  <div className="text-[10px] font-mono font-bold uppercase text-slate-400">Neural SIF Precursor Score</div>
-                  <div className="font-mono text-2xl font-black mt-0.5 text-amber-400">
+                  <div className="text-[10px] font-semibold uppercase text-[#5E7072]">Neural SIF Precursor Score</div>
+                  <div className="font-heading text-xl font-bold mt-0.5 text-[#0A6B63]">
                     {activeEvent.sif_score.toFixed(2)} / 1.00 ({activeEvent.sif_label})
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className={`px-2.5 py-1 rounded-lg text-xs font-mono font-black ${
+                  <span className={`px-2 py-1 rounded-md text-xs font-semibold ${
                     activeEvent.sif_score >= 0.75 
-                      ? 'bg-red-600 text-white animate-pulse' 
+                      ? 'bg-[#FDF2F2] text-[#D63B3B] border border-[#F5C6C6]' 
                       : activeEvent.sif_score >= 0.5 
-                      ? 'bg-amber-500 text-white' 
-                      : 'bg-emerald-600 text-white'
+                      ? 'bg-[#FEF7EC] text-[#D4820A] border border-[#F8DFB6]' 
+                      : 'bg-[#EDFAF4] text-[#1B8A6C] border border-[#BFEADB]'
                   }`}>
-                    {activeEvent.sif_score >= 0.75 ? '🚨 HIGH SIF TRIGGER' : 'MONITORING'}
+                    {activeEvent.sif_score >= 0.75 ? 'HIGH SIF TRIGGER' : 'MONITORING'}
                   </span>
                 </div>
               </div>
 
               {/* What SANKET AI Does */}
-              <div className="p-4 rounded-xl bg-emerald-50 border-2 border-emerald-300 space-y-1.5 shadow-2xs">
-                <div className="text-[10px] font-mono font-black uppercase text-emerald-800 flex items-center gap-1.5">
-                  <Zap className="w-4 h-4 text-emerald-600 fill-emerald-600" />
-                  SANKET AI Autonomous Action on Day {activeEvent.day}:
+              <div className="p-3 rounded-lg bg-[#EDFAF4] border border-[#BFEADB] space-y-1">
+                <div className="text-[10px] font-bold uppercase text-[#1B8A6C] flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-[#1B8A6C]" />
+                  SANKET AI Action on Day {activeEvent.day}:
                 </div>
-                <p className="text-xs text-emerald-950 font-bold leading-relaxed">
+                <p className="text-xs text-[#1A2B2D] leading-relaxed">
                   {activeEvent.sanket_action}
                 </p>
               </div>
 
               {/* Counterfactual Impact Note */}
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-1">
-                <div className="text-[10px] font-mono font-bold uppercase text-slate-500 flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5 text-blue-600" /> Counterfactual Outcome:
+              <div className="p-3 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2] text-xs space-y-0.5">
+                <div className="text-[10px] font-semibold uppercase text-[#5E7072] flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5 text-[#0A6B63]" /> Counterfactual Outcome:
                 </div>
-                <p className="font-bold text-slate-900 leading-relaxed">
+                <p className="text-[#1A2B2D] leading-relaxed">
                   {activeEvent.counterfactual}
                 </p>
               </div>
@@ -402,70 +391,70 @@ export default function BaghjanReplayPage() {
           </div>
 
           {/* Bottom Success Action Bar */}
-          <div className="px-5 py-3 bg-emerald-600 text-white text-xs font-bold flex items-center justify-between shadow-md">
-            <span>SANKET Counterfactual Result:</span>
-            <span className="font-mono font-black">
-              {activeIdx >= 3 ? '✅ BLOWOUT AVERTED 5 DAYS EARLY (MAY 24)' : 'PRE-CURSORS TRACKED IN REAL TIME'}
+          <div className="px-4 py-2.5 bg-[#EDFAF4] border-t border-[#BFEADB] text-xs font-semibold text-[#1B8A6C] flex items-center justify-between">
+            <span>SANKET Result:</span>
+            <span className="font-mono font-bold">
+              {activeIdx >= 3 ? 'BLOWOUT AVERTED 5 DAYS EARLY (MAY 24)' : 'PRECURSORS TRACKED IN REAL TIME'}
             </span>
           </div>
         </div>
 
       </div>
 
-      {/* ── CUMULATIVE VALUE METRIC SCOREBOARD (Why SANKET Saves Oil India) ── */}
-      <div className="bg-white p-5 rounded-2xl border-2 border-slate-300 shadow-md space-y-3">
-        <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+      {/* ── CUMULATIVE VALUE METRIC SCOREBOARD ── */}
+      <div className="bg-white p-4 rounded-xl border-2 border-[#C2CEC2] shadow-xs space-y-3">
+        <div className="flex items-center justify-between border-b border-[#D8E0D8] pb-2">
           <div className="flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 text-red-600" />
-            <h3 className="font-heading font-extrabold text-xs uppercase tracking-wider text-slate-900">
+            <ShieldAlert className="w-4 h-4 text-[#0A6B63]" />
+            <h3 className="font-heading font-bold text-xs uppercase tracking-wider text-[#1A2B2D]">
               Total Impact Metrics Prevented at Baghjan Well #5
             </h3>
           </div>
-          <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-            PROVEN PSU RECOVERY
+          <span className="text-[10px] font-semibold text-[#1B8A6C] bg-[#EDFAF4] px-2 py-0.5 rounded-md border border-[#BFEADB]">
+            PROVEN PSU VALUE
           </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
           
-          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 shadow-2xs">
-            <div className="text-[10px] font-mono font-bold text-slate-500 uppercase flex items-center gap-1">
-              <HeartHandshake className="w-3.5 h-3.5 text-red-600" /> Human Lives Protected
+          <div className="p-3 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2]">
+            <div className="text-[10px] font-medium text-[#5E7072] uppercase flex items-center gap-1">
+              <HeartHandshake className="w-3.5 h-3.5 text-[#D63B3B]" /> Human Lives Protected
             </div>
-            <div className="font-mono text-2xl font-black text-slate-900 mt-1">
+            <div className="font-heading text-xl font-bold text-[#1A2B2D] mt-1">
               3 Firefighters
             </div>
-            <div className="text-[10px] text-emerald-700 font-bold mt-0.5">Zero Fatalities with SANKET</div>
+            <div className="text-[10px] text-[#1B8A6C] font-medium mt-0.5">Zero Fatalities with SANKET</div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 shadow-2xs">
-            <div className="text-[10px] font-mono font-bold text-slate-500 uppercase flex items-center gap-1">
-              <Building2 className="w-3.5 h-3.5 text-blue-600" /> PSU Asset & Financial Loss
+          <div className="p-3 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2]">
+            <div className="text-[10px] font-medium text-[#5E7072] uppercase flex items-center gap-1">
+              <Building2 className="w-3.5 h-3.5 text-[#0A6B63]" /> PSU Asset Loss Avoided
             </div>
-            <div className="font-mono text-2xl font-black text-slate-900 mt-1">
+            <div className="font-heading text-xl font-bold text-[#1A2B2D] mt-1">
               ₹580 Crores
             </div>
-            <div className="text-[10px] text-emerald-700 font-bold mt-0.5">Rig, Well-Kill & Compensation Saved</div>
+            <div className="text-[10px] text-[#1B8A6C] font-medium mt-0.5">Rig, Well-Kill & Compensation Saved</div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 shadow-2xs">
-            <div className="text-[10px] font-mono font-bold text-slate-500 uppercase flex items-center gap-1">
-              <TreePine className="w-3.5 h-3.5 text-emerald-600" /> Environmental Ecology
+          <div className="p-3 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2]">
+            <div className="text-[10px] font-medium text-[#5E7072] uppercase flex items-center gap-1">
+              <TreePine className="w-3.5 h-3.5 text-[#1B8A6C]" /> Environmental Ecology
             </div>
-            <div className="font-mono text-2xl font-black text-slate-900 mt-1">
+            <div className="font-heading text-xl font-bold text-[#1A2B2D] mt-1">
               10,000 Hectares
             </div>
-            <div className="text-[10px] text-emerald-700 font-bold mt-0.5">Dibru-Saikhowa National Park Preserved</div>
+            <div className="text-[10px] text-[#1B8A6C] font-medium mt-0.5">Dibru-Saikhowa National Park Preserved</div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 shadow-2xs">
-            <div className="text-[10px] font-mono font-bold text-slate-500 uppercase flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5 text-amber-600" /> Early Warning Window
+          <div className="p-3 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2]">
+            <div className="text-[10px] font-medium text-[#5E7072] uppercase flex items-center gap-1">
+              <Clock className="w-3.5 h-3.5 text-[#D4820A]" /> Early Warning Window
             </div>
-            <div className="font-mono text-2xl font-black text-slate-900 mt-1">
+            <div className="font-heading text-xl font-bold text-[#1A2B2D] mt-1">
               5 Full Days
             </div>
-            <div className="text-[10px] text-emerald-700 font-bold mt-0.5">Intervened on May 24 vs May 27 Blowout</div>
+            <div className="text-[10px] text-[#1B8A6C] font-medium mt-0.5">Intervened May 24 vs May 27 Blowout</div>
           </div>
 
         </div>

@@ -1,19 +1,18 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Network, 
   Activity, 
   RefreshCw, 
-  Filter, 
   ZoomIn, 
   ZoomOut, 
   RotateCcw,
-  Sparkles,
-  ChevronRight,
-  ShieldAlert,
-  Flame,
-  Info
+  Flame, 
+  Clock, 
+  FileText,
+  Zap,
+  AlertOctagon
 } from 'lucide-react';
 
 const API = 'http://localhost:8000';
@@ -38,17 +37,43 @@ interface EdgeData {
   edge_type: string;
 }
 
+interface NodeEvidence {
+  node_id: string;
+  node_label: string;
+  node_type: string;
+  total_incidents: number;
+  high_sif_count: number;
+  medium_sif_count: number;
+  has_active_cluster: boolean;
+  cluster_details?: {
+    alert_id: string;
+    event_count: number;
+    detected_at: string;
+  };
+  recommended_capa: string;
+  supporting_reports: Array<{
+    id: string;
+    raw_text: string;
+    sif_score: number;
+    sif_label: string;
+    location?: string;
+    activity_type?: string;
+    iogp_rule?: string;
+    created_at?: string;
+  }>;
+}
+
 const TYPE_CONFIG: Record<string, { color: string; label: string; icon: string }> = {
-  EQUIPMENT: { color: '#2563EB', label: 'Equipment & Components', icon: '⚙️' },
+  EQUIPMENT: { color: '#0284C7', label: 'Equipment & Components', icon: '⚙️' },
   LOCATION: { color: '#7C3AED', label: 'Well Pads & Facilities', icon: '📍' },
-  'LSR RULE': { color: '#DC2626', label: 'IOGP Life-Saving Rules', icon: '🛡️' },
-  LSR_VIOLATION: { color: '#DC2626', label: 'Life-Saving Rules', icon: '🚨' },
+  'LSR RULE': { color: '#D63B3B', label: 'IOGP Life-Saving Rules', icon: '🛡️' },
+  LSR_VIOLATION: { color: '#D63B3B', label: 'Life-Saving Rules', icon: '🚨' },
   BARRIER_FAILURE: { color: '#E11D48', label: 'Barrier Failures', icon: '🛑' },
   ENERGY_SOURCE: { color: '#D97706', label: 'Energy Sources', icon: '⚡' },
-  ACTIVITY: { color: '#0284C7', label: 'Activities', icon: '🏗️' },
+  ACTIVITY: { color: '#0D9488', label: 'Activities', icon: '🏗️' },
 };
 
-export default function StaticInteractiveGraphPage() {
+export default function EvidenceSignalGraphPage() {
   const [rawNodes, setRawNodes] = useState<any[]>([]);
   const [rawEdges, setRawEdges] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,6 +83,10 @@ export default function StaticInteractiveGraphPage() {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
 
+  const [evidence, setEvidence] = useState<NodeEvidence | null>(null);
+  const [loadingEvidence, setLoadingEvidence] = useState(false);
+  const [swaToast, setSwaToast] = useState<string | null>(null);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const nodesRef = useRef<NodeData[]>([]);
   const edgesRef = useRef<EdgeData[]>([]);
@@ -66,17 +95,14 @@ export default function StaticInteractiveGraphPage() {
   const panStartRef = useRef({ x: 0, y: 0 });
   const pulseParticlesRef = useRef<{ edgeIdx: number; progress: number; speed: number }[]>([]);
 
-  // Fetch initial graph data
   const loadGraph = () => {
     setLoading(true);
     fetch(`${API}/api/graph/signals`)
       .then(r => r.json())
       .then(d => {
-        const nList = d.nodes || [];
-        const eList = d.edges || [];
-        setRawNodes(nList);
-        setRawEdges(eList);
-        initializeDeterministicLayout(nList, eList);
+        setRawNodes(d.nodes || []);
+        setRawEdges(d.edges || []);
+        initializeDeterministicLayout(d.nodes || [], d.edges || []);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -86,125 +112,89 @@ export default function StaticInteractiveGraphPage() {
     loadGraph();
   }, []);
 
-  // Multi-Ring Deterministic Clustered Layout (100% Rock-Solid Stable)
-  const initializeDeterministicLayout = (nList: any[], eList: any[]) => {
-    const canvas = canvasRef.current;
-    const w = canvas ? canvas.offsetWidth : 850;
-    const h = canvas ? canvas.offsetHeight : 560;
-    const cx = w / 2;
-    const cy = h / 2;
+  useEffect(() => {
+    if (!selectedNode) {
+      setEvidence(null);
+      return;
+    }
 
-    // Group nodes by category
-    const categorized: Record<string, any[]> = {
-      'LSR RULE': [],
-      EQUIPMENT: [],
-      LOCATION: [],
-      ACTIVITY: [],
-      OTHER: [],
+    setLoadingEvidence(true);
+    fetch(`${API}/api/graph/evidence/${encodeURIComponent(selectedNode.id)}`)
+      .then(r => r.json())
+      .then(data => {
+        setEvidence(data);
+        setLoadingEvidence(false);
+      })
+      .catch(() => setLoadingEvidence(false));
+  }, [selectedNode]);
+
+  const initializeDeterministicLayout = (nList: any[], eList: any[]) => {
+    const width = 720;
+    const height = 580;
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    const clusters: Record<string, { x: number; y: number }> = {
+      EQUIPMENT: { x: centerX - 160, y: centerY - 100 },
+      LOCATION: { x: centerX + 160, y: centerY - 100 },
+      'LSR RULE': { x: centerX - 160, y: centerY + 100 },
+      LSR_VIOLATION: { x: centerX - 160, y: centerY + 100 },
+      BARRIER_FAILURE: { x: centerX, y: centerY - 150 },
+      ENERGY_SOURCE: { x: centerX + 160, y: centerY + 100 },
+      ACTIVITY: { x: centerX, y: centerY + 150 },
     };
 
-    nList.forEach((n) => {
-      const typeKey = (n.data?.type || 'EQUIPMENT').toUpperCase();
-      if (typeKey.includes('LSR') || typeKey.includes('RULE')) {
-        categorized['LSR RULE'].push(n);
-      } else if (typeKey.includes('EQUIP') || typeKey.includes('VALVE') || typeKey.includes('PUMP') || typeKey.includes('BOP')) {
-        categorized.EQUIPMENT.push(n);
-      } else if (typeKey.includes('LOC') || typeKey.includes('PAD') || typeKey.includes('STATION')) {
-        categorized.LOCATION.push(n);
-      } else if (typeKey.includes('ACT')) {
-        categorized.ACTIVITY.push(n);
-      } else {
-        categorized.OTHER.push(n);
-      }
+    const typeCounters: Record<string, number> = {};
+
+    const formattedNodes: NodeData[] = nList.map((n: any) => {
+      const typeKey = (n.type || 'EQUIPMENT').toUpperCase();
+      const cluster = clusters[typeKey] || { x: centerX, y: centerY };
+
+      typeCounters[typeKey] = (typeCounters[typeKey] || 0) + 1;
+      const indexInType = typeCounters[typeKey];
+
+      const angle = (indexInType * 2.4) % (2 * Math.PI);
+      const radiusOffset = 35 + (indexInType * 16) % 90;
+
+      const x = cluster.x + Math.cos(angle) * radiusOffset;
+      const y = cluster.y + Math.sin(angle) * radiusOffset;
+
+      const reportCount = n.report_count || 1;
+      const nodeRadius = Math.max(10, Math.min(22, 9 + Math.log2(reportCount + 1) * 3.5));
+
+      const typeConf = TYPE_CONFIG[typeKey] || { color: '#0284C7' };
+
+      return {
+        id: n.id,
+        label: n.label || n.id,
+        type: n.type || 'EQUIPMENT',
+        report_count: reportCount,
+        severity: n.severity || 'MEDIUM',
+        x,
+        y,
+        radius: nodeRadius,
+        color: typeConf.color,
+      };
     });
 
-    const initialized: NodeData[] = [];
-
-    // Ring 1: High SIF Rules (Inner Core) - Radius 110px
-    const innerRing = categorized['LSR RULE'];
-    innerRing.forEach((n, i) => {
-      const angle = (i / Math.max(innerRing.length, 1)) * 2 * Math.PI - Math.PI / 2;
-      const r = 110;
-      const cfg = TYPE_CONFIG['LSR RULE'];
-      const rCount = n.data?.report_count || 1;
-      initialized.push({
-        id: n.data.id,
-        label: n.data.label || n.data.id,
-        type: 'LSR RULE',
-        report_count: rCount,
-        severity: 'HIGH',
-        x: cx + Math.cos(angle) * r,
-        y: cy + Math.sin(angle) * r,
-        radius: 14 + Math.min(rCount * 2, 8),
-        color: cfg.color,
-      });
-    });
-
-    // Ring 2: Equipment (Middle Ring) - Radius 200px
-    const midRing = categorized.EQUIPMENT;
-    midRing.forEach((n, i) => {
-      const angle = (i / Math.max(midRing.length, 1)) * 2 * Math.PI;
-      const r = 195;
-      const cfg = TYPE_CONFIG.EQUIPMENT;
-      const rCount = n.data?.report_count || 1;
-      initialized.push({
-        id: n.data.id,
-        label: n.data.label || n.data.id,
-        type: 'EQUIPMENT',
-        report_count: rCount,
-        severity: rCount >= 3 ? 'HIGH' : 'STANDARD',
-        x: cx + Math.cos(angle) * r,
-        y: cy + Math.sin(angle) * r,
-        radius: 12 + Math.min(rCount * 2, 6),
-        color: cfg.color,
-      });
-    });
-
-    // Ring 3: Locations & Activities (Outer Ring) - Radius 280px
-    const outerRing = [...categorized.LOCATION, ...categorized.ACTIVITY, ...categorized.OTHER];
-    outerRing.forEach((n, i) => {
-      const angle = (i / Math.max(outerRing.length, 1)) * 2 * Math.PI + 0.3;
-      const r = 275;
-      const typeKey = (n.data?.type || 'LOCATION').toUpperCase();
-      const cfg = TYPE_CONFIG[typeKey] || { color: '#7C3AED' };
-      const rCount = n.data?.report_count || 1;
-      initialized.push({
-        id: n.data.id,
-        label: n.data.label || n.data.id,
-        type: typeKey,
-        report_count: rCount,
-        severity: rCount >= 4 ? 'HIGH' : 'STANDARD',
-        x: cx + Math.cos(angle) * r,
-        y: cy + Math.sin(angle) * r,
-        radius: 11 + Math.min(rCount * 2, 6),
-        color: cfg.color,
-      });
-    });
-
-    const parsedEdges: EdgeData[] = eList.map((e, i) => ({
-      id: e.data?.id || `e-${i}`,
-      source: e.data?.source,
-      target: e.data?.target,
-      weight: e.data?.weight || 1,
-      edge_type: e.data?.edge_type || 'CONNECTED_TO',
+    const formattedEdges: EdgeData[] = eList.map((e: any) => ({
+      id: `${e.source}->${e.target}`,
+      source: e.source,
+      target: e.target,
+      weight: e.weight || 1,
+      edge_type: e.edge_type || 'CO_OCCURRENCE',
     }));
 
-    nodesRef.current = initialized;
-    edgesRef.current = parsedEdges;
+    nodesRef.current = formattedNodes;
+    edgesRef.current = formattedEdges;
 
-    // Create 30 animated pulse particles along the fixed edges
-    const particles = [];
-    for (let i = 0; i < Math.min(parsedEdges.length * 2, 35); i++) {
-      particles.push({
-        edgeIdx: Math.floor(Math.random() * parsedEdges.length),
-        progress: Math.random(),
-        speed: 0.004 + Math.random() * 0.004,
-      });
-    }
-    pulseParticlesRef.current = particles;
+    pulseParticlesRef.current = formattedEdges.slice(0, 30).map((_, idx) => ({
+      edgeIdx: idx,
+      progress: Math.random(),
+      speed: 0.004 + Math.random() * 0.006,
+    }));
   };
 
-  // 60 FPS Render Loop (Draws fixed stable nodes + gliding data particles)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -214,490 +204,433 @@ export default function StaticInteractiveGraphPage() {
     let animId: number;
 
     const render = () => {
-      const w = canvas.offsetWidth;
-      const h = canvas.offsetHeight;
-      if (canvas.width !== w * 2 || canvas.height !== h * 2) {
-        canvas.width = w * 2;
-        canvas.height = h * 2;
-      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = '#F7F8F5';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       ctx.save();
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.scale(2, 2);
-
-      // Pan & Zoom
-      ctx.translate(w / 2 + panOffset.x, h / 2 + panOffset.y);
+      ctx.translate(panOffset.x, panOffset.y);
       ctx.scale(zoomLevel, zoomLevel);
-      ctx.translate(-w / 2, -h / 2);
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+      for (let x = -200; x < canvas.width + 400; x += 30) {
+        for (let y = -200; y < canvas.height + 400; y += 30) {
+          ctx.beginPath();
+          ctx.arc(x, y, 1, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+      }
 
       const nodes = nodesRef.current;
       const edges = edgesRef.current;
+      const nodeMap = new Map(nodes.map(n => [n.id, n]));
 
-      // Determine active highlight neighbors
       const activeNode = hoveredNode || selectedNode;
-      const neighborIds = new Set<string>();
+      const connectedNodeIds = new Set<string>();
       if (activeNode) {
-        neighborIds.add(activeNode.id);
+        connectedNodeIds.add(activeNode.id);
         edges.forEach(e => {
-          if (e.source === activeNode.id) neighborIds.add(e.target);
-          if (e.target === activeNode.id) neighborIds.add(e.source);
+          if (e.source === activeNode.id) connectedNodeIds.add(e.target);
+          if (e.target === activeNode.id) connectedNodeIds.add(e.source);
         });
       }
 
-      // 1. Draw subtle background coordinate grid
-      ctx.strokeStyle = 'rgba(226, 232, 240, 0.4)';
-      ctx.lineWidth = 1;
-      const gridSize = 40;
-      for (let gx = -w; gx < w * 2; gx += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(gx, -h);
-        ctx.lineTo(gx, h * 2);
-        ctx.stroke();
-      }
-      for (let gy = -h; gy < h * 2; gy += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(-w, gy);
-        ctx.lineTo(w * 2, gy);
-        ctx.stroke();
-      }
+      edges.forEach((edge) => {
+        const src = nodeMap.get(edge.source);
+        const tgt = nodeMap.get(edge.target);
+        if (!src || !tgt) return;
 
-      // 2. Draw Connecting Edges
-      edges.forEach(e => {
-        const a = nodes.find(n => n.id === e.source);
-        const b = nodes.find(n => n.id === e.target);
-        if (!a || !b) return;
+        const isFiltered =
+          filterType === 'ALL' ||
+          src.type.toUpperCase().includes(filterType) ||
+          tgt.type.toUpperCase().includes(filterType);
+        if (!isFiltered) return;
 
-        const isHighlighted = activeNode && (a.id === activeNode.id || b.id === activeNode.id);
-        const isDimmed = activeNode && !isHighlighted;
+        const isConnected =
+          activeNode &&
+          (edge.source === activeNode.id || edge.target === activeNode.id);
+        const isDimmed = activeNode && !isConnected;
 
         ctx.beginPath();
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
+        ctx.moveTo(src.x, src.y);
+        ctx.lineTo(tgt.x, tgt.y);
 
-        if (isHighlighted) {
-          ctx.strokeStyle = 'rgba(37, 99, 235, 0.85)';
-          ctx.lineWidth = 2.5;
+        if (isConnected) {
+          ctx.strokeStyle = '#D63B3B';
+          ctx.lineWidth = Math.min(3, 1.5 + edge.weight * 0.4);
         } else if (isDimmed) {
-          ctx.strokeStyle = 'rgba(203, 213, 225, 0.18)';
-          ctx.lineWidth = 1;
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.04)';
+          ctx.lineWidth = 0.8;
         } else {
-          ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
-          ctx.lineWidth = 1.2;
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.12)';
+          ctx.lineWidth = Math.min(2.5, 0.8 + edge.weight * 0.25);
         }
+
         ctx.stroke();
       });
 
-      // 3. Draw Gliding Data Particles along Edges
       pulseParticlesRef.current.forEach(p => {
-        p.progress += p.speed;
-        if (p.progress >= 1) p.progress = 0;
-
         const edge = edges[p.edgeIdx];
         if (!edge) return;
-        const a = nodes.find(n => n.id === edge.source);
-        const b = nodes.find(n => n.id === edge.target);
-        if (!a || !b) return;
+        const src = nodeMap.get(edge.source);
+        const tgt = nodeMap.get(edge.target);
+        if (!src || !tgt) return;
 
-        const px = a.x + (b.x - a.x) * p.progress;
-        const py = a.y + (b.y - a.y) * p.progress;
+        p.progress += p.speed;
+        if (p.progress > 1) p.progress = 0;
+
+        const px = src.x + (tgt.x - src.x) * p.progress;
+        const py = src.y + (tgt.y - src.y) * p.progress;
 
         ctx.beginPath();
-        ctx.arc(px, py, 2.5, 0, Math.PI * 2);
-        ctx.fillStyle = '#38BDF8';
-        ctx.shadowColor = '#0284C7';
-        ctx.shadowBlur = 5;
+        ctx.arc(px, py, 2, 0, 2 * Math.PI);
+        ctx.fillStyle = '#0A6B63';
         ctx.fill();
-        ctx.shadowBlur = 0;
       });
 
-      // 4. Draw Nodes (Rock-Solid Fixed Positions)
-      nodes.forEach(n => {
-        const isSelected = selectedNode?.id === n.id;
-        const isHovered = hoveredNode?.id === n.id;
-        const isNeighbor = neighborIds.has(n.id);
-        const isDimmed = activeNode && !isNeighbor;
+      nodes.forEach((node) => {
+        const isFiltered = filterType === 'ALL' || node.type.toUpperCase().includes(filterType);
+        if (!isFiltered) return;
 
-        // Category filter
-        const matchesFilter = filterType === 'ALL' || n.type === filterType;
-        if (!matchesFilter) return;
+        const isSelected = selectedNode?.id === node.id;
+        const isHovered = hoveredNode?.id === node.id;
+        const isConnected = connectedNodeIds.has(node.id);
+        const isDimmed = activeNode && !isConnected;
 
-        // Glow Aura
-        if (n.severity === 'HIGH' || isSelected || isHovered) {
-          ctx.beginPath();
-          ctx.arc(n.x, n.y, n.radius + (isSelected ? 8 : 5), 0, Math.PI * 2);
-          ctx.fillStyle = isSelected 
-            ? 'rgba(37, 99, 235, 0.22)' 
-            : n.severity === 'HIGH' 
-            ? 'rgba(220, 38, 38, 0.2)' 
-            : 'rgba(59, 130, 246, 0.12)';
-          ctx.fill();
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, node.radius, 0, 2 * Math.PI);
+
+        if (isSelected) {
+          ctx.fillStyle = '#D63B3B';
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth = 3;
+        } else if (isHovered) {
+          ctx.fillStyle = node.color;
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth = 2.5;
+        } else if (isDimmed) {
+          ctx.fillStyle = '#E2E8E2';
+          ctx.strokeStyle = '#C2CEC2';
+          ctx.lineWidth = 1;
+        } else {
+          ctx.fillStyle = node.color;
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth = 2;
         }
 
-        // Main Node Circle
-        ctx.beginPath();
-        ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
-        ctx.fillStyle = isDimmed ? '#94A3B8' : n.color;
         ctx.fill();
-        ctx.strokeStyle = isSelected ? '#0F172A' : '#FFFFFF';
-        ctx.lineWidth = isSelected ? 3 : 2;
         ctx.stroke();
 
-        // Core White Dot
-        ctx.beginPath();
-        ctx.arc(n.x, n.y, 3, 0, Math.PI * 2);
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fill();
-
-        // Label
-        if (!isDimmed || isHovered) {
-          ctx.font = isSelected ? 'bold 11px Plus Jakarta Sans, sans-serif' : '600 10px Plus Jakarta Sans, sans-serif';
-          ctx.textAlign = 'center';
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
-          ctx.lineWidth = 3;
-          ctx.strokeText(n.label, n.x, n.y + n.radius + 12);
-          ctx.fillStyle = isSelected ? '#0F172A' : '#1E293B';
-          ctx.fillText(n.label, n.x, n.y + n.radius + 12);
-        }
+        ctx.font = `${isSelected ? '600 11px' : '500 10px'} Inter, sans-serif`;
+        ctx.fillStyle = isDimmed ? '#94A3A5' : '#1A2B2D';
+        ctx.textAlign = 'center';
+        ctx.fillText(node.label, node.x, node.y + node.radius + 12);
       });
 
       ctx.restore();
       animId = requestAnimationFrame(render);
     };
 
-    animId = requestAnimationFrame(render);
+    render();
     return () => cancelAnimationFrame(animId);
-  }, [filterType, hoveredNode, selectedNode, zoomLevel, panOffset]);
+  }, [zoomLevel, panOffset, selectedNode, hoveredNode, filterType]);
 
-  // Mouse Coordinates Translation
-  const getCanvasCoords = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
-    if (!canvas) return { x: 0, y: 0 };
+    if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const rawX = e.clientX - rect.left;
-    const rawY = e.clientY - rect.top;
+    const mouseX = (e.clientX - rect.left - panOffset.x) / zoomLevel;
+    const mouseY = (e.clientY - rect.top - panOffset.y) / zoomLevel;
 
-    const w = canvas.offsetWidth;
-    const h = canvas.offsetHeight;
+    const clicked = nodesRef.current.find(n => {
+      const dx = n.x - mouseX;
+      const dy = n.y - mouseY;
+      return Math.sqrt(dx * dx + dy * dy) <= n.radius + 4;
+    });
 
-    const normX = (rawX - (w / 2 + panOffset.x)) / zoomLevel + w / 2;
-    const normY = (rawY - (h / 2 + panOffset.y)) / zoomLevel + h / 2;
-
-    return { x: normX, y: normY, rawX, rawY };
+    if (clicked) {
+      setSelectedNode(clicked);
+      draggingNodeRef.current = clicked;
+    } else {
+      isPanningRef.current = true;
+      panStartRef.current = { x: e.clientX - panOffset.x, y: e.clientY - panOffset.y };
+    }
   };
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const { x, y, rawX, rawY } = getCanvasCoords(e);
-    const nodes = nodesRef.current;
-
-    for (let i = nodes.length - 1; i >= 0; i--) {
-      const n = nodes[i];
-      const dist = Math.sqrt((n.x - x) ** 2 + (n.y - y) ** 2);
-      if (dist <= n.radius + 6) {
-        draggingNodeRef.current = n;
-        setSelectedNode(n);
-        return;
-      }
-    }
-
-    isPanningRef.current = true;
-    panStartRef.current = { x: rawX - panOffset.x, y: rawY - panOffset.y };
-  };
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const { x, y, rawX, rawY } = getCanvasCoords(e);
-
-    if (draggingNodeRef.current) {
-      draggingNodeRef.current.x = x;
-      draggingNodeRef.current.y = y;
-      return;
-    }
+  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
 
     if (isPanningRef.current) {
       setPanOffset({
-        x: rawX - panStartRef.current.x,
-        y: rawY - panStartRef.current.y,
+        x: e.clientX - panStartRef.current.x,
+        y: e.clientY - panStartRef.current.y,
       });
       return;
     }
 
-    const nodes = nodesRef.current;
-    let found: NodeData | null = null;
-    for (let i = nodes.length - 1; i >= 0; i--) {
-      const n = nodes[i];
-      const dist = Math.sqrt((n.x - x) ** 2 + (n.y - y) ** 2);
-      if (dist <= n.radius + 6) {
-        found = n;
-        break;
-      }
+    const mouseX = (e.clientX - rect.left - panOffset.x) / zoomLevel;
+    const mouseY = (e.clientY - rect.top - panOffset.y) / zoomLevel;
+
+    if (draggingNodeRef.current) {
+      draggingNodeRef.current.x = mouseX;
+      draggingNodeRef.current.y = mouseY;
+      return;
     }
-    setHoveredNode(found);
+
+    const hovered = nodesRef.current.find(n => {
+      const dx = n.x - mouseX;
+      const dy = n.y - mouseY;
+      return Math.sqrt(dx * dx + dy * dy) <= n.radius + 4;
+    });
+
+    setHoveredNode(hovered || null);
   };
 
-  const handleMouseUp = () => {
+  const handleCanvasMouseUp = () => {
     draggingNodeRef.current = null;
     isPanningRef.current = false;
   };
 
-  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-    const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
-    setZoomLevel(prev => Math.min(Math.max(prev * zoomFactor, 0.5), 2.5));
+  const triggerSWAFromGraph = () => {
+    if (!selectedNode) return;
+    setSwaToast(`Stop Work Authority Dispatched: Freezing all active digital permits connected to ${selectedNode.label}.`);
+    setTimeout(() => setSwaToast(null), 5000);
   };
-
-  const resetView = () => {
-    setZoomLevel(1);
-    setPanOffset({ x: 0, y: 0 });
-    initializeDeterministicLayout(rawNodes, rawEdges);
-  };
-
-  const connectedNeighbors = useMemo(() => {
-    if (!selectedNode) return [];
-    const nIds = new Set<string>();
-    edgesRef.current.forEach(e => {
-      if (e.source === selectedNode.id) nIds.add(e.target);
-      if (e.target === selectedNode.id) nIds.add(e.source);
-    });
-    return nodesRef.current.filter(n => nIds.has(n.id));
-  }, [selectedNode]);
-
-  const topHub = useMemo(() => {
-    if (nodesRef.current.length === 0) return null;
-    return [...nodesRef.current].sort((a, b) => b.report_count - a.report_count)[0];
-  }, [rawNodes]);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 bg-[#F1F5F9]/70 min-h-screen">
+    <div className="dashboard-page space-y-5 p-6 bg-[#F7F8F5] min-h-screen text-[#1A2B2D]">
       
-      {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-300 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-md">
-            <Network className="w-5 h-5 text-blue-400" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="font-heading font-bold text-xl text-[#1A2B2D] tracking-tight">
+              Safety Signal Knowledge Graph & Evidence Inspector
+            </h1>
+            <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#E8F4F0] text-[#0A6B63] border border-[#BCE3DC]">
+              Neural Graph
+            </span>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="font-heading font-black text-2xl text-slate-900 tracking-tight">
-                Safety Signal Knowledge Graph
-              </h1>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-100 text-blue-800 border border-blue-300 flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-blue-600" />
-                DETERMINISTIC CLUSTER TOPOLOGY
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">
-              Uncovers cross-asset systemic risk clusters between equipment, well pads, activities, and Life-Saving Rules
-            </p>
-          </div>
+          <p className="text-[13px] text-[#5E7072] mt-0.5 font-normal">
+            Correlates multi-barrier degradation cascades, recurring near-miss clusters, and systemic SIF precursors
+          </p>
         </div>
 
-        {/* View Controls */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setZoomLevel(z => Math.min(z + 0.2, 2.5))}
-            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
-            title="Zoom In"
-          >
-            <ZoomIn className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setZoomLevel(z => Math.max(z - 0.2, 0.5))}
-            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
-            title="Zoom Out"
-          >
-            <ZoomOut className="w-4 h-4" />
-          </button>
-          <button
-            onClick={resetView}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-sm transition-all"
-            title="Reset Canvas Position"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            Reset Layout
-          </button>
-        </div>
-      </div>
-
-      {/* ── Category Filters & Hub Spotlight ── */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-1.5 bg-white p-2 rounded-2xl border border-slate-300 shadow-xs">
-          <span className="text-[10px] font-mono font-bold uppercase text-slate-400 px-2 flex items-center gap-1">
-            <Filter className="w-3 h-3" /> Filter:
-          </span>
-          {['ALL', 'LSR RULE', 'EQUIPMENT', 'LOCATION', 'ACTIVITY'].map(ft => (
+        <div className="flex items-center gap-1 bg-[#F0F2ED] p-1 rounded-lg flex-wrap">
+          {['ALL', 'LSR', 'EQUIP', 'LOC', 'ACT'].map((cat) => (
             <button
-              key={ft}
-              onClick={() => setFilterType(ft)}
-              className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
-                filterType === ft
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              key={cat}
+              onClick={() => setFilterType(cat)}
+              className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                filterType === cat
+                  ? 'bg-[#0A6B63] text-white shadow-xs'
+                  : 'text-[#5E7072] hover:text-[#1A2B2D]'
               }`}
             >
-              {ft === 'ALL' ? '🌟 All Nodes' : ft.replace(/_/g, ' ')}
+              {cat === 'ALL' ? 'All Nodes' : cat === 'LSR' ? 'LSR Rules' : cat === 'EQUIP' ? 'Equipment' : cat === 'LOC' ? 'Locations' : 'Activities'}
             </button>
           ))}
         </div>
-
-        {topHub && (
-          <div className="bg-red-50 border border-red-200 px-4 py-2 rounded-2xl flex items-center gap-2.5 text-xs shadow-xs">
-            <span className="w-2 h-2 rounded-full bg-red-600 animate-ping" />
-            <span className="text-red-900 font-bold">
-              Critical Hub Spotlight: <span className="font-mono underline">{topHub.label}</span> ({topHub.report_count} Incidents)
-            </span>
-          </div>
-        )}
       </div>
 
-      {/* ── Main Graph & Inspector Grid ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {swaToast && (
+        <div className="p-3.5 rounded-xl bg-[#D63B3B] text-white text-xs font-semibold flex items-center justify-between shadow-md border border-[#B92525]">
+          <div className="flex items-center gap-2.5">
+            <AlertOctagon className="w-5 h-5 shrink-0" />
+            <span>{swaToast}</span>
+          </div>
+          <button onClick={() => setSwaToast(null)} className="text-white/80 hover:text-white font-bold text-sm px-2 cursor-pointer">✕</button>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         
-        {/* LEFT CANVAS (8 Cols): Rock-Solid Stable Interactive Canvas */}
-        <div className="lg:col-span-8 bg-white rounded-2xl border-2 border-slate-300 shadow-md overflow-hidden relative">
+        <div className="lg:col-span-7 bg-white rounded-xl border-2 border-[#C2CEC2] shadow-xs overflow-hidden relative">
           
-          <div className="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between shadow-sm select-none">
+          <div className="px-4 py-2.5 bg-[#F0F2ED] flex items-center justify-between border-b border-[#C2CEC2]">
             <div className="flex items-center gap-2">
-              <Activity className="w-4 h-4 text-emerald-400" />
-              <h3 className="font-heading font-extrabold text-xs uppercase tracking-wider text-white">
-                Deterministic Risk Topology Canvas
+              <Activity className="w-4 h-4 text-[#0A6B63]" />
+              <h3 className="font-heading font-semibold text-xs text-[#1A2B2D]">
+                Cross-Asset Topology Canvas
               </h3>
             </div>
-            <div className="flex items-center gap-3 text-[10px] font-mono font-bold text-slate-300">
-              <span>{rawNodes.length} Nodes</span>
-              <span>•</span>
-              <span>{rawEdges.length} Causal Edges</span>
-              <span>•</span>
-              <span className="text-emerald-300">100% Stable (Click to Inspect / Drag)</span>
+
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setZoomLevel(prev => Math.min(2.0, prev + 0.15))}
+                className="p-1 rounded-md bg-white hover:bg-[#E2E8E2] text-[#3E5052] border border-[#C2CEC2] cursor-pointer"
+                title="Zoom In"
+              >
+                <ZoomIn className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setZoomLevel(prev => Math.max(0.6, prev - 0.15))}
+                className="p-1 rounded-md bg-white hover:bg-[#E2E8E2] text-[#3E5052] border border-[#C2CEC2] cursor-pointer"
+                title="Zoom Out"
+              >
+                <ZoomOut className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => { setZoomLevel(1); setPanOffset({ x: 0, y: 0 }); }}
+                className="p-1 rounded-md bg-white hover:bg-[#E2E8E2] text-[#3E5052] border border-[#C2CEC2] cursor-pointer"
+                title="Reset View"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
 
-          <div className="relative bg-slate-50/60" style={{ height: 560 }}>
-            {loading ? (
-              <div className="flex items-center justify-center h-full text-slate-400 font-mono text-xs animate-pulse">
-                Mapping Deterministic Cross-Asset Knowledge Graph...
-              </div>
-            ) : (
-              <canvas
-                ref={canvasRef}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onWheel={handleWheel}
-                className="w-full h-full cursor-grab active:cursor-grabbing"
-              />
-            )}
+          <canvas
+            ref={canvasRef}
+            width={720}
+            height={560}
+            onMouseDown={handleCanvasMouseDown}
+            onMouseMove={handleCanvasMouseMove}
+            onMouseUp={handleCanvasMouseUp}
+            onMouseLeave={handleCanvasMouseUp}
+            className="w-full bg-[#F7F8F5] cursor-grab active:cursor-grabbing block"
+          />
 
-            <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-200 text-[10px] font-mono text-slate-600 shadow-sm pointer-events-none">
-              💡 <strong>Left-Click</strong>: Select Node | <strong>Drag</strong>: Move Node / Pan | <strong>Wheel</strong>: Zoom
-            </div>
+          <div className="p-2.5 bg-[#F0F2ED] border-t border-[#C2CEC2] flex items-center justify-between text-[11px] text-[#5E7072]">
+            <span>Drag nodes to rearrange • Click any node to inspect evidence</span>
+            <span className="font-mono">{rawNodes.length} Nodes • {rawEdges.length} Co-occurrence Edges</span>
           </div>
         </div>
 
-        {/* RIGHT PANEL (4 Cols): Deep Node Telemetry */}
-        <div className="lg:col-span-4 bg-white rounded-2xl border-2 border-slate-300 shadow-md overflow-hidden">
+        <div className="lg:col-span-5 bg-white rounded-xl border-2 border-[#C2CEC2] shadow-xs overflow-hidden flex flex-col justify-between">
           
-          <div className="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between shadow-sm">
-            <h3 className="font-heading font-extrabold text-xs uppercase tracking-wider text-white">
-              Signal Node Telemetry
-            </h3>
-            <span className="text-[10px] font-mono text-slate-400">CYTOSCAPE</span>
-          </div>
-
-          <div className="p-5 space-y-4 bg-slate-50/50">
-            {selectedNode ? (
-              <div className="space-y-4 animate-fadeIn">
-                
-                <div className="p-4 rounded-xl bg-white border-2 border-slate-300 shadow-sm space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2.5 py-0.5 rounded text-[10px] font-mono font-black uppercase text-white shadow-xs" style={{ backgroundColor: selectedNode.color }}>
-                      {selectedNode.type}
-                    </span>
-                    <span className="text-[10px] font-mono font-bold text-slate-400">
-                      ID: {selectedNode.id}
-                    </span>
-                  </div>
-
-                  <h4 className="font-heading font-black text-xl text-slate-900 mt-1">
-                    {selectedNode.label}
-                  </h4>
-
-                  <div className="flex items-center gap-2 pt-1">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-black ${
-                      selectedNode.severity === 'HIGH' ? 'bg-red-100 text-red-900 border border-red-300' : 'bg-slate-100 text-slate-700'
-                    }`}>
-                      {selectedNode.severity === 'HIGH' ? '🚨 HIGH SIF CONCENTRATION' : 'STANDARD RISK NODE'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-2xs">
-                    <div className="text-[10px] font-mono text-slate-400 uppercase font-bold">Incident Count</div>
-                    <div className="font-mono text-lg font-black text-slate-900 mt-0.5">
-                      {selectedNode.report_count} Reports
-                    </div>
-                  </div>
-                  <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-2xs">
-                    <div className="text-[10px] font-mono text-slate-400 uppercase font-bold">Connected Links</div>
-                    <div className="font-mono text-lg font-black text-blue-600 mt-0.5">
-                      {connectedNeighbors.length} Edges
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-xl bg-white border border-slate-200 space-y-2 shadow-2xs">
-                  <div className="text-[10px] font-mono uppercase font-bold text-slate-500">
-                    Directly Linked Safety Entities:
-                  </div>
-
-                  <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
-                    {connectedNeighbors.length === 0 ? (
-                      <div className="text-xs text-slate-400 italic">No direct connections</div>
-                    ) : (
-                      connectedNeighbors.map(nb => (
-                        <button
-                          key={nb.id}
-                          onClick={() => setSelectedNode(nb)}
-                          className="w-full p-2 rounded-lg bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 text-left transition-all flex items-center justify-between text-xs"
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: nb.color }} />
-                            <span className="font-bold text-slate-800 truncate">{nb.label}</span>
-                          </div>
-                          <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </div>
-
+          <div>
+            <div className="px-4 py-2.5 bg-[#F0F2ED] flex items-center justify-between border-b border-[#C2CEC2]">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[#0A6B63]" />
+                <h3 className="font-heading font-semibold text-xs text-[#1A2B2D]">
+                  Supporting Evidence & Investigation
+                </h3>
               </div>
-            ) : (
-              <div className="p-8 text-center text-slate-500 space-y-3 bg-white rounded-xl border border-slate-300 shadow-sm">
-                <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center mx-auto">
-                  <Network className="w-6 h-6 animate-pulse" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-800">Select Any Node on Canvas</h4>
-                  <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
-                    Click and drag any bubble to explore causal equipment pathways and cross-site failure cascades.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            <div className="p-3.5 rounded-xl bg-slate-900 text-white text-xs space-y-1.5 shadow-xs">
-              <div className="text-[10px] font-mono text-slate-400 uppercase font-bold">Network Architecture</div>
-              <div className="flex justify-between font-mono text-[11px]">
-                <span className="text-slate-300">Layout Engine</span>
-                <span className="text-emerald-400 font-bold">Concentric Ring Clusters</span>
-              </div>
-              <div className="flex justify-between font-mono text-[11px]">
-                <span className="text-slate-300">Frame Stability</span>
-                <span className="text-blue-300 font-bold">100% Rock-Solid (0 Jitter)</span>
-              </div>
+              <span className="text-[11px] font-mono text-[#94A3A5]">F6 + F7 AUDIT</span>
             </div>
 
+            <div className="p-4 space-y-4 max-h-[530px] overflow-y-auto">
+              
+              {loadingEvidence ? (
+                <div className="py-16 text-center text-[#94A3A5] font-mono text-xs">
+                  <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-[#94A3A5]" />
+                  Extracting incident history & physical barriers...
+                </div>
+              ) : evidence ? (
+                <div className="space-y-3.5">
+                  
+                  <div className="p-3.5 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2] space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#E8F4F0] text-[#0A6B63] border border-[#BCE3DC]">
+                        {evidence.node_type}
+                      </span>
+                      <span className="text-[10px] font-mono text-[#94A3A5]">
+                        ID: {evidence.node_id}
+                      </span>
+                    </div>
+
+                    <h4 className="font-heading font-bold text-base text-[#1A2B2D]">
+                      {evidence.node_label}
+                    </h4>
+
+                    {evidence.has_active_cluster && (
+                      <div className="p-3 rounded-lg bg-[#FDF2F2] border border-[#F5C6C6] text-[#D63B3B] text-xs font-semibold flex items-center gap-2">
+                        <Flame className="w-4 h-4 text-[#D63B3B] shrink-0" />
+                        <div>
+                          <div className="text-[11px] font-bold text-[#D63B3B]">
+                            NEAR-MISS MULTIPLIER TRIGGERED ({evidence.cluster_details?.event_count} EVENTS IN 7 DAYS)
+                          </div>
+                          <p className="text-[10px] text-[#5E7072] font-normal mt-0.5">
+                            Systemic barrier cascade detected. Connected reports elevated to HIGH SIF.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-3 gap-2 pt-2 text-center text-xs border-t border-[#C2CEC2]">
+                      <div className="p-2 rounded bg-white border border-[#C2CEC2]">
+                        <div className="text-[10px] text-[#5E7072]">Total Reports</div>
+                        <div className="font-heading text-sm font-bold text-[#1A2B2D]">{evidence.total_incidents}</div>
+                      </div>
+                      <div className="p-2 rounded bg-white border border-[#C2CEC2]">
+                        <div className="text-[10px] text-[#D63B3B]">High SIF</div>
+                        <div className="font-heading text-sm font-bold text-[#D63B3B]">{evidence.high_sif_count}</div>
+                      </div>
+                      <div className="p-2 rounded bg-white border border-[#C2CEC2]">
+                        <div className="text-[10px] text-[#D4820A]">Medium Risk</div>
+                        <div className="font-heading text-sm font-bold text-[#D4820A]">{evidence.medium_sif_count}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-lg bg-[#FEF7EC] border border-[#F8DFB6] space-y-1">
+                    <div className="text-[11px] font-semibold text-[#D4820A] flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5 text-[#D4820A]" />
+                      Recommended Preventative Action (CAPA):
+                    </div>
+                    <p className="text-xs text-[#3E5052] font-medium leading-relaxed">
+                      {evidence.recommended_capa}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="text-[11px] font-semibold text-[#5E7072] flex items-center justify-between">
+                      <span>Evidence Timeline ({evidence.supporting_reports.length} observations)</span>
+                      <Clock className="w-3.5 h-3.5 text-[#94A3A5]" />
+                    </div>
+
+                    <div className="space-y-2">
+                      {evidence.supporting_reports.map((rep, idx) => (
+                        <div key={rep.id || idx} className="p-3 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2] space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                              rep.sif_label === 'HIGH' ? 'bg-[#FDF2F2] text-[#D63B3B] border border-[#F5C6C6]' : 'bg-[#FEF7EC] text-[#D4820A] border border-[#F8DFB6]'
+                            }`}>
+                              {rep.sif_label} ({rep.sif_score?.toFixed(2)})
+                            </span>
+                            <span className="text-[10px] font-mono text-[#94A3A5]">
+                              {new Date(rep.created_at || Date.now()).toLocaleDateString('en-GB')}
+                            </span>
+                          </div>
+
+                          <p className="text-xs text-[#1A2B2D] leading-snug line-clamp-3">
+                            "{rep.raw_text}"
+                          </p>
+
+                          <div className="flex items-center gap-2 text-[10px] text-[#5E7072] pt-0.5">
+                            <span>📍 {rep.location || 'Well Pad 7'}</span>
+                            {rep.iogp_rule && <span>• 🛡️ {rep.iogp_rule}</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
+              ) : (
+                <div className="py-16 text-center text-[#94A3A5] text-xs">
+                  Click any node on the graph canvas to inspect supporting evidence.
+                </div>
+              )}
+
+            </div>
           </div>
+
+          {selectedNode && (
+            <div className="p-3 bg-[#F0F2ED] border-t border-[#C2CEC2]">
+              <button
+                onClick={triggerSWAFromGraph}
+                className="w-full py-2 px-4 rounded-lg bg-[#D63B3B] hover:bg-[#B92525] text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+              >
+                <AlertOctagon className="w-4 h-4" />
+                Dispatch SWA Lockout for {selectedNode.label}
+              </button>
+            </div>
+          )}
+
         </div>
 
       </div>

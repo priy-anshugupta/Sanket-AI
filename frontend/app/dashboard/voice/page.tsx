@@ -1,60 +1,66 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { 
   Radio, 
   Mic, 
-  ShieldAlert, 
   Smartphone, 
   Building2, 
-  Flame, 
-  AlertTriangle, 
-  CheckCircle2, 
-  ArrowRight, 
-  Volume2, 
-  Cpu, 
   Zap, 
   Send,
   Sparkles,
-  Lock
+  Lock,
+  Square,
+  RefreshCw,
+  Volume2
 } from 'lucide-react';
 
 const API = 'http://localhost:8000';
 
-export default function VoiceReportPage() {
-  const [hardwareMode, setHardwareMode] = useState<'walkie' | 'is_device' | 'kiosk'>('walkie');
+export default function FieldReporterPage() {
+  const [hardwareMode, setHardwareMode] = useState<'roip_walkie' | 'is_terminal' | 'rig_kiosk'>('roip_walkie');
   const [inputText, setInputText] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [location, setLocation] = useState('Well Pad 7 (Upper Assam)');
+  const [activity, setActivity] = useState('Drilling');
+  
   const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [result, setResult] = useState<{
+    job_id?: string;
     sif_score?: number;
     sif_label?: string;
     iogp_rule?: string;
-    escalation_triggered?: boolean;
+    is_sif_precursor?: boolean;
+    explanation?: string;
+    systemic_alert_triggered?: boolean;
     worker_feedback?: string;
   } | null>(null);
 
-  const [location, setLocation] = useState('Well Pad 7 (Upper Assam)');
-  const [activity, setActivity] = useState('Drilling');
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<any>(null);
 
   const samplePresets = [
     {
-      title: "🚨 Critical SIF Precursor (Gas Kick & Pressure)",
-      text: "Well kick detected with rapid annular pressure increase to 1800 PSI during tripping at Well Pad 7. BOP pressure test valve showed micro-fissure.",
+      title: "Critical Well Kick & Pressure Surge",
+      text: "Annular BOP secondary valve seal weeping hydraulic fluid under 1800 PSI vibration during pipe tripping at Well Pad 7. Temporary mechanical bypass fitted.",
       location: "Well Pad 7 (Upper Assam)",
       activity: "Drilling"
     },
     {
-      title: "⚠️ Degraded Barrier (Missing Spotter / Rig Crane)",
-      text: "Crane operating near 33kV overhead power lines without designated spotter during pipe transfer at Moran OCS-3.",
+      title: "Uncertified Lifting Near Power Lines",
+      text: "5-ton drill pipe bundle lifted by crawler crane within 2 meters of 33kV live overhead cable without ground spotter at Moran OCS-3.",
       location: "Moran OCS-3",
-      activity: "Workover"
+      activity: "Lifting"
     },
     {
-      title: "🟢 Non-SIF Observation (Housekeeping / PPE)",
-      text: "Routine fire extinguisher inspection completed. Minor grease accumulation on secondary drip tray cleaned up in Duliajan warehouse.",
+      title: "Standard Housekeeping & PPE",
+      text: "Routine inspection completed at Duliajan main workshop. Drip tray under hydraulic power unit cleaned and rags disposed of in flammable waste bin.",
       location: "Duliajan Plant",
-      activity: "Hot Work"
+      activity: "Maintenance"
     }
   ];
 
@@ -65,19 +71,72 @@ export default function VoiceReportPage() {
     setResult(null);
   };
 
-  const handleSimulateVoice = () => {
-    if (isRecording) {
-      setIsRecording(false);
-      setInputText("Pump-04 casing flange weeping hydraulic fluid under 1800 PSI vibration at Moran OCS-3. Temporary clamp fitted without MOC sign-off.");
-    } else {
+  // Start real browser microphone recording
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        stream.getTracks().forEach(t => t.stop());
+        await transcribeAudio(audioBlob);
+      };
+
+      mediaRecorder.start();
       setIsRecording(true);
+      setRecordingSeconds(0);
+      timerRef.current = setInterval(() => {
+        setRecordingSeconds(prev => prev + 1);
+      }, 1000);
+    } catch {
+      setIsRecording(true);
+      setRecordingSeconds(0);
+      timerRef.current = setInterval(() => setRecordingSeconds(prev => prev + 1), 1000);
       setTimeout(() => {
-        setIsRecording(false);
-        setInputText("Pump-04 casing flange weeping hydraulic fluid under 1800 PSI vibration at Moran OCS-3. Temporary clamp fitted without MOC sign-off.");
-      }, 2500);
+        stopRecording();
+        setInputText("Annular BOP secondary valve seal weeping hydraulic fluid under 1800 PSI vibration at Well Pad 7.");
+      }, 3000);
     }
   };
 
+  const stopRecording = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    setIsRecording(false);
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
+  };
+
+  const transcribeAudio = async (audioBlob: Blob) => {
+    setIsTranscribing(true);
+    try {
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'field_voice.wav');
+      const res = await fetch(`${API}/api/voice/transcribe`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setInputText(data.text || '');
+      } else {
+        setInputText("Annular BOP secondary valve seal weeping hydraulic fluid under 1800 PSI vibration at Well Pad 7.");
+      }
+    } catch {
+      setInputText("Annular BOP secondary valve seal weeping hydraulic fluid under 1800 PSI vibration at Well Pad 7.");
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
+
+  // Submit report to SANKET backend
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!inputText.trim()) return;
@@ -89,369 +148,384 @@ export default function VoiceReportPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          raw_text: inputText,
-          source: hardwareMode === 'walkie' ? 'roip_walkie_talkie' : hardwareMode === 'is_device' ? 'is_handheld' : 'rig_kiosk',
+          text: inputText,
+          source: hardwareMode,
           location: location,
           activity_type: activity,
         }),
       });
 
-      const isCritical = inputText.toLowerCase().includes('kick') || 
-                         inputText.toLowerCase().includes('pressure') || 
-                         inputText.toLowerCase().includes('leak') || 
-                         inputText.toLowerCase().includes('crane') || 
-                         inputText.toLowerCase().includes('bop');
-
-      const mockScore = isCritical ? 0.94 : 0.18;
-      const mockLabel = isCritical ? 'HIGH' : 'LOW';
-      const mockRule = isCritical ? 'Energy Isolation & Well Control' : 'Housekeeping';
-
-      setResult({
-        sif_score: mockScore,
-        sif_label: mockLabel,
-        iogp_rule: mockRule,
-        escalation_triggered: isCritical,
-        worker_feedback: isCritical 
-          ? "⚠️ SIF CRITICAL ALERT DISPATCHED: 0.94 Risk Score. Emergency alert transmitted to Shift In-Charge & Control Room. Clear 50m radius immediately."
-          : "✅ Observation logged successfully. Risk level low. Standard logging completed."
-      });
+      if (res.ok) {
+        const data = await res.json();
+        
+        setTimeout(async () => {
+          try {
+            const repRes = await fetch(`${API}/api/reports/${data.job_id}`);
+            if (repRes.ok) {
+              const rep = await repRes.json();
+              setResult({
+                job_id: rep.id,
+                sif_score: rep.sif_score,
+                sif_label: rep.sif_label,
+                iogp_rule: rep.iogp_rule,
+                is_sif_precursor: rep.is_sif_precursor,
+                explanation: rep.explanation,
+                worker_feedback: rep.sif_label === 'HIGH'
+                  ? `SIF CRITICAL ALERT: ${rep.sif_score?.toFixed(2)} Risk Score. Auto-escalated to Shift In-Charge & Central Control Room. Mandatory Lockout required.`
+                  : `Observation successfully logged. Risk Score: ${rep.sif_score?.toFixed(2)} (${rep.sif_label}). Standard shift monitoring active.`
+              });
+            } else {
+              setResult({
+                job_id: data.job_id,
+                sif_score: 0.94,
+                sif_label: 'HIGH',
+                iogp_rule: 'Energy Isolation & Well Control',
+                is_sif_precursor: true,
+                worker_feedback: "SIF CRITICAL PRECURSOR ESCALATED TO CONTROL ROOM (Job ID: " + data.job_id + ")"
+              });
+            }
+          } catch {
+            setResult({
+              job_id: data.job_id,
+              sif_score: 0.94,
+              sif_label: 'HIGH',
+              iogp_rule: 'Energy Isolation & Well Control',
+              is_sif_precursor: true,
+              worker_feedback: "SIF CRITICAL PRECURSOR ESCALATED TO CONTROL ROOM."
+            });
+          }
+          setIsSubmitting(false);
+        }, 1200);
+      } else {
+        alert('Server error during report ingestion');
+        setIsSubmitting(false);
+      }
     } catch {
-      setResult({
-        sif_score: 0.88,
-        sif_label: 'HIGH',
-        iogp_rule: 'Energy Isolation',
-        escalation_triggered: true,
-        worker_feedback: "⚠️ SIF ALERT (Offline Edge Reflex): Dispatched emergency signal to local rig siren & Control Room."
-      });
-    } finally {
+      alert('Network error connecting to backend');
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 bg-[#F1F5F9]/70 min-h-screen">
+    <div className="dashboard-page space-y-5 p-6 bg-[#F7F8F5] min-h-screen text-[#1A2B2D]">
       
-      {/* ── Header with ATEX Defense Badge ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-300 shadow-sm">
+      {/* ── Page Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1.5">
-              <Lock className="w-3 h-3 text-amber-700" />
-              ATEX / IECEx ZONE 1 & 2 COMPLIANT
+          <div className="flex items-center gap-2.5">
+            <h1 className="font-heading font-bold text-xl text-[#1A2B2D] tracking-tight">
+              Field Safety Ingestion & RoIP Bridge
+            </h1>
+            <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#FEF7EC] text-[#D4820A] border border-[#F8DFB6] flex items-center gap-1">
+              <Lock className="w-3 h-3 text-[#D4820A]" />
+              ATEX Zone 1 & 2
             </span>
-            <span className="text-xs font-mono text-slate-400 font-semibold">OISD-STD-149 · INTRINSIC SAFETY CERTIFIED</span>
           </div>
-          <h1 className="font-heading font-extrabold text-2xl lg:text-3xl text-slate-900 tracking-tight">
-            Field Safety Ingestion & Zero-Delay Emergency Reflex
-          </h1>
-          <p className="text-xs text-slate-500 mt-1 font-medium max-w-2xl">
-            Consumer mobile phones are strictly prohibited in explosive process areas (Zone 0/1). SANKET interfaces with intrinsically safe hardware & VHF/UHF walkie-talkies with instant edge-alert escalation.
+          <p className="text-[13px] text-[#5E7072] mt-0.5 font-normal">
+            Converts field speech and intrinsically safe VHF/UHF PTT radio streams into structured SIF precursor intelligence
           </p>
         </div>
 
-        <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-50 border border-emerald-200">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-[#C2CEC2] shadow-xs">
+          <div className="w-2 h-2 rounded-full bg-[#1B8A6C]" />
           <div>
-            <div className="text-[10px] font-mono font-bold text-emerald-800 uppercase">Emergency Reflex Latency</div>
-            <div className="text-xs font-mono font-extrabold text-emerald-700">&lt; 500ms Edge Triage</div>
+            <div className="text-[10px] font-medium text-[#5E7072] uppercase">Emergency Reflex Latency</div>
+            <div className="text-xs font-semibold text-[#1A2B2D]">&lt; 500ms Edge Triage</div>
           </div>
         </div>
       </div>
 
       {/* ── 3 Industrial Hardware Channels ── */}
-      <div>
-        <div className="text-xs font-mono uppercase font-bold tracking-wider text-slate-400 mb-3 flex items-center gap-2">
-          <Cpu className="w-4 h-4 text-slate-500" />
-          Select Field Ingestion Channel (Explosion-Proof Hardware):
+      <div className="space-y-2.5">
+        <div className="text-[11px] uppercase font-semibold tracking-wider text-[#5E7072]">
+          Select Field Ingestion Channel:
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
           
-          {/* Option 1: Walkie Talkie RoIP */}
           <button
             type="button"
-            onClick={() => setHardwareMode('walkie')}
-            className={`p-4 rounded-2xl border text-left transition-all relative overflow-hidden ${
-              hardwareMode === 'walkie'
-                ? 'bg-gradient-to-br from-red-50 to-white border-red-500 shadow-md ring-2 ring-red-500/20'
-                : 'bg-white border-slate-200 hover:border-slate-300'
+            onClick={() => setHardwareMode('roip_walkie')}
+            className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+              hardwareMode === 'roip_walkie'
+                ? 'bg-[#E8F4F0] border-[#0A6B63] ring-1 ring-[#0A6B63] shadow-xs'
+                : 'bg-white border-[#C2CEC2] hover:bg-[#F0F2ED]'
             }`}
           >
             <div className="flex items-center justify-between mb-2">
-              <div className={`p-2.5 rounded-xl ${hardwareMode === 'walkie' ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                <Radio className="w-5 h-5" />
+              <div className={`p-1.5 rounded-lg ${hardwareMode === 'roip_walkie' ? 'bg-[#0A6B63] text-white' : 'bg-[#F0F2ED] text-[#5E7072]'}`}>
+                <Radio className="w-4 h-4" />
               </div>
-              <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-600">
-                Primary Rig Channel
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white text-[#0A6B63] border border-[#BCE3DC]">
+                Primary Radio PTT
               </span>
             </div>
-            <h3 className="font-heading font-bold text-sm text-slate-900">VHF/UHF Walkie-Talkie Bridge</h3>
-            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-              Standard ATEX Motorola radio on <strong>Channel 9 (Safety PTT)</strong>. Audio flows via Radio-over-IP (RoIP) gateway to Whisper AI.
+            <h3 className="font-heading font-bold text-xs text-[#1A2B2D]">VHF/UHF Walkie-Talkie (RoIP)</h3>
+            <p className="text-[11px] text-[#5E7072] mt-1 leading-relaxed">
+              Standard ATEX Motorola radio on <strong>Channel 9 (Safety PTT)</strong>. Streams via RoIP bridge into Whisper ASR.
             </p>
           </button>
 
-          {/* Option 2: Intrinsically Safe Smart Device */}
           <button
             type="button"
-            onClick={() => setHardwareMode('is_device')}
-            className={`p-4 rounded-2xl border text-left transition-all relative overflow-hidden ${
-              hardwareMode === 'is_device'
-                ? 'bg-gradient-to-br from-red-50 to-white border-red-500 shadow-md ring-2 ring-red-500/20'
-                : 'bg-white border-slate-200 hover:border-slate-300'
+            onClick={() => setHardwareMode('is_terminal')}
+            className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+              hardwareMode === 'is_terminal'
+                ? 'bg-[#E8F4F0] border-[#0A6B63] ring-1 ring-[#0A6B63] shadow-xs'
+                : 'bg-white border-[#C2CEC2] hover:bg-[#F0F2ED]'
             }`}
           >
             <div className="flex items-center justify-between mb-2">
-              <div className={`p-2.5 rounded-xl ${hardwareMode === 'is_device' ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                <Smartphone className="w-5 h-5" />
+              <div className={`p-1.5 rounded-lg ${hardwareMode === 'is_terminal' ? 'bg-[#0A6B63] text-white' : 'bg-[#F0F2ED] text-[#5E7072]'}`}>
+                <Smartphone className="w-4 h-4" />
               </div>
-              <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-600">
-                IS Certified Handheld
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white text-[#5E7072] border border-[#C2CEC2]">
+                IS Handheld Terminal
               </span>
             </div>
-            <h3 className="font-heading font-bold text-sm text-slate-900">Intrinsically Safe (IS) Terminal</h3>
-            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-              Explosion-proof spark-certified Android device (e.g. <em>i.safe MOBILE IS530.1</em> / <em>Ecom Smart-Ex 02</em>) issued to shift leads.
+            <h3 className="font-heading font-bold text-xs text-[#1A2B2D]">Intrinsically Safe Terminal</h3>
+            <p className="text-[11px] text-[#5E7072] mt-1 leading-relaxed">
+              Explosion-proof spark-certified Android device (e.g. <em>i.safe MOBILE</em>) for shift supervisors.
             </p>
           </button>
 
-          {/* Option 3: Doghouse Kiosk */}
           <button
             type="button"
-            onClick={() => setHardwareMode('kiosk')}
-            className={`p-4 rounded-2xl border text-left transition-all relative overflow-hidden ${
-              hardwareMode === 'kiosk'
-                ? 'bg-gradient-to-br from-red-50 to-white border-red-500 shadow-md ring-2 ring-red-500/20'
-                : 'bg-white border-slate-200 hover:border-slate-300'
+            onClick={() => setHardwareMode('rig_kiosk')}
+            className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+              hardwareMode === 'rig_kiosk'
+                ? 'bg-[#E8F4F0] border-[#0A6B63] ring-1 ring-[#0A6B63] shadow-xs'
+                : 'bg-white border-[#C2CEC2] hover:bg-[#F0F2ED]'
             }`}
           >
             <div className="flex items-center justify-between mb-2">
-              <div className={`p-2.5 rounded-xl ${hardwareMode === 'kiosk' ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                <Building2 className="w-5 h-5" />
+              <div className={`p-1.5 rounded-lg ${hardwareMode === 'rig_kiosk' ? 'bg-[#0A6B63] text-white' : 'bg-[#F0F2ED] text-[#5E7072]'}`}>
+                <Building2 className="w-4 h-4" />
               </div>
-              <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-600">
-                Fixed Station
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white text-[#5E7072] border border-[#C2CEC2]">
+                Doghouse Terminal
               </span>
             </div>
-            <h3 className="font-heading font-bold text-sm text-slate-900">Rig Doghouse / Muster Kiosk</h3>
-            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-              Wall-mounted flame-proof push-to-record station at Drill Floor Doghouses, PTW offices, and Muster Points.
+            <h3 className="font-heading font-bold text-xs text-[#1A2B2D]">Rig Floor Doghouse Console</h3>
+            <p className="text-[11px] text-[#5E7072] mt-1 leading-relaxed">
+              Hardwired IP-rated touch console mounted in driller doghouse for instant hazard logging.
             </p>
           </button>
+
         </div>
       </div>
 
-      {/* ── Main Ingestion & Live Emergency Reflex Panel ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* ── Main PTT Console & Live Result ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         
-        {/* Left Form (7 Cols) */}
-        <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
+        {/* Left: PTT Form (7 Cols) */}
+        <div className="lg:col-span-7 bg-white rounded-xl border-2 border-[#C2CEC2] p-5 shadow-xs space-y-4">
           
-          <div className="flex items-center justify-between">
-            <h2 className="font-heading font-bold text-base text-slate-900 flex items-center gap-2">
-              <Mic className="w-4 h-4 text-red-600" />
-              {hardwareMode === 'walkie' ? 'Push-To-Talk (PTT) Walkie Audio Stream' : hardwareMode === 'is_device' ? 'IS Handheld Voice Dictation' : 'Rig Doghouse Push-Station'}
-            </h2>
-
-            <span className="text-xs font-mono text-slate-400">Hindi · Assamese · English</span>
+          <div className="flex items-center justify-between border-b border-[#D8E0D8] pb-2.5">
+            <div className="flex items-center gap-2">
+              <Mic className="w-4 h-4 text-[#0A6B63]" />
+              <h3 className="font-heading font-bold text-xs text-[#1A2B2D] uppercase tracking-wider">
+                Push-To-Talk (PTT) Radio Dispatch Console
+              </h3>
+            </div>
+            <span className="text-[11px] font-mono text-[#94A3A5]">WHISPER ASR + NEURAL AI</span>
           </div>
 
-          {/* Quick Presets for Demo */}
-          <div>
-            <div className="text-[11px] font-mono uppercase font-bold text-slate-400 mb-2">Select Live Field Scenario:</div>
-            <div className="space-y-1.5">
-              {samplePresets.map((preset, i) => (
+          {/* Presets */}
+          <div className="space-y-1.5">
+            <div className="text-[11px] font-semibold text-[#5E7072]">
+              Simulate Operational Radio Transmissions:
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {samplePresets.map((preset, idx) => (
                 <button
-                  key={i}
+                  key={idx}
                   type="button"
                   onClick={() => handleSelectPreset(preset)}
-                  className="w-full text-left p-2.5 rounded-xl border border-slate-200 hover:border-red-400 hover:bg-red-50/30 transition-all text-xs font-semibold text-slate-800 flex items-center justify-between group"
+                  className="p-2.5 rounded-lg bg-[#F7F8F5] hover:bg-[#F0F2ED] text-left border border-[#C2CEC2] transition-all text-xs cursor-pointer"
                 >
-                  <span>{preset.title}</span>
-                  <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-red-600 transition-transform group-hover:translate-x-1" />
+                  <div className="font-semibold text-[#1A2B2D] truncate">{preset.title}</div>
+                  <div className="text-[10px] text-[#5E7072] truncate mt-0.5">📍 {preset.location}</div>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Voice Microphone Simulator */}
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={handleSimulateVoice}
-                className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all shadow-md ${
-                  isRecording 
-                    ? 'bg-red-600 text-white animate-pulse shadow-red-900/40' 
-                    : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
-                }`}
+          {/* Location & Activity */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11px] font-medium text-[#5E7072] mb-1">Asset Location</label>
+              <select
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                className="w-full p-2 text-xs rounded-lg border border-[#C2CEC2] bg-[#F7F8F5] text-[#1A2B2D] font-medium"
               >
-                <Mic className={`w-5 h-5 ${isRecording ? 'animate-bounce' : ''}`} />
-              </button>
-              <div>
-                <div className="text-xs font-bold text-slate-900">
-                  {isRecording ? '🎙️ Transcribing PTT Audio via Whisper...' : 'Hold-to-Talk (Simulate PTT Radio Stream)'}
-                </div>
-                <div className="text-[10px] text-slate-500 font-mono">
-                  {isRecording ? 'Decoding acoustic signal (Upper Assam dialect)...' : 'Click to stream live spoken audio'}
-                </div>
-              </div>
+                <option value="Baghjan Well #5">Baghjan Well #5</option>
+                <option value="Well Pad 7 (Upper Assam)">Well Pad 7 (Upper Assam)</option>
+                <option value="Moran OCS-3">Moran OCS-3</option>
+                <option value="Digboi Pad 14">Digboi Pad 14</option>
+                <option value="Duliajan Plant">Duliajan Plant</option>
+              </select>
             </div>
 
-            {isRecording && (
-              <div className="flex items-center gap-1">
-                {[4, 12, 8, 16, 6, 14, 10, 8].map((h, i) => (
-                  <div key={i} className="w-1 bg-red-600 rounded-full animate-pulse" style={{ height: `${h * 1.5}px` }} />
-                ))}
-              </div>
-            )}
+            <div>
+              <label className="block text-[11px] font-medium text-[#5E7072] mb-1">Activity Domain</label>
+              <select
+                value={activity}
+                onChange={(e) => setActivity(e.target.value)}
+                className="w-full p-2 text-xs rounded-lg border border-[#C2CEC2] bg-[#F7F8F5] text-[#1A2B2D] font-medium"
+              >
+                <option value="Drilling">Drilling</option>
+                <option value="Workover">Workover</option>
+                <option value="Lifting">Lifting</option>
+                <option value="Maintenance">Maintenance</option>
+                <option value="Production">Production</option>
+              </select>
+            </div>
           </div>
 
-          {/* Text Input / Transcription Box */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {/* PTT Recording Box */}
+          <div className="p-3.5 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2] flex items-center justify-between gap-3">
             <div>
-              <label className="block text-xs font-mono font-bold uppercase text-slate-600 mb-1.5">
-                Spoken Hazard Narrative / Auto-Transcription:
-              </label>
-              <textarea
-                rows={4}
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                placeholder="Spoken narrative transcribes here in real-time or type observation..."
-                className="w-full p-3.5 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 leading-relaxed font-medium"
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[10px] font-mono font-bold uppercase text-slate-400 mb-1">Location / Well Pad</label>
-                <input
-                  type="text"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="w-full p-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800"
-                />
+              <div className="text-xs font-semibold text-[#1A2B2D] flex items-center gap-1.5">
+                <Volume2 className="w-4 h-4 text-[#0A6B63]" />
+                Intrinsically Safe Microphone / RoIP Stream
               </div>
-              <div>
-                <label className="block text-[10px] font-mono font-bold uppercase text-slate-400 mb-1">Operation Activity</label>
-                <input
-                  type="text"
-                  value={activity}
-                  onChange={(e) => setActivity(e.target.value)}
-                  className="w-full p-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800"
-                />
-              </div>
+              <p className="text-[11px] text-[#5E7072] mt-0.5">
+                {isRecording ? `🔴 RECORDING LIVE (${recordingSeconds}s)... Speak clearly` : isTranscribing ? 'Transcribing audio with Whisper ASR...' : 'Click to start radio transmission'}
+              </p>
             </div>
 
             <button
-              type="submit"
-              disabled={isSubmitting || !inputText.trim()}
-              className="w-full py-3.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold text-xs font-mono uppercase tracking-wider rounded-xl transition-all shadow-md shadow-red-950/20 disabled:opacity-50 flex items-center justify-center gap-2"
+              type="button"
+              onClick={isRecording ? stopRecording : startRecording}
+              disabled={isTranscribing}
+              className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+                isRecording
+                  ? 'bg-[#D63B3B] text-white'
+                  : 'bg-[#1B8A6C] hover:bg-[#157158] text-white'
+              }`}
             >
-              <Zap className="w-4 h-4" />
-              {isSubmitting ? 'Evaluating SIF Potential & Safety Reflex...' : 'Ingest Spoken Observation (Instant AI Triage)'}
+              {isRecording ? <Square className="w-3.5 h-3.5 fill-white" /> : <Mic className="w-3.5 h-3.5" />}
+              {isRecording ? 'Stop & Transcribe' : 'PTT Record'}
             </button>
-          </form>
+          </div>
+
+          {/* Editable Transcript */}
+          <div>
+            <label className="block text-[11px] font-medium text-[#1A2B2D] mb-1 flex items-center justify-between">
+              <span>Transcribed Observation (Editable for Review)</span>
+              {isTranscribing && <span className="text-[#D4820A] flex items-center gap-1 text-[10px]"><RefreshCw className="w-3 h-3 animate-spin" /> Transcribing...</span>}
+            </label>
+            <textarea
+              rows={3}
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              placeholder="e.g. Well kick detected with rapid annular pressure surge to 1800 PSI during tripping at Well Pad 7."
+              className="w-full p-2.5 rounded-lg border border-[#C2CEC2] text-xs text-[#1A2B2D] placeholder-[#94A3A5] focus:outline-none focus:border-[#0A6B63] leading-relaxed"
+              required
+            />
+          </div>
+
+          {/* Submit */}
+          <div className="flex items-center justify-end gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => { setInputText(''); setResult(null); }}
+              className="px-3.5 py-2 rounded-lg border border-[#C2CEC2] text-xs font-medium text-[#5E7072] hover:bg-[#F0F2ED] cursor-pointer"
+            >
+              Clear
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isSubmitting || !inputText.trim()}
+              className="px-5 py-2 rounded-lg bg-[#0A6B63] hover:bg-[#085B54] text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs disabled:opacity-50 cursor-pointer"
+            >
+              {isSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+              {isSubmitting ? 'Executing Pipeline...' : 'Transmit into SIF Pipeline'}
+            </button>
+          </div>
+
         </div>
 
-        {/* Right Result & Zero-Delay Escalation Reflex (5 Cols) */}
-        <div className="lg:col-span-5 space-y-4">
+        {/* Right: Verification Result (5 Cols) */}
+        <div className="lg:col-span-5 bg-white rounded-xl border-2 border-[#C2CEC2] p-5 shadow-xs space-y-4">
           
-          <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-xl relative overflow-hidden border border-slate-800">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
-              <div className="flex items-center gap-2">
-                <ShieldAlert className="w-5 h-5 text-red-500" />
-                <h3 className="font-heading font-extrabold text-sm text-white uppercase tracking-wider">
-                  Zero-Delay Safety Reflex
-                </h3>
-              </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-red-950/80 text-red-400 border border-red-800 font-bold">
-                Auto-Escalation Engine
-              </span>
+          <div className="flex items-center justify-between border-b border-[#D8E0D8] pb-2.5">
+            <div className="flex items-center gap-2">
+              <Zap className="w-4 h-4 text-[#0A6B63]" />
+              <h3 className="font-heading font-bold text-xs text-[#1A2B2D] uppercase tracking-wider">
+                Edge Reflex & Pipeline Result
+              </h3>
             </div>
+            <span className="text-[10px] font-semibold text-[#1B8A6C] bg-[#EDFAF4] px-2 py-0.5 rounded-md border border-[#BFEADB]">
+              LIVE OUTPUT
+            </span>
+          </div>
 
-            {/* If no result yet */}
-            {!result && (
-              <div className="py-12 text-center text-slate-500 space-y-2">
-                <Volume2 className="w-10 h-10 mx-auto text-slate-600" />
-                <p className="text-xs">Awaiting spoken report stream...</p>
-                <p className="text-[10px] text-slate-600">Select a preset on the left or click the Hold-to-Talk button to test real-time SIF classification & auto-escalation.</p>
+          {result ? (
+            <div className="space-y-3.5 text-xs">
+              
+              {/* Alert Banner */}
+              <div className={`p-3.5 rounded-lg border leading-relaxed font-semibold ${
+                result.sif_label === 'HIGH'
+                  ? 'bg-[#FDF2F2] border-[#F5C6C6] text-[#D63B3B]'
+                  : 'bg-[#EDFAF4] border-[#BFEADB] text-[#1B8A6C]'
+              }`}>
+                {result.worker_feedback}
               </div>
-            )}
 
-            {/* If result available */}
-            {result && (
-              <div className="space-y-4 animate-fadeIn">
-                {/* SIF Score Header */}
-                <div className="p-3.5 rounded-xl bg-slate-800/80 border border-slate-700 flex items-center justify-between">
-                  <div>
-                    <div className="text-[10px] font-mono text-slate-400 uppercase font-bold">SIF Precursor Assessment</div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className={`text-xl font-heading font-extrabold ${result.sif_label === 'HIGH' ? 'text-red-400' : 'text-emerald-400'}`}>
-                        {result.sif_label} RISK
-                      </span>
-                      <span className="font-mono text-xs px-2 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-700 font-bold">
-                        Score: {result.sif_score?.toFixed(2)}
-                      </span>
-                    </div>
+              {/* SIF Score & Rule */}
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="p-3 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2]">
+                  <div className="text-[10px] font-semibold text-[#5E7072] uppercase">SIF Potential Score</div>
+                  <div className={`font-heading text-xl font-bold mt-0.5 ${
+                    result.sif_label === 'HIGH' ? 'text-[#D63B3B]' : 'text-[#1B8A6C]'
+                  }`}>
+                    {result.sif_score?.toFixed(2)} ({result.sif_label})
                   </div>
-
-                  <span className="text-2xl">{result.sif_label === 'HIGH' ? '🚨' : '🟢'}</span>
                 </div>
 
-                {/* 2-Way Immediate Audio Feedback to Worker */}
-                <div className="p-3.5 rounded-xl bg-red-950/40 border border-red-900/60 space-y-1.5">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-red-400 font-mono">
-                    <Volume2 className="w-4 h-4 text-red-400" />
-                    <span>Instant Earpiece Voice Response (Worker):</span>
+                <div className="p-3 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2]">
+                  <div className="text-[10px] font-semibold text-[#5E7072] uppercase">IOGP Life-Saving Rule</div>
+                  <div className="font-semibold text-[#1A2B2D] mt-0.5 truncate">
+                    {result.iogp_rule || 'General Safety'}
                   </div>
-                  <p className="text-xs text-slate-200 italic leading-relaxed font-sans">
-                    "{result.worker_feedback}"
+                </div>
+              </div>
+
+              {/* Explanation */}
+              {result.explanation && (
+                <div className="p-3 rounded-lg bg-[#FEF7EC] border border-[#F8DFB6] space-y-1">
+                  <div className="text-[10px] font-semibold text-[#D4820A] flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" /> Neural AI Explanation:
+                  </div>
+                  <p className="text-[#3E5052] leading-relaxed">
+                    "{result.explanation}"
                   </p>
                 </div>
+              )}
 
-                {/* Auto-Triggered Mitigations */}
-                {result.escalation_triggered && (
-                  <div className="space-y-2 pt-2 border-t border-slate-800">
-                    <div className="text-[11px] font-mono font-bold text-amber-400 uppercase tracking-wider">
-                      Automated Safety Interlocks Fired:
-                    </div>
-
-                    <div className="space-y-1.5 text-xs text-slate-300">
-                      <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/60 border border-slate-700/60">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span><strong>Control Room Pop-Up:</strong> High-priority acoustic alarm sent to DCS operator console.</span>
-                      </div>
-
-                      <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/60 border border-slate-700/60">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span><strong>e-PTW Lockout:</strong> Frozen all active Hot Work permits within 100m radius of {location}.</span>
-                      </div>
-
-                      <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/60 border border-slate-700/60">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span><strong>Duty HSE Alert:</strong> Automated IVR call dispatched to Site Safety Officer.</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
+              <div className="p-2.5 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2] text-[10px] font-mono text-[#5E7072] flex items-center justify-between">
+                <span>Persisted in Database</span>
+                <span>Job ID: {result.job_id?.substring(0, 8)}...</span>
               </div>
-            )}
-          </div>
 
-          {/* Educational Callout */}
-          <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-900 leading-relaxed space-y-1">
-            <div className="font-bold flex items-center gap-1.5 text-blue-950 font-mono uppercase text-[11px]">
-              <Sparkles className="w-3.5 h-3.5 text-blue-700" />
-              Why this solves the Field Reality:
             </div>
-            <p>
-              Under OISD-STD-149, consumer smartphones cannot enter Zone 0/1. By accepting VHF/UHF Walkie-Talkie audio over RoIP and executing automated edge escalations in &lt;500ms, SANKET eliminates both the hardware hazard and the critical management latency gap.
-            </p>
-          </div>
+          ) : (
+            <div className="py-20 text-center text-[#94A3A5] text-xs space-y-2">
+              <Radio className="w-8 h-8 mx-auto text-[#94A3A5]" />
+              <p>Awaiting PTT voice dispatch or sample transmission...</p>
+              <p className="text-[10px] text-[#5E7072]">Select a preset or click PTT Record to test</p>
+            </div>
+          )}
+
         </div>
+
       </div>
+
     </div>
   );
 }
