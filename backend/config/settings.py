@@ -24,7 +24,9 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRY_MINUTES: int = 480
 
-    # --- Online LLM Provider (Groq) ---
+    # --- Online LLM Providers (OpenAI / Groq) ---
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "gpt-4o-mini"
     GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "llama-3.3-70b-versatile"
 
