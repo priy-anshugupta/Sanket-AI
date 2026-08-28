@@ -22,7 +22,7 @@ export default function HomePage() {
         <div 
           className="absolute inset-0"
           style={{
-            background: 'linear-gradient(90deg, #05080E 0%, rgba(5,8,14,0.96) 38%, rgba(5,8,14,0.72) 60%, rgba(5,8,14,0.18) 85%, rgba(5,8,14,0.05) 100%)'
+            background: 'linear-gradient(to right, #05080E 0%, #05080E 35%, rgba(5,8,14,0.7) 65%, rgba(5,8,14,0.3) 100%)'
           }}
         />
         {/* Top and Bottom subtle vignetting */}
@@ -158,8 +158,8 @@ export default function HomePage() {
               href="/dashboard/replay"
               className="px-5 py-3 rounded-xl border border-white/20 hover:border-white/40 text-white font-semibold text-xs tracking-wider uppercase transition-all duration-200 backdrop-blur-md hover:bg-white/10 flex items-center gap-2"
             >
-              <Play className="w-3.5 h-3.5 text-red-400 fill-red-400" />
-              WATCH DEMO
+              <Network className="w-3.5 h-3.5 text-amber-400" />
+              EXPLORE ARCHITECTURE
             </Link>
           </div>
         </div>

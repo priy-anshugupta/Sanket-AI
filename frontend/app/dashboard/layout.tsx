@@ -111,11 +111,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                     <div className="flex items-center gap-1.5 shrink-0">
                       {item.badge && !active && (
-                        <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded ${
-                          item.badge === 'CRITICAL' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700 animate-pulse'
-                        }`}>
-                          {item.badge}
-                        </span>
+                        item.badge === 'CRITICAL' ? (
+                          <span className="flex items-center gap-1 text-[9px] font-mono font-black px-1.5 py-0.2 rounded-full bg-red-100 text-red-700 border border-red-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-ping" />
+                            SWA
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-700 animate-pulse">
+                            {item.badge}
+                          </span>
+                        )
                       )}
                       <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
                         active ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-400 group-hover:text-slate-600'
@@ -133,12 +138,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Bottom Status & Profile */}
         <div className="p-3 border-t border-slate-100 space-y-2">
           {/* Sovereign Air-Gap Badge */}
-          <div className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200/60 flex items-center justify-between">
+          <div className="px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200/60 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <div>
-                <div className="text-[10px] font-bold text-emerald-800 uppercase font-mono">Air-Gapped Sovereign</div>
-                <div className="text-[9px] font-mono text-emerald-600 font-semibold">0 KB/s Zero-Egress</div>
+                <div className="text-[10px] font-bold text-emerald-800 uppercase font-mono">SOVEREIGN AIR-GAP</div>
+                <div className="text-[9px] font-mono text-emerald-600 font-semibold">0 KB/s OUT · LOCAL</div>
               </div>
             </div>
             <Radio className="w-3.5 h-3.5 text-emerald-600" />

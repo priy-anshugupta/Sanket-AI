@@ -170,7 +170,7 @@ export default function LoginPage() {
                       placeholder="e.g. rajesh or priya"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:border-red-500 transition-colors text-sm"
+                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.15] text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500 transition-all text-sm shadow-inner"
                       required
                     />
                   </div>
@@ -185,7 +185,7 @@ export default function LoginPage() {
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:border-red-500 transition-colors text-sm"
+                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.15] text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500 transition-all text-sm shadow-inner"
                       required
                     />
                   </div>

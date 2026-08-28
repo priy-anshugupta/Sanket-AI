@@ -1,6 +1,6 @@
 """
 SANKET · AI — Database Engine & Session Factory
-SQLAlchemy async engine for SQLite (dev) / PostgreSQL (prod).
+SQLAlchemy async engine for SQLite (dev) / PostgreSQL (prod / Supabase).
 """
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
@@ -9,10 +9,16 @@ from sqlalchemy import event
 from backend.config.settings import settings
 
 
-# SQLite specific options
+# Connect args based on DB engine
 connect_args = {}
 if "sqlite" in settings.DATABASE_URL:
     connect_args = {"timeout": 60}
+elif "postgresql" in settings.DATABASE_URL or "asyncpg" in settings.DATABASE_URL:
+    connect_args = {
+        "statement_cache_size": 0,
+        "timeout": 45,
+        "command_timeout": 45,
+    }
 
 # Async engine
 engine = create_async_engine(
@@ -20,6 +26,8 @@ engine = create_async_engine(
     echo=False,
     future=True,
     connect_args=connect_args,
+    pool_pre_ping=True,
+    pool_recycle=300,
 )
 
 # Enable WAL mode and busy timeout for concurrent SQLite transactions

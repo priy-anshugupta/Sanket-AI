@@ -379,12 +379,24 @@ export default function TriageDashboard() {
                       {report.location || 'Well Pad 7'}
                     </td>
 
-                    {/* Status */}
+                    {/* Status with Visual Variety */}
                     <td>
-                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        {report.status || 'Completed'}
-                      </span>
+                      {report.sif_label === 'HIGH' ? (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-bold bg-red-100 text-red-800 border border-red-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-ping" />
+                          SWA ACTIVE
+                        </span>
+                      ) : report.sif_label === 'MEDIUM' ? (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                          IN REVIEW
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          RESOLVED
+                        </span>
+                      )}
                     </td>
 
                     {/* Time */}

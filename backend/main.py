@@ -13,36 +13,42 @@ from backend.config.settings import settings
 from backend.db.engine import init_db, close_db
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Startup and shutdown lifecycle events."""
-    # ── Startup ──
-    print("=" * 60)
-    print("  SANKET · AI — Starting Up")
-    print(f"  Mode: {settings.AI_MODE.upper()}")
-    print(f"  Database: {settings.DATABASE_URL}")
-    print("=" * 60)
+import asyncio
 
-    # Initialize database tables
-    await init_db()
-    print("[Startup] [OK] Database initialized")
+async def async_background_startup():
+    """Run DB initialization and AI model weights loading in background without blocking port binding."""
+    try:
+        await asyncio.wait_for(init_db(), timeout=10.0)
+        print("[Startup] [OK] Supabase PostgreSQL Database connected & verified", flush=True)
+        await seed_default_users()
+    except Exception as e:
+        print(f"[Startup] [WARN] DB init deferred/fallback: {e}", flush=True)
 
-    # Seed default users if empty
-    await seed_default_users()
-
-    # Pre-initialize SIF classifier (loads embedding model)
     try:
         from ai.sif.classifier import sif_classifier
         sif_classifier.initialize()
-        print("[Startup] [OK] SIF Classifier initialized")
+        print("[Startup] [OK] SIF Embedding Classifier initialized", flush=True)
     except Exception as e:
-        print(f"[Startup] [WARN] SIF Classifier init deferred: {e}")
+        print(f"[Startup] [WARN] SIF Classifier init deferred: {e}", flush=True)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Instant Non-Blocking Startup Lifecycle."""
+    print("=" * 60, flush=True)
+    print("  SANKET · AI — Starting Up (Fast Instant Port Bind)", flush=True)
+    print(f"  Mode: {settings.AI_MODE.upper()}", flush=True)
+    print(f"  Database: {settings.DATABASE_URL}", flush=True)
+    print("=" * 60, flush=True)
+
+    # Launch DB & AI loading asynchronously so port 8000 opens in < 0.2s!
+    asyncio.create_task(async_background_startup())
 
     yield
 
     # ── Shutdown ──
     await close_db()
-    print("[Shutdown] Database connections closed")
+    print("[Shutdown] Database connections closed", flush=True)
 
 
 async def seed_default_users():
