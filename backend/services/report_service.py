@@ -101,6 +101,7 @@ class ReportService:
         status: Optional[str] = None,
         location: Optional[str] = None,
         search: Optional[str] = None,
+        sort_by: Optional[str] = "latest",
     ) -> tuple[list[Report], int]:
         """
         Paginated, filterable report listing for Triage Queue.
@@ -135,8 +136,12 @@ class ReportService:
         total_result = await db.execute(count_query)
         total = total_result.scalar() or 0
 
-        # Sort by SIF score descending, then by creation date
-        query = query.order_by(desc(Report.sif_score), desc(Report.created_at))
+        # Sort: Default newest first (latest), or highest risk first (risk)
+        if sort_by == "risk":
+            query = query.order_by(desc(Report.sif_score), desc(Report.created_at))
+        else:
+            query = query.order_by(desc(Report.created_at), desc(Report.sif_score))
+
         query = query.offset((page - 1) * limit).limit(limit)
 
         result = await db.execute(query)

@@ -75,13 +75,36 @@ class SIFClassifier:
         max_similarity = float(similarities[max_idx])
         matched_anchor = anchor_library.anchors[max_idx]
 
+        # Check for explicitly safe / routine / non-hazardous observations
+        import re
+        safe_regex = re.compile(
+            r"\b(all\s+good|all\s+safe|all\s+ok|everything\s+ok|everything\s+fine|routine\s+check|routine\s+inspection|routine\s+cleaning|no\s+hazard|no\s+issue|no\s+leak|no\s+danger|normal\s+shift|sab\s+theek|bhal\s+aase|housekeeping\s+ok|normal\s+operation)\b",
+            re.IGNORECASE
+        )
+        
         # 3. Negation-aware keyword boost
         keyword_results = negation_parser.check_keywords(text, settings.CRITICAL_KEYWORDS)
         boosted_keywords = [kr["keyword"] for kr in keyword_results if kr["should_boost"]]
         keyword_boost = settings.KEYWORD_BOOST if boosted_keywords else 0.0
 
-        # 4. Raw score + clamp
-        raw_score = max_similarity + keyword_boost
+        if safe_regex.search(text) and not boosted_keywords:
+            return {
+                "sif_score": 0.12,
+                "sif_label": "LOW",
+                "is_sif_precursor": False,
+                "matched_anchor_id": "SAFE-001",
+                "matched_anchor_text": "Routine safe field condition without high energy precursors",
+                "matched_anchor_similarity": 0.12,
+                "keyword_boost_applied": False,
+                "boosted_keywords": [],
+            }
+
+        # 4. Raw score + clamp (calibrated for E5 similarity floor: anchor baseline is ~0.70)
+        # Scale range [0.70, 0.95] into [0.0, 1.0] for non-boosted embeddings
+        calibrated_similarity = (max_similarity - 0.70) / 0.25 if max_similarity > 0.70 else 0.10
+        calibrated_similarity = float(np.clip(calibrated_similarity, 0.0, 1.0))
+        
+        raw_score = (calibrated_similarity * 0.7) + (max_similarity * 0.3) + keyword_boost
         final_score = float(np.clip(raw_score, 0.0, 1.0))
 
         # 5. Label assignment

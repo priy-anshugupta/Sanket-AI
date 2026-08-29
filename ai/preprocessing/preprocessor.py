@@ -71,7 +71,7 @@ class TextPreprocessor:
             "preprocessed_text": text,
             "language": language,
             "word_count": word_count,
-            "is_valid": word_count >= 3,  # Minimum 3 words for a meaningful report
+            "is_valid": word_count >= 1,  # Valid even for short field observations (e.g. 'all good', 'fire', 'leak')
         }
 
     def _detect_language(self, text: str) -> str:
