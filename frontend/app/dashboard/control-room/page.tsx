@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000';
 
 interface LiveReport {
   id: string;
@@ -55,20 +55,20 @@ export default function ControlRoomPage() {
   // Fetch Live Reports from Backend API
   const fetchLiveReports = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/reports?limit=15`);
+      const res = await fetch(`${API_BASE}/api/reports?limit=15&sort_by=latest`);
       if (res.ok) {
         const data = await res.json();
         const reps: any[] = data.reports || [];
-        const highReps = reps.filter((r: any) => r.sif_score >= 0.7);
-        if (highReps.length > 0) {
-          setAlerts(highReps.map((r: any) => ({
+        const precursorReps = reps.filter((r: any) => (r.sif_score && r.sif_score >= 0.40) || r.sif_label === 'HIGH' || r.sif_label === 'MEDIUM');
+        if (precursorReps.length > 0) {
+          setAlerts(precursorReps.map((r: any) => ({
             id: r.id,
             sif_score: r.sif_score,
-            sif_label: r.sif_label || 'HIGH',
+            sif_label: r.sif_label || (r.sif_score >= 0.75 ? 'HIGH' : 'MEDIUM'),
             location: r.location || 'Well Pad 7',
             raw_text: r.raw_text,
             iogp_rule: r.iogp_rule || 'Life-Saving Rule Precursor',
-            created_at: r.created_at || 'Just now'
+            created_at: r.created_at ? new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'
           })));
         }
       }
@@ -93,7 +93,11 @@ export default function ControlRoomPage() {
   useEffect(() => {
     fetchLiveReports();
     const interval = setInterval(fetchLiveReports, 3000);
-    return () => clearInterval(interval);
+    window.addEventListener('sanket:new_report', fetchLiveReports);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('sanket:new_report', fetchLiveReports);
+    };
   }, []);
 
   const playAlarmSound = () => {
@@ -167,7 +171,7 @@ export default function ControlRoomPage() {
             </span>
           </div>
 
-          <button
+          <button type="button" suppressHydrationWarning
             onClick={triggerTestAlarm}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#D63B3B] hover:bg-[#B92525] text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
           >
@@ -183,7 +187,7 @@ export default function ControlRoomPage() {
             <AlertOctagon className="w-4 h-4" />
             <span>{lastAlarm}</span>
           </div>
-          <button onClick={() => setLastAlarm(null)} className="text-white/80 hover:text-white">✕</button>
+          <button type="button" suppressHydrationWarning onClick={() => setLastAlarm(null)} className="text-white/80 hover:text-white">✕</button>
         </div>
       )}
 
@@ -253,7 +257,11 @@ export default function ControlRoomPage() {
                 >
                   <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded bg-red-50 text-red-700 border border-red-200 font-bold text-[10px]">
+                      <span className={`px-2 py-0.5 rounded font-bold text-[10px] border ${
+                        alert.sif_score >= 0.75
+                          ? 'bg-[#FDF2F2] text-[#D63B3B] border-[#F5C6C6]'
+                          : 'bg-[#FEF7EC] text-[#D4820A] border-[#F8DFB6]'
+                      }`}>
                         SIF {Math.round(alert.sif_score * 100)}% RISK
                       </span>
                       <span className="font-bold text-[#1A2B2D] flex items-center gap-1">
@@ -275,8 +283,18 @@ export default function ControlRoomPage() {
                       {alert.iogp_rule}
                     </span>
 
-                    <button
-                      onClick={() => router.push('/dashboard/emergency')}
+                    <button type="button" suppressHydrationWarning
+                      onClick={() => {
+                        const loc = (alert.location || 'Well Pad 7').toLowerCase();
+                        let target = 'Well Pad 7';
+                        if (loc.includes('moran')) target = 'Moran OCS-3';
+                        else if (loc.includes('baghjan')) target = 'Baghjan Well #5';
+                        else if (loc.includes('digboi')) target = 'Digboi Rig #2';
+                        else if (loc.includes('geleki')) target = 'Geleki GGS-1';
+                        else if (loc.includes('lakwa')) target = 'Lakwa Well #12';
+                        else target = 'Well Pad 7';
+                        router.push(`/dashboard/emergency?location=${encodeURIComponent(target)}`);
+                      }}
                       className="px-2.5 py-1 bg-[#D63B3B] hover:bg-[#B92525] text-white rounded-md text-[11px] font-bold flex items-center gap-1 shadow-xs cursor-pointer transition-colors"
                     >
                       <AlertOctagon className="w-3 h-3" />
@@ -305,7 +323,7 @@ export default function ControlRoomPage() {
               {assetThreats.map((asset) => (
                 <div
                   key={asset.name}
-                  onClick={() => router.push('/dashboard/emergency')}
+                  onClick={() => router.push(`/dashboard/emergency?location=${encodeURIComponent(asset.name)}`)}
                   className="p-2.5 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2] hover:border-[#0A6B63] cursor-pointer transition-all space-y-1"
                 >
                   <div className="flex items-center justify-between text-xs">

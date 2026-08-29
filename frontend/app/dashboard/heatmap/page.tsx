@@ -20,7 +20,7 @@ import {
   MapPin
 } from 'lucide-react';
 
-const API = 'http://localhost:8000';
+const API = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000';
 
 interface HeatmapCell {
   site: string;
@@ -318,6 +318,13 @@ export default function DualHeatmapAndMapPage() {
   const [selectedAsset, setSelectedAsset] = useState<GeoAsset | null>(GEO_ASSETS[0]);
   const [swaToast, setSwaToast] = useState<string | null>(null);
 
+  const flyToAsset = (asset: GeoAsset) => {
+    setSelectedAsset(asset);
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.flyTo([asset.lat, asset.lng], 13, { duration: 1.2 });
+    }
+  };
+
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const LRef = useRef<any>(null);
@@ -332,10 +339,21 @@ export default function DualHeatmapAndMapPage() {
   const markersGroupRef = useRef<any>(null);
 
   useEffect(() => {
-    fetch(`${API}/api/analytics/heatmap`)
-      .then(r => r.json())
-      .then(d => { setData(d); setLoading(false); })
-      .catch(() => setLoading(false));
+    const fetchHeatmap = () => {
+      fetch(`${API}/api/analytics/heatmap`)
+        .then(r => r.json())
+        .then(d => { setData(d); setLoading(false); })
+        .catch(() => setLoading(false));
+    };
+
+    fetchHeatmap();
+    const interval = setInterval(fetchHeatmap, 4000);
+    window.addEventListener('sanket:new_report', fetchHeatmap);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('sanket:new_report', fetchHeatmap);
+    };
   }, []);
 
   useEffect(() => {
@@ -626,7 +644,7 @@ export default function DualHeatmapAndMapPage() {
 
         {/* View Switcher Tabs */}
         <div className="flex items-center gap-1 bg-[#F0F2ED] p-1 rounded-lg border border-[#C2CEC2]">
-          <button
+          <button type="button" suppressHydrationWarning
             onClick={() => setActiveTab('gis_map')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'gis_map'
@@ -637,7 +655,7 @@ export default function DualHeatmapAndMapPage() {
             <Compass className="w-3.5 h-3.5" />
             GIS Tactical Map
           </button>
-          <button
+          <button type="button" suppressHydrationWarning
             onClick={() => setActiveTab('matrix')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'matrix'
@@ -658,7 +676,7 @@ export default function DualHeatmapAndMapPage() {
             <Layers className="w-3.5 h-3.5 text-[#0A6B63]" /> Layers:
           </span>
 
-          <button
+          <button type="button" suppressHydrationWarning
             onClick={() => setShowGasPlume(!showGasPlume)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5 ${
               showGasPlume
@@ -671,7 +689,7 @@ export default function DualHeatmapAndMapPage() {
             <span className={`w-1.5 h-1.5 rounded-full ${showGasPlume ? 'bg-white animate-pulse' : 'bg-[#94A3A5]'}`} />
           </button>
 
-          <button
+          <button type="button" suppressHydrationWarning
             onClick={() => setShowNasaFirms(!showNasaFirms)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5 ${
               showNasaFirms
@@ -684,7 +702,7 @@ export default function DualHeatmapAndMapPage() {
             <span className={`w-1.5 h-1.5 rounded-full ${showNasaFirms ? 'bg-white animate-pulse' : 'bg-[#94A3A5]'}`} />
           </button>
 
-          <button
+          <button type="button" suppressHydrationWarning
             onClick={() => setShowFloodRisk(!showFloodRisk)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5 ${
               showFloodRisk
@@ -697,7 +715,7 @@ export default function DualHeatmapAndMapPage() {
             <span className={`w-1.5 h-1.5 rounded-full ${showFloodRisk ? 'bg-white animate-pulse' : 'bg-[#94A3A5]'}`} />
           </button>
 
-          <button
+          <button type="button" suppressHydrationWarning
             onClick={() => setShowPipelines(!showPipelines)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5 ${
               showPipelines
@@ -716,7 +734,7 @@ export default function DualHeatmapAndMapPage() {
           <span className="text-xs font-semibold text-[#5E7072]">SWA Buffer:</span>
           <div className="flex items-center gap-1 bg-[#F0F2ED] p-1 rounded-lg border border-[#C2CEC2]">
             {[250, 500, 1000].map(r => (
-              <button
+              <button type="button" suppressHydrationWarning
                 key={r}
                 onClick={() => setBufferRadiusMeters(r)}
                 className={`px-2.5 py-1 rounded-md text-xs font-mono transition-all cursor-pointer ${
@@ -739,7 +757,7 @@ export default function DualHeatmapAndMapPage() {
             <AlertOctagon className="w-4 h-4 fill-white shrink-0" />
             <span>{swaToast}</span>
           </div>
-          <button onClick={() => setSwaToast(null)} className="text-white font-bold cursor-pointer">✕</button>
+          <button type="button" suppressHydrationWarning onClick={() => setSwaToast(null)} className="text-white font-bold cursor-pointer">✕</button>
         </div>
       )}
 
@@ -760,7 +778,7 @@ export default function DualHeatmapAndMapPage() {
 
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1 bg-white p-0.5 rounded-md border border-[#C2CEC2]">
-                    <button
+                    <button type="button" suppressHydrationWarning
                       onClick={() => setMapType('satellite')}
                       className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all ${
                         mapType === 'satellite' ? 'bg-[#0A6B63] text-white font-semibold' : 'text-[#5E7072]'
@@ -768,7 +786,7 @@ export default function DualHeatmapAndMapPage() {
                     >
                       Satellite
                     </button>
-                    <button
+                    <button type="button" suppressHydrationWarning
                       onClick={() => setMapType('street')}
                       className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all ${
                         mapType === 'street' ? 'bg-[#0A6B63] text-white font-semibold' : 'text-[#5E7072]'
@@ -778,7 +796,7 @@ export default function DualHeatmapAndMapPage() {
                     </button>
                   </div>
 
-                  <button
+                  <button type="button" suppressHydrationWarning
                     onClick={() => setIsExpanded(!isExpanded)}
                     className="p-1 rounded-md bg-white border border-[#C2CEC2] text-[#5E7072] hover:text-[#1A2B2D]"
                     title={isExpanded ? "Collapse Map" : "Expand Fullscreen"}
@@ -844,7 +862,7 @@ export default function DualHeatmapAndMapPage() {
                       </div>
 
                       {selectedAsset.sif_label === 'HIGH' && (
-                        <button
+                        <button type="button" suppressHydrationWarning
                           onClick={() => handleTriggerSWA(selectedAsset)}
                           className="w-full py-2 px-3 rounded-lg bg-[#D63B3B] hover:bg-[#B92525] text-white font-semibold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
                         >
@@ -971,7 +989,7 @@ export default function DualHeatmapAndMapPage() {
 
                     {/* Section 6: SWA Lockout Button */}
                     {selectedAsset.sif_label === 'HIGH' && (
-                      <button
+                      <button type="button" suppressHydrationWarning
                         onClick={() => handleTriggerSWA(selectedAsset)}
                         className="w-full py-2 px-3 rounded-lg bg-[#D63B3B] hover:bg-[#B92525] text-white font-semibold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer"
                       >
@@ -985,7 +1003,7 @@ export default function DualHeatmapAndMapPage() {
                       <div className="text-[10px] font-medium text-[#5E7072]">Jump to Asset Pin:</div>
                       <div className="flex flex-wrap gap-1">
                         {GEO_ASSETS.map(a => (
-                          <button
+                          <button type="button" suppressHydrationWarning
                             key={a.id}
                             onClick={() => flyToAsset(a)}
                             className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all cursor-pointer ${

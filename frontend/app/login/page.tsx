@@ -1,13 +1,14 @@
 'use client';
 
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Shield, Lock, User, ArrowLeft, ArrowRight, Sparkles, HardHat } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
   const [activeTab, setActiveTab] = useState<'manager' | 'worker'>('manager');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -15,13 +16,31 @@ export default function LoginPage() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [error, setError] = useState('');
 
+  // Mobile Device Detection (Locks Manager Login on Phone)
+  useEffect(() => {
+    const checkMobile = () => {
+      const isMobile = window.innerWidth < 768 || /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      setIsMobileDevice(isMobile);
+      if (isMobile) {
+        setActiveTab('worker');
+      }
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   const handleManagerLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isMobileDevice) {
+      setError('🔒 Access Denied: Safety Manager Operations are restricted to HQ Desktop/Laptop workstations per OISD-189.');
+      return;
+    }
     setIsLoggingIn(true);
     setError('');
 
     try {
-      const res = await fetch('http://localhost:8000/api/auth/login', {
+      const res = await fetch(`http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:8000/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
@@ -49,6 +68,11 @@ export default function LoginPage() {
   };
 
   const quickLogin = async (u: string, p: string, targetPath?: string) => {
+    if (isMobileDevice && (u === 'rajesh' || u === 'priya')) {
+      setError('🔒 Access Denied: Manager accounts (Rajesh/Priya) cannot be used on mobile phones. Please use Field Worker Terminal (Bikash/Horen).');
+      setActiveTab('worker');
+      return;
+    }
     setUsername(u);
     setPassword(p);
     setIsLoggingIn(true);
@@ -58,7 +82,7 @@ export default function LoginPage() {
     const destination = targetPath || defaultPath;
 
     try {
-      const res = await fetch('http://localhost:8000/api/auth/login', {
+      const res = await fetch(`http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:8000/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: u, password: p }),
@@ -117,7 +141,7 @@ export default function LoginPage() {
 
         <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10">
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="font-mono text-emerald-400 text-xs font-semibold">AIR-GAP ACTIVE</span>
+          <span className="font-mono text-emerald-400 text-xs font-semibold">AI ENGINE ACTIVE</span>
         </div>
       </header>
 
@@ -148,6 +172,8 @@ export default function LoginPage() {
           {/* 2-Portal Tab Switcher */}
           <div className="grid grid-cols-2 gap-1.5 p-1 rounded-lg bg-[#0F1B1D] border border-[#264245] mb-6">
             <button
+              type="button"
+              suppressHydrationWarning
               onClick={() => { setActiveTab('manager'); setError(''); }}
               className={`py-2 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                 activeTab === 'manager'
@@ -159,6 +185,8 @@ export default function LoginPage() {
               Safety Manager (HQ)
             </button>
             <button
+              type="button"
+              suppressHydrationWarning
               onClick={() => { setActiveTab('worker'); setError(''); }}
               className={`py-2 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                 activeTab === 'worker'
@@ -173,53 +201,80 @@ export default function LoginPage() {
 
           {/* ── PORTAL 1: SAFETY MANAGER LOGIN ── */}
           {activeTab === 'manager' && (
-            <div className="space-y-5">
-              <form onSubmit={handleManagerLogin} className="space-y-3.5">
-                <div>
-                  <label className="block text-[11px] font-medium uppercase text-[#8BA4A7] mb-1">Username / Employee ID</label>
-                  <div className="relative">
-                    <User className="w-4 h-4 absolute left-3 top-3 text-[#5E7072]" />
-                    <input
-                      type="text"
-                      placeholder="e.g. rajesh.kumar"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      className="w-full pl-9 pr-3.5 py-2.5 rounded-lg bg-[#1D3234] border border-[#264245] text-[#F7F8F5] placeholder-[#5E7072] focus:outline-none focus:ring-1 focus:ring-[#0A6B63] focus:border-[#0A6B63] transition-all text-xs"
-                      required
-                    />
+            <div className="space-y-5" suppressHydrationWarning>
+              {isMobileDevice ? (
+                <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-center space-y-3">
+                  <div className="w-10 h-10 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
+                    <Shield className="w-5 h-5" />
                   </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+                      HQ Command Center Locked on Mobile
+                    </h3>
+                    <p className="text-[11px] text-[#8BA4A7] mt-1 leading-relaxed">
+                      Per Oil India Security Protocol (OISD-189), the <strong>Safety Manager HQ Portal</strong> is restricted to authorized Desktop/Control Room terminals.
+                    </p>
+                  </div>
+                  <button suppressHydrationWarning
+                    type="button"
+                    onClick={() => setActiveTab('worker')}
+                    className="w-full py-2.5 bg-[#0A6B63] hover:bg-[#085B54] text-white font-bold text-xs rounded-lg shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <HardHat className="w-4 h-4" />
+                    Use Field Worker Terminal on Mobile
+                  </button>
                 </div>
-
-                <div>
-                  <label className="block text-[11px] font-medium uppercase text-[#8BA4A7] mb-1">Password</label>
-                  <div className="relative">
-                    <Lock className="w-4 h-4 absolute left-3 top-3 text-[#5E7072]" />
-                    <input
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-9 pr-3.5 py-2.5 rounded-lg bg-[#1D3234] border border-[#264245] text-[#F7F8F5] placeholder-[#5E7072] focus:outline-none focus:ring-1 focus:ring-[#0A6B63] focus:border-[#0A6B63] transition-all text-xs"
-                      required
-                    />
+              ) : (
+                <form onSubmit={handleManagerLogin} className="space-y-3.5" suppressHydrationWarning>
+                  <div>
+                    <label className="block text-[11px] font-medium uppercase text-[#8BA4A7] mb-1">Username / Employee ID</label>
+                    <div className="relative">
+                      <User className="w-4 h-4 absolute left-3 top-3 text-[#5E7072]" />
+                      <input
+                        type="text"
+                        suppressHydrationWarning
+                        placeholder="e.g. rajesh.kumar"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        className="w-full pl-9 pr-3.5 py-2.5 rounded-lg bg-[#1D3234] border border-[#264245] text-[#F7F8F5] placeholder-[#5E7072] focus:outline-none focus:ring-1 focus:ring-[#0A6B63] focus:border-[#0A6B63] transition-all text-xs"
+                        required
+                      />
+                    </div>
                   </div>
-                </div>
 
-                {error && (
-                  <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-mono">
-                    {error}
+                  <div>
+                    <label className="block text-[11px] font-medium uppercase text-[#8BA4A7] mb-1">Password</label>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 absolute left-3 top-3 text-[#5E7072]" />
+                      <input
+                        type="password"
+                        suppressHydrationWarning
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full pl-9 pr-3.5 py-2.5 rounded-lg bg-[#1D3234] border border-[#264245] text-[#F7F8F5] placeholder-[#5E7072] focus:outline-none focus:ring-1 focus:ring-[#0A6B63] focus:border-[#0A6B63] transition-all text-xs"
+                        required
+                      />
+                    </div>
                   </div>
-                )}
 
-                <button
-                  type="submit"
-                  disabled={isLoggingIn}
-                  className="w-full py-2.5 bg-[#0A6B63] hover:bg-[#085B54] text-white font-semibold text-xs tracking-wider uppercase rounded-lg transition-all shadow-xs disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  {isLoggingIn ? 'Authenticating...' : 'Sign In to Command Center'}
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </form>
+                  {error && (
+                    <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-mono">
+                      {error}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={isLoggingIn}
+                    suppressHydrationWarning
+                    className="w-full py-2.5 bg-[#0A6B63] hover:bg-[#085B54] text-white font-semibold text-xs tracking-wider uppercase rounded-lg transition-all shadow-xs disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    {isLoggingIn ? 'Authenticating...' : 'Sign In to Command Center'}
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </form>
+              )}
 
               {/* Demo 1-Click Quick Access Pills for Evaluators */}
               <div className="pt-4 border-t border-[#264245]">
@@ -230,7 +285,7 @@ export default function LoginPage() {
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  <button
+                  <button type="button" suppressHydrationWarning
                     onClick={() => quickLogin('rajesh', 'rajesh123', '/dashboard')}
                     className="p-2.5 rounded-lg border border-[#264245] bg-[#1D3234] hover:bg-[#233D3F] hover:border-[#0A6B63] text-left transition-all cursor-pointer"
                   >
@@ -238,7 +293,7 @@ export default function LoginPage() {
                     <div className="text-[10px] text-[#8BA4A7] font-mono mt-0.5">HSE GM (HQ Duliajan)</div>
                   </button>
 
-                  <button
+                  <button type="button" suppressHydrationWarning
                     onClick={() => quickLogin('priya', 'priya123', '/dashboard')}
                     className="p-2.5 rounded-lg border border-[#264245] bg-[#1D3234] hover:bg-[#233D3F] hover:border-[#0A6B63] text-left transition-all cursor-pointer"
                   >
@@ -259,7 +314,7 @@ export default function LoginPage() {
 
               <div>
                 <label className="block text-[11px] font-medium uppercase text-[#8BA4A7] mb-1">Enter 4-Digit Rig Badge ID</label>
-                <input
+                <input suppressHydrationWarning
                   type="text"
                   maxLength={4}
                   value={badgeId}
@@ -268,7 +323,7 @@ export default function LoginPage() {
                 />
               </div>
 
-              <button
+              <button type="button" suppressHydrationWarning
                 onClick={() => quickLogin('bikash', 'bikash123', '/worker')}
                 disabled={isLoggingIn}
                 className="w-full py-2.5 bg-[#0A6B63] hover:bg-[#085B54] text-white font-semibold text-xs tracking-wider uppercase rounded-lg transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
@@ -283,7 +338,7 @@ export default function LoginPage() {
                   Select Field Crew Profile:
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  <button
+                  <button type="button" suppressHydrationWarning
                     onClick={() => quickLogin('bikash', 'bikash123', '/worker')}
                     className="p-2.5 rounded-lg border border-[#264245] bg-[#1D3234] hover:bg-[#233D3F] hover:border-[#1B8A6C] text-left transition-all cursor-pointer"
                   >
@@ -291,7 +346,7 @@ export default function LoginPage() {
                     <div className="text-[10px] text-[#8BA4A7] font-mono mt-0.5">Rig Floor Operator (Well Pad 7)</div>
                   </button>
 
-                  <button
+                  <button type="button" suppressHydrationWarning
                     onClick={() => quickLogin('horen', 'horen123', '/worker')}
                     className="p-2.5 rounded-lg border border-[#264245] bg-[#1D3234] hover:bg-[#233D3F] hover:border-[#1B8A6C] text-left transition-all cursor-pointer"
                   >

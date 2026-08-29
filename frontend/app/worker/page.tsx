@@ -18,10 +18,11 @@ import {
   Shield,
   FileCheck,
   Radio,
-  Sparkles
+  Sparkles,
+  UploadCloud
 } from 'lucide-react';
 
-const API = 'http://localhost:8000';
+const API = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000';
 
 interface WorkerReport {
   id: string;
@@ -42,25 +43,46 @@ export default function FieldWorkerTerminal() {
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [touchFeedback, setTouchFeedback] = useState<string | null>(null);
 
-  const [submittedReports, setSubmittedReports] = useState<WorkerReport[]>([
-    {
-      id: 'REP-W7-01',
-      text: 'Routine grease top-up completed on mud pump #2 bearings. Gauges normal.',
-      time: '08:45 AM',
-      sif_label: 'LOW',
-      sif_score: 0.15,
-      status: 'VERIFIED SAFE'
-    },
-    {
-      id: 'REP-W7-02',
-      text: 'BOP secondary valve seal weeping hydraulic fluid under 1800 PSI vibration.',
-      time: '11:15 AM',
-      sif_label: 'HIGH',
-      sif_score: 0.94,
-      status: 'SWA ESCALATED'
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [submittedReports, setSubmittedReports] = useState<WorkerReport[]>([]);
+
+  // Fetch real submitted worker reports from database
+  const fetchWorkerHistory = async () => {
+    try {
+      const res = await fetch(`${API}/api/reports?limit=12&sort_by=latest`);
+      if (res.ok) {
+        const d = await res.json();
+        const reps: any[] = d.reports || [];
+        if (reps.length > 0) {
+          const formatted: WorkerReport[] = reps.map((r: any) => ({
+            id: `REP-${r.id.substring(0, 6).toUpperCase()}`,
+            text: r.raw_text,
+            time: r.created_at ? new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Today',
+            sif_label: r.sif_label || (r.sif_score >= 0.75 ? 'HIGH' : 'MEDIUM'),
+            sif_score: r.sif_score || 0.50,
+            status: r.status === 'RESOLVED' ? 'RESOLVED ✓' : (r.sif_score >= 0.75 ? 'SWA ESCALATED' : 'CONTROL ROOM SYNCED'),
+          }));
+          setSubmittedReports(formatted);
+          localStorage.setItem('sanket_worker_history', JSON.stringify(formatted));
+        }
+      }
+    } catch {
+      // Load cached offline reports from localStorage
+      try {
+        const cached = localStorage.getItem('sanket_worker_history');
+        if (cached) setSubmittedReports(JSON.parse(cached));
+      } catch {}
     }
-  ]);
+  };
+
+  useEffect(() => {
+    fetchWorkerHistory();
+    const interval = setInterval(fetchWorkerHistory, 4000);
+    return () => clearInterval(interval);
+  }, []);
 
   const [lastResult, setLastResult] = useState<{
     sif_score: number;
@@ -125,72 +147,146 @@ export default function FieldWorkerTerminal() {
     setSelectedTag(tag.id);
     setInputText(tag.presetText);
     setLastResult(null);
+    setTouchFeedback(`Selected: ${tag.label}`);
+    setTimeout(() => setTouchFeedback(null), 1500);
   };
 
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioChunksRef.current = [];
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
+  // ──── ROBUST VOICE RECORDING: MediaRecorder Start/Stop + OpenAI Whisper ────
 
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunksRef.current.push(e.data);
-      };
+  const streamRef = useRef<MediaStream | null>(null);
 
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        stream.getTracks().forEach(t => t.stop());
-        await transcribeAudio(audioBlob);
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-      setRecordingSeconds(0);
-      timerRef.current = setInterval(() => setRecordingSeconds(p => p + 1), 1000);
-    } catch {
-      setIsRecording(true);
-      setRecordingSeconds(0);
-      timerRef.current = setInterval(() => setRecordingSeconds(p => p + 1), 1000);
-      setTimeout(() => {
-        stopRecording();
-        setInputText('BOP secondary valve seal weeping hydraulic fluid under 1800 PSI vibration at Well Pad 7.');
-      }, 2500);
-    }
-  };
-
-  const stopRecording = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    setIsRecording(false);
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop();
-    }
-  };
-
-  const transcribeAudio = async (blob: Blob) => {
+  // Upload a blob to backend Whisper for transcription
+  const uploadAndTranscribe = async (audioBlob: Blob) => {
     setIsTranscribing(true);
+    setTouchFeedback('🧠 OpenAI Whisper AI transcribing...');
     try {
       const fd = new FormData();
-      fd.append('audio', blob, 'worker_voice.wav');
-      const res = await fetch(`${API}/api/voice/transcribe`, { method: 'POST', body: fd });
+      fd.append('audio', audioBlob, 'recording.webm');
+      const res = await fetch(`${API}/api/voice/transcribe`, {
+        method: 'POST',
+        body: fd,
+      });
       if (res.ok) {
         const d = await res.json();
-        setInputText(d.text || '');
+        if (d.text && d.text.trim().length > 0) {
+          setInputText((prev) => (prev ? `${prev} ${d.text.trim()}` : d.text.trim()));
+          setTouchFeedback(`✅ Transcribed: "${d.text.substring(0, 40)}..."`);
+        } else {
+          setTouchFeedback('⚠️ No speech detected. Try speaking louder or closer.');
+        }
       } else {
-        setInputText('BOP secondary valve seal weeping hydraulic fluid under 1800 PSI vibration at Well Pad 7.');
+        setTouchFeedback('⚠️ Whisper error. Try again or type manually.');
       }
     } catch {
-      setInputText('BOP secondary valve seal weeping hydraulic fluid under 1800 PSI vibration at Well Pad 7.');
+      setTouchFeedback('⚠️ Network error. Check Wi-Fi connection.');
     } finally {
       setIsTranscribing(false);
+      setTimeout(() => setTouchFeedback(null), 4000);
     }
   };
 
-  const handleSubmitObservation = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  // START recording using MediaRecorder (works on all phones)
+  const startRecording = async () => {
+    try {
+      // Request mic permission
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 16000 }
+      });
+      streamRef.current = stream;
+      audioChunksRef.current = [];
+
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm')
+          ? 'audio/webm'
+          : MediaRecorder.isTypeSupported('audio/mp4')
+            ? 'audio/mp4'
+            : '';
+
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = async () => {
+        // Combine all chunks into one blob
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType || 'audio/webm' });
+        audioChunksRef.current = [];
+        if (audioBlob.size > 1000) {
+          await uploadAndTranscribe(audioBlob);
+        } else {
+          setTouchFeedback('⚠️ Recording too short. Hold longer while speaking.');
+          setTimeout(() => setTouchFeedback(null), 3000);
+        }
+      };
+
+      recorder.start(250); // Collect data every 250ms for reliability
+      setIsRecording(true);
+      setRecordingSeconds(0);
+      setTouchFeedback('🔴 Recording... Speak now! Tap again to stop.');
+
+      // Timer to show recording duration
+      timerRef.current = setInterval(() => {
+        setRecordingSeconds((s) => s + 1);
+      }, 1000);
+    } catch (err: any) {
+      console.error('Mic access error:', err);
+      // Fallback: open native file picker for audio
+      setTouchFeedback('🎙️ Opening audio recorder...');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+        fileInputRef.current.click();
+      }
+    }
+  };
+
+  // STOP recording
+  const stopRecording = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    setIsRecording(false);
+    setRecordingSeconds(0);
+
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+
+    // Release mic
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+  };
+
+  // Toggle: tap to start, tap again to stop (back-to-back recording)
+  const toggleRecording = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  };
+
+  // Native audio file upload fallback (for phones that block MediaRecorder)
+  const handleNativeAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadAndTranscribe(file);
+  };
+
+
+  const handleSubmitObservation = async (e?: any) => {
+    if (e && e.preventDefault) e.preventDefault();
     if (!inputText.trim()) return;
     setIsSubmitting(true);
     setLastResult(null);
+    setTouchFeedback('🚀 Transmitting to Control Room...');
 
     try {
       const res = await fetch(`${API}/api/reports/ingest`, {
@@ -220,46 +316,66 @@ export default function FieldWorkerTerminal() {
               sif_score: rep.sif_score || 0.94,
               sif_label: rep.sif_label || 'HIGH',
               iogp_rule: rep.iogp_rule || 'Energy Isolation',
-              feedback: feedbackText
+              feedback: feedbackText,
             });
 
-            setSubmittedReports(prev => [
-              {
-                id: `REP-${data.job_id.substring(0, 6)}`,
-                text: inputText,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                sif_label: rep.sif_label || 'HIGH',
-                sif_score: rep.sif_score || 0.94,
-                status: isHigh ? 'SWA ESCALATED' : 'LOGGED'
-              },
-              ...prev
-            ]);
-            setInputText('');
+            const newReport: WorkerReport = {
+              id: `REP-${data.job_id?.substring(0, 6).toUpperCase() || 'NEW'}`,
+              text: inputText,
+              time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              sif_label: rep.sif_label || 'HIGH',
+              sif_score: rep.sif_score || 0.94,
+              status: isHigh ? 'SWA ESCALATED' : 'LOGGED SAFE',
+            };
+            setSubmittedReports(prev => [newReport, ...prev.slice(0, 9)]);
+            setTouchFeedback('🎉 Report Saved Successfully!');
+            setTimeout(() => setTouchFeedback(null), 3000);
           } catch {
-            setLastResult({
-              sif_score: 0.94,
-              sif_label: 'HIGH',
-              iogp_rule: 'Energy Isolation',
-              feedback: '🚨 CRITICAL ALERT: Escalated to Control Room.'
-            });
+            setTouchFeedback('🎉 Report Sent!');
+            setTimeout(() => setTouchFeedback(null), 3000);
           }
           setIsSubmitting(false);
-        }, 1000);
+        }, 600);
+        return;
       }
     } catch {
-      alert('Network error connecting to SANKET server');
-      setIsSubmitting(false);
+      setTouchFeedback('❌ Error connecting to server');
+      setTimeout(() => setTouchFeedback(null), 3000);
     }
+    setIsSubmitting(false);
   };
 
-  const handleEmergencySWA = () => {
-    setSwaToast('🛑 STOP WORK ORDER SENT: Rig Siren & Supervisor Alerted!');
-    setTimeout(() => setSwaToast(null), 6000);
+  const handleEmergencySWA = async () => {
+    setSwaToast('🚨 STOP WORK AUTHORITY TRIGGERED — ALL DRILLING ON WELL PAD 7 FROZEN');
+    setTouchFeedback('🚨 EMERGENCY SWA TRIGGERED');
+    try {
+      await fetch(`${API}/api/emergency/swa/trigger`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'Well Pad 7 (Upper Assam)',
+          reason: 'Worker SWA Manual Panic Reflex Button Pressed',
+          declared_by: currentUser?.full_name || 'Bikash Das',
+        }),
+      });
+    } catch {}
+    setTimeout(() => setTouchFeedback(null), 3000);
   };
 
   return (
-    <div className="min-h-screen bg-[#0F1B1D] text-[#F7F8F5] p-3 sm:p-6 font-sans select-none">
-      <div className="w-full max-w-5xl mx-auto space-y-4 pb-8">
+    <div className="min-h-screen bg-[#0F1B1D] text-[#F7F8F5] p-3 sm:p-6 font-sans">
+      
+      {/* Hidden Native Mobile Voice Recorder Input */}
+      <input suppressHydrationWarning 
+        ref={fileInputRef}
+        type="file"
+        accept="audio/*"
+        capture="microphone"
+        onChange={handleNativeAudioUpload}
+        className="hidden"
+      />
+
+      <div className="w-full max-w-5xl mx-auto space-y-4 pb-12">
         
         {/* ── Top Header ── */}
         <div className="bg-[#162829] p-3.5 sm:p-4 rounded-xl border border-[#264245] shadow-md flex items-center justify-between">
@@ -291,10 +407,10 @@ export default function FieldWorkerTerminal() {
               ONLINE
             </span>
 
-            <button
+            <button suppressHydrationWarning
+              type="button"
               onClick={handleLogout}
-              title="Logout"
-              className="p-2 rounded-lg bg-[#1D3234] hover:bg-[#264245] text-[#8BA4A7] hover:text-white transition-colors cursor-pointer border border-[#264245] flex items-center gap-1 text-xs"
+              className="p-2 rounded-lg bg-[#1D3234] active:bg-[#264245] text-[#8BA4A7] hover:text-white transition-colors cursor-pointer border border-[#264245] flex items-center gap-1 text-xs"
             >
               <LogOut className="w-4 h-4" />
               <span className="hidden sm:inline">Sign Out</span>
@@ -302,13 +418,20 @@ export default function FieldWorkerTerminal() {
           </div>
         </div>
 
+        {/* Touch Feedback Banner */}
+        {touchFeedback && (
+          <div className="p-3 rounded-lg bg-[#0A6B63] text-white text-xs font-bold text-center shadow-lg border border-[#1B8A6C] animate-in fade-in">
+            {touchFeedback}
+          </div>
+        )}
+
         {swaToast && (
           <div className="p-3.5 rounded-xl bg-[#D63B3B] text-white text-xs font-semibold flex items-center justify-between shadow-xl border border-[#B92525]">
             <div className="flex items-center gap-2.5">
               <AlertOctagon className="w-5 h-5 fill-white shrink-0 animate-bounce" />
               <span>{swaToast}</span>
             </div>
-            <button onClick={() => setSwaToast(null)} className="text-white font-bold px-2 cursor-pointer">✕</button>
+            <button suppressHydrationWarning type="button" onClick={() => setSwaToast(null)} className="text-white font-bold px-2 cursor-pointer">✕</button>
           </div>
         )}
 
@@ -348,55 +471,71 @@ export default function FieldWorkerTerminal() {
                   Report Safety Hazard
                 </span>
                 <span className="text-[10px] text-[#1B8A6C] font-semibold bg-[#1D3234] px-2 py-0.5 rounded border border-[#264245]">
-                  VOICE ENABLED
+                  WHISPER AI VOICE
                 </span>
               </div>
 
-              {/* Big Push-To-Talk Button */}
+              {/* Big Push-To-Talk Toggle: Tap to Start, Tap Again to Stop */}
               <div className="flex flex-col items-center justify-center py-2">
-                <button
+                {/* Hidden file input fallback for phones without MediaRecorder */}
+                <input suppressHydrationWarning
+                  ref={fileInputRef}
+                  type="file"
+                  accept="audio/*"
+                  capture="environment"
+                  onChange={handleNativeAudioUpload}
+                  className="hidden"
+                />
+                <button suppressHydrationWarning
                   type="button"
-                  onClick={isRecording ? stopRecording : startRecording}
+                  onClick={toggleRecording}
                   disabled={isTranscribing}
-                  className={`w-28 h-28 rounded-full flex flex-col items-center justify-center gap-1.5 transition-all shadow-xl cursor-pointer border-3 ${
-                    isRecording
-                      ? 'bg-[#D63B3B] text-white border-[#F5C6C6] scale-105 animate-pulse'
-                      : 'bg-[#0A6B63] hover:bg-[#085B54] text-white border-[#1B8A6C] hover:scale-102'
+                  className={`w-32 h-32 rounded-full flex flex-col items-center justify-center gap-1.5 transition-all shadow-2xl cursor-pointer border-4 active:scale-95 ${
+                    isTranscribing
+                      ? 'bg-[#1D3234] border-[#264245] text-[#8BA4A7]'
+                      : isRecording
+                        ? 'bg-[#D63B3B] border-[#F5C6C6] text-white animate-pulse'
+                        : 'bg-[#0A6B63] active:bg-[#085B54] text-white border-[#1B8A6C]'
                   }`}
                 >
-                  {isRecording ? (
+                  {isTranscribing ? (
                     <>
-                      <Square className="w-8 h-8 fill-white" />
-                      <span className="text-[11px] font-bold">{recordingSeconds}s STOP</span>
+                      <RefreshCw className="w-9 h-9 animate-spin text-white" />
+                      <span className="text-[10px] font-bold">TRANSCRIBING...</span>
+                    </>
+                  ) : isRecording ? (
+                    <>
+                      <Square className="w-9 h-9" />
+                      <span className="text-xs font-bold uppercase tracking-wider">{recordingSeconds}s ● STOP</span>
                     </>
                   ) : (
                     <>
-                      <Mic className="w-8 h-8" />
-                      <span className="text-[11px] font-bold uppercase tracking-wider">TAP TO SPEAK</span>
+                      <Mic className="w-9 h-9" />
+                      <span className="text-xs font-bold uppercase tracking-wider">TAP TO RECORD</span>
                     </>
                   )}
                 </button>
                 <p className="text-xs text-[#8BA4A7] mt-3 font-medium text-center">
-                  {isRecording ? '🔴 Listening... Speak clearly' : isTranscribing ? '⚡ Converting voice to text...' : 'Speak in Hindi, Assamese or English'}
+                  {isRecording ? '🔴 Recording live... Speak in Hindi / English / Assamese. Tap again to stop & transcribe.' : 'Tap to record → Tap to stop → Record again. Each clip appends text.'}
                 </p>
               </div>
 
               {/* 4 Quick-Select Hazard Pre-fills */}
               <div className="space-y-1.5">
                 <div className="text-[11px] font-semibold uppercase text-[#8BA4A7]">Quick Tap Hazard:</div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2.5">
                   {quickTags.map((tag) => (
-                    <button
+                    <button suppressHydrationWarning
                       key={tag.id}
                       type="button"
                       onClick={() => handleSelectTag(tag)}
-                      className={`p-2.5 rounded-lg border text-left transition-all text-xs font-medium flex items-center gap-2 cursor-pointer ${
+                      className={`p-3 rounded-lg border text-left transition-all text-xs font-semibold flex items-center gap-2 cursor-pointer active:scale-95 ${
                         selectedTag === tag.id
-                          ? 'bg-[#0A6B63]/30 border-[#1B8A6C] text-white ring-1 ring-[#1B8A6C]'
-                          : 'bg-[#1D3234] border-[#264245] text-[#8BA4A7] hover:text-white hover:bg-[#264245]'
+                          ? 'bg-[#0A6B63] border-[#1B8A6C] text-white shadow-md'
+                          : 'bg-[#1D3234] border-[#264245] text-[#8BA4A7] hover:text-white active:bg-[#264245]'
                       }`}
                     >
-                      <span className="text-base">{tag.icon}</span>
+                      <span className="text-lg">{tag.icon}</span>
                       <span className="truncate">{tag.label}</span>
                     </button>
                   ))}
@@ -405,21 +544,21 @@ export default function FieldWorkerTerminal() {
 
               {/* Observation Text Input Area */}
               <div>
-                <textarea
-                  rows={2}
+                <textarea suppressHydrationWarning
+                  rows={3}
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
-                  placeholder="Or type hazard notes here..."
+                  placeholder="Type or speak using your keyboard mic..."
                   className="w-full p-3 rounded-lg bg-[#1D3234] border border-[#264245] text-xs text-white placeholder-[#5E7072] focus:outline-none focus:border-[#0A6B63] leading-relaxed"
                 />
               </div>
 
               {/* Submit Observation Button */}
-              <button
+              <button suppressHydrationWarning
                 type="button"
                 onClick={handleSubmitObservation}
                 disabled={isSubmitting || !inputText.trim()}
-                className="w-full py-3 rounded-lg bg-[#0A6B63] hover:bg-[#085B54] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-xs disabled:opacity-50 cursor-pointer transition-all"
+                className="w-full py-3.5 rounded-lg bg-[#0A6B63] active:bg-[#085B54] text-white font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 cursor-pointer transition-all active:scale-98"
               >
                 {isSubmitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 {isSubmitting ? 'Sending to Control Room...' : 'Send Hazard Report'}
@@ -428,7 +567,7 @@ export default function FieldWorkerTerminal() {
 
             {/* Real-Time SIF Result Box */}
             {lastResult && (
-              <div className={`p-3.5 rounded-xl border space-y-1.5 shadow-md ${
+              <div className={`p-4 rounded-xl border space-y-1.5 shadow-md ${
                 lastResult.sif_label === 'HIGH'
                   ? 'bg-[#FDF2F2]/10 border-[#F5C6C6]/40 text-[#F5C6C6]'
                   : 'bg-[#EDFAF4]/10 border-[#BFEADB]/40 text-[#BFEADB]'
@@ -449,10 +588,10 @@ export default function FieldWorkerTerminal() {
             )}
 
             {/* Emergency Stop Work Authority (SWA) Red Bar */}
-            <button
+            <button suppressHydrationWarning
               type="button"
               onClick={handleEmergencySWA}
-              className="w-full py-3 rounded-xl bg-[#D63B3B] hover:bg-[#B92525] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl cursor-pointer transition-all border border-[#F5C6C6]/30"
+              className="w-full py-3.5 rounded-xl bg-[#D63B3B] active:bg-[#B92525] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl cursor-pointer transition-all border border-[#F5C6C6]/30 active:scale-98"
             >
               <AlertOctagon className="w-4 h-4 fill-white" />
               Emergency Stop Work (SWA Lockdown)
@@ -499,52 +638,43 @@ export default function FieldWorkerTerminal() {
               </div>
             </div>
 
-            {/* Shift Rules */}
-            <div className="bg-[#162829] p-4 rounded-xl border border-[#264245] shadow-xs space-y-2.5">
-              <div className="flex items-center justify-between border-b border-[#264245] pb-2">
-                <span className="text-xs font-bold text-white flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-[#2563EB]" />
-                  Today's Safety Rules
-                </span>
-                <span className="text-[10px] text-[#8BA4A7]">MANDATORY</span>
-              </div>
-
-              <div className="space-y-2 text-xs">
-                <div className="p-2 rounded-lg bg-[#1D3234] border border-[#264245] flex items-center gap-2">
-                  <span className="w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 font-bold text-[10px] flex items-center justify-center shrink-0">1</span>
-                  <span className="font-semibold text-white">Energy Isolation (LOTO)</span>
-                </div>
-                <div className="p-2 rounded-lg bg-[#1D3234] border border-[#264245] flex items-center gap-2">
-                  <span className="w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 font-bold text-[10px] flex items-center justify-center shrink-0">2</span>
-                  <span className="font-semibold text-white">Do Not Bypass Safety Controls</span>
-                </div>
-              </div>
-            </div>
-
-            {/* My Reports Today */}
+            {/* Shift Report History */}
             <div className="bg-[#162829] p-4 rounded-xl border border-[#264245] shadow-xs space-y-3">
               <div className="flex items-center justify-between border-b border-[#264245] pb-2">
                 <span className="text-xs font-bold text-white flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-[#8BA4A7]" />
-                  My Reports (Today)
+                  <Clock className="w-4 h-4 text-[#0A6B63]" />
+                  Your Shift History (Today)
                 </span>
-                <span className="text-[10px] text-[#1B8A6C]">{submittedReports.length} Sent</span>
+                <span className="text-[10px] font-mono text-[#8BA4A7]">
+                  {submittedReports.length} REPORTS
+                </span>
               </div>
 
-              <div className="space-y-2">
-                {submittedReports.map((rep) => (
-                  <div key={rep.id} className="p-2.5 rounded-lg bg-[#1D3234] border border-[#264245] space-y-1">
+              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                {submittedReports.map((report) => (
+                  <div 
+                    key={report.id}
+                    className="p-3 rounded-lg bg-[#1D3234] border border-[#264245] space-y-1.5 text-xs"
+                  >
                     <div className="flex items-center justify-between">
-                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${
-                        rep.sif_label === 'HIGH' ? 'bg-[#D63B3B]/20 text-[#F5C6C6] border border-[#D63B3B]/40' : 'bg-[#1B8A6C]/20 text-[#BFEADB] border border-[#1B8A6C]/40'
-                      }`}>
-                        {rep.sif_label} ({Math.round(rep.sif_score * 100)}%)
-                      </span>
-                      <span className="text-[10px] text-[#8BA4A7]">{rep.time}</span>
+                      <span className="font-mono text-[10px] font-bold text-[#8BA4A7]">{report.id}</span>
+                      <span className="text-[10px] text-[#5E7072]">{report.time}</span>
                     </div>
-                    <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
-                      "{rep.text}"
+
+                    <p className="text-slate-200 line-clamp-2 text-[11px] leading-relaxed">
+                      {report.text}
                     </p>
+
+                    <div className="flex items-center justify-between pt-1 border-t border-[#264245]/60">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        report.sif_label === 'HIGH'
+                          ? 'bg-[#FDF2F2]/10 text-[#D63B3B] border border-[#D63B3B]/30'
+                          : 'bg-[#EDFAF4]/10 text-[#1B8A6C] border border-[#1B8A6C]/30'
+                      }`}>
+                        {report.sif_label} RISK ({Math.round(report.sif_score * 100)}%)
+                      </span>
+                      <span className="text-[10px] text-[#8BA4A7]">{report.status}</span>
+                    </div>
                   </div>
                 ))}
               </div>

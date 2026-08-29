@@ -194,7 +194,21 @@ async def submit_feedback(
             officer_id=request.officer_id,
         )
         await db.commit()
-        return {"feedback_id": feedback.id, "status": "recorded"}
+        return {"feedback_id": feedback.id, "status": "RESOLVED", "message": "Incident marked as reviewed and resolved."}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/{report_id}/resolve")
+async def resolve_report(
+    report_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Mark report status as RESOLVED."""
+    try:
+        report = await report_service.resolve_report(db, report_id, status="RESOLVED")
+        await db.commit()
+        return {"id": report.id, "status": "RESOLVED", "message": "Incident marked as resolved."}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

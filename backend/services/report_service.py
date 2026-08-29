@@ -236,12 +236,30 @@ class ReportService:
         )
         db.add(feedback)
 
-        # Update displayed label (preserving original in audit trail)
+        # Update displayed label and status
         report.sif_label = corrected_label
+        report.status = "RESOLVED"
         report.updated_at = datetime.utcnow()
 
         await db.flush()
         return feedback
+
+    async def resolve_report(
+        self,
+        db: AsyncSession,
+        report_id: str,
+        status: str = "RESOLVED",
+        resolution_notes: str = None,
+    ) -> Report:
+        """Mark report status as RESOLVED or CLOSED."""
+        report = await self.get_report(db, report_id)
+        if not report:
+            raise ValueError(f"Report {report_id} not found")
+
+        report.status = status
+        report.updated_at = datetime.utcnow()
+        await db.flush()
+        return report
 
     async def get_analytics_summary(self, db: AsyncSession) -> dict:
         """Get analytics summary for dashboard."""

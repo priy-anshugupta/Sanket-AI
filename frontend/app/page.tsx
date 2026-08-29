@@ -329,7 +329,7 @@ export default function HomePage() {
             {/* Left Stage Selector List */}
             <div className="lg:col-span-5 space-y-2">
               {PIPELINE_STAGES.map((st, idx) => (
-                <button
+                <button type="button" suppressHydrationWarning
                   key={st.step}
                   onClick={() => setActivePipelineStage(idx)}
                   className={`w-full p-3.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between gap-3 ${

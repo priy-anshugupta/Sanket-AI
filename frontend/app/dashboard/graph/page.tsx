@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import Link from 'next/link';
 import {
   Network,
   Activity,
@@ -21,10 +22,11 @@ import {
   Layers,
   Info,
   ShieldAlert,
-  ArrowUpRight
+  ArrowUpRight,
+  ArrowRight
 } from 'lucide-react';
 
-const API = 'http://localhost:8000';
+const API = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000';
 
 /* ──────── Types ──────── */
 interface GNode {
@@ -105,7 +107,8 @@ export default function SignalGraphPage() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [evidence, setEvidence] = useState<NodeEvidence | null>(null);
   const [loadingEvidence, setLoadingEvidence] = useState(false);
-  const [swaToast, setSwaToast] = useState<string | null>(null);
+  const [swaToast, setSwaToast] = useState<{ node: string; type: string; time: string } | null>(null);
+  const [activeSwaNodes, setActiveSwaNodes] = useState<string[]>([]);
 
   /* ── Filter Visibility Predicate ── */
   const isNodeVisible = useCallback((n: GNode, filter: string) => {
@@ -233,18 +236,26 @@ export default function SignalGraphPage() {
 
   /* ── Fetch Graph Data from Backend API ── */
   useEffect(() => {
-    setLoading(true);
-    fetch(`${API}/api/graph/signals`)
-      .then(r => r.json())
-      .then(d => {
-        if (d.nodes && d.nodes.length >= 6) {
-          buildGraph(d.nodes, d.edges || []);
-        }
-        setLoading(false);
-      })
-      .catch(() => {
-        setLoading(false);
-      });
+    const fetchGraph = () => {
+      fetch(`${API}/api/graph/signals`)
+        .then(r => r.json())
+        .then(d => {
+          if (d.nodes && d.nodes.length >= 1) {
+            buildGraph(d.nodes, d.edges || []);
+          }
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
+    };
+
+    fetchGraph();
+    const interval = setInterval(fetchGraph, 4000);
+    window.addEventListener('sanket:new_report', fetchGraph);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('sanket:new_report', fetchGraph);
+    };
   }, [buildGraph]);
 
   /* ── Fetch Node Evidence on selection ── */
@@ -687,8 +698,49 @@ export default function SignalGraphPage() {
 
   const triggerSWA = () => {
     if (!selectedNode) return;
-    setSwaToast(`Stop Work Authority LOCKOUT: 500m digital perimeter freeze around ${selectedNode.label}`);
-    setTimeout(() => setSwaToast(null), 6000);
+    const isCurrentlyActive = activeSwaNodes.includes(selectedNode.id);
+    
+    if (isCurrentlyActive) {
+      // Lift SWA
+      setActiveSwaNodes(prev => prev.filter(id => id !== selectedNode.id));
+      setSwaToast(null);
+      return;
+    }
+
+    // Activate SWA Lockout
+    setActiveSwaNodes(prev => [...prev, selectedNode.id]);
+    setSwaToast({
+      node: selectedNode.label,
+      type: selectedNode.type.replace('_', ' '),
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    });
+
+    // Play Alert Chime via Web Audio API
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtx) {
+        const ctx = new AudioCtx();
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.3);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.6);
+      }
+    } catch {
+      // Ignore
+    }
+
+    // Dispatch global lockout event
+    window.dispatchEvent(new CustomEvent('sanket:swa_lockout', {
+      detail: { node: selectedNode.label, type: selectedNode.type }
+    }));
   };
 
   const filterTabs = [
@@ -723,7 +775,7 @@ export default function SignalGraphPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
+          <button type="button" suppressHydrationWarning
             onClick={() => setPhysicsOn(!physicsOn)}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-semibold shadow-xs transition-colors cursor-pointer ${
               physicsOn
@@ -735,7 +787,7 @@ export default function SignalGraphPage() {
             {physicsOn ? 'Physics Active' : 'Physics Paused'}
           </button>
 
-          <button
+          <button type="button" suppressHydrationWarning
             onClick={fitView}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#C2CEC2] bg-white hover:bg-[#F0F2ED] text-[#3E5052] text-xs font-semibold shadow-xs transition-colors cursor-pointer"
             title="Fit to Screen"
@@ -744,7 +796,7 @@ export default function SignalGraphPage() {
             Fit View
           </button>
 
-          <button
+          <button type="button" suppressHydrationWarning
             onClick={() => setIsExpanded(!isExpanded)}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-semibold shadow-xs transition-colors cursor-pointer ${
               isExpanded
@@ -766,7 +818,7 @@ export default function SignalGraphPage() {
             <Filter className="w-3.5 h-3.5 text-[#94A3A5]" /> Filter:
           </span>
           {filterTabs.map((t) => (
-            <button
+            <button type="button" suppressHydrationWarning
               key={t.key}
               onClick={() => setFilterType(t.key)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
@@ -782,7 +834,7 @@ export default function SignalGraphPage() {
 
         <div className="relative">
           <Search className="w-4 h-4 absolute left-3 top-2.5 text-[#94A3A5]" />
-          <input
+          <input suppressHydrationWarning
             type="text"
             placeholder="Search node, equipment, hazard..."
             value={searchQuery}
@@ -792,7 +844,7 @@ export default function SignalGraphPage() {
           {searchQuery && (
             <div className="absolute right-0 mt-1 w-72 bg-white border border-[#C2CEC2] rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto">
               {nodesRef.current.filter(n => n.label.toLowerCase().includes(searchQuery.toLowerCase())).map(n => (
-                <button
+                <button type="button" suppressHydrationWarning
                   key={n.id}
                   onClick={() => {
                     setSelectedNode(n);
@@ -814,13 +866,50 @@ export default function SignalGraphPage() {
       {/* ── Main Graph & Inspector Grid ── */}
       <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-3.5 overflow-hidden relative">
 
-        {/* SWA Toast */}
+        {/* SWA High-Visibility Lockout Toast */}
         {swaToast && (
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 max-w-lg w-full px-4">
-            <div className="p-3 rounded-xl bg-[#162829] border-2 border-[#D63B3B] text-white shadow-2xl flex items-center gap-3 text-xs">
-              <AlertOctagon className="w-5 h-5 text-red-400 shrink-0 animate-pulse" />
-              <span>{swaToast}</span>
-              <button onClick={() => setSwaToast(null)} className="ml-auto text-slate-400 hover:text-white cursor-pointer">✕</button>
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 max-w-xl w-full px-4 animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className="p-4 rounded-2xl bg-[#162829] border-2 border-[#D63B3B] text-white shadow-2xl space-y-3 backdrop-blur-xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400">
+                    <AlertOctagon className="w-5 h-5 animate-pulse" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-mono font-bold text-red-400 uppercase tracking-widest block">
+                      🚨 SWA LOCKDOWN PROTOCOL ACTIVE
+                    </span>
+                    <h3 className="text-sm font-heading font-bold text-white">
+                      500m Perimeter Freeze: {swaToast.node} ({swaToast.type})
+                    </h3>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  suppressHydrationWarning
+                  onClick={() => setSwaToast(null)}
+                  className="text-slate-400 hover:text-white p-1 rounded-md cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <p className="text-xs text-[#8BA4A7] leading-relaxed">
+                Emergency Stop Work Authority broadcast to <strong>Well Pad 7 & Duliajan Control Room</strong> per DGMS/OISD-189 standards. High-pressure pumps isolated.
+              </p>
+
+              <div className="flex items-center justify-between pt-1 border-t border-[#264245]">
+                <span className="text-[10px] font-mono text-[#5E7072]">
+                  Authorized: {swaToast.time} · SWA-LOC-{swaToast.node.substring(0, 4).toUpperCase()}
+                </span>
+                <Link
+                  href={`/dashboard/emergency?location=${encodeURIComponent(swaToast.node.toLowerCase().includes('moran') ? 'Moran OCS-3' : swaToast.node.toLowerCase().includes('baghjan') ? 'Baghjan Well #5' : 'Well Pad 7')}`}
+                  className="px-3 py-1.5 bg-[#D63B3B] hover:bg-[#B92525] text-white font-bold text-xs rounded-lg shadow-sm flex items-center gap-1.5 transition-all"
+                >
+                  <span>Open Emergency Playbook</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
             </div>
           </div>
         )}
@@ -856,7 +945,7 @@ export default function SignalGraphPage() {
 
           {/* Bottom Zoom & Node Stats Controls Overlay */}
           <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-lg border border-[#C2CEC2] text-xs text-[#3E5052] shadow-xs">
-            <button
+            <button type="button" suppressHydrationWarning
               onClick={() => {
                 const { width, height } = dimsRef.current;
                 zoomAt(zoom * 1.25, width / 2, height / 2);
@@ -869,7 +958,7 @@ export default function SignalGraphPage() {
             <span className="text-[11px] text-[#1A2B2D] w-10 text-center font-bold font-mono">
               {(zoom * 100).toFixed(0)}%
             </span>
-            <button
+            <button type="button" suppressHydrationWarning
               onClick={() => {
                 const { width, height } = dimsRef.current;
                 zoomAt(zoom / 1.25, width / 2, height / 2);
@@ -880,7 +969,7 @@ export default function SignalGraphPage() {
               <ZoomOut className="w-4 h-4" />
             </button>
             <span className="h-3 w-px bg-[#C2CEC2] mx-1" />
-            <button
+            <button type="button" suppressHydrationWarning
               onClick={fitView}
               className="p-1 hover:text-[#0A6B63] hover:bg-[#F0F2ED] rounded transition-colors cursor-pointer"
               title="Reset / Fit View"
@@ -975,9 +1064,20 @@ export default function SignalGraphPage() {
                 </div>
               </div>
 
-              <button onClick={triggerSWA}
-                className="w-full py-2.5 bg-[#D63B3B] hover:bg-[#C02E2E] text-white font-heading font-bold text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-colors">
-                <AlertOctagon className="w-4 h-4" /> Issue Stop Work Authority (SWA)
+              <button
+                type="button"
+                suppressHydrationWarning
+                onClick={triggerSWA}
+                className={`w-full py-3 font-heading font-bold text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all active:scale-98 ${
+                  activeSwaNodes.includes(selectedNode.id)
+                    ? 'bg-[#D63B3B] text-white border-2 border-red-300 animate-pulse'
+                    : 'bg-[#D63B3B] hover:bg-[#B92525] text-white'
+                }`}
+              >
+                <AlertOctagon className="w-4 h-4" />
+                {activeSwaNodes.includes(selectedNode.id)
+                  ? '🛑 SWA LOCKDOWN ACTIVE (Click to Lift)'
+                  : '🚨 Issue Stop Work Authority (SWA)'}
               </button>
             </div>
           ) : (

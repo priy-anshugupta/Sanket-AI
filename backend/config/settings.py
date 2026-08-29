@@ -26,7 +26,7 @@ class Settings(BaseSettings):
 
     # --- Online LLM Providers (OpenAI / Groq) ---
     OPENAI_API_KEY: str = ""
-    OPENAI_MODEL: str = "gpt-4o-mini"
+    OPENAI_MODEL: str = "gpt-4o"
     GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "llama-3.3-70b-versatile"
 
@@ -49,19 +49,29 @@ class Settings(BaseSettings):
     # --- Keyword Boost ---
     KEYWORD_BOOST: float = 0.15
 
-    # --- Critical SIF Keywords ---
+    # --- Critical SIF Keywords (English + Hindi/Hinglish) ---
     CRITICAL_KEYWORDS: list[str] = [
         "fatality", "confined space", "energized", "fall from height",
         "h2s", "h₂s", "blowout", "explosion", "crush", "amputation",
         "high voltage", "unanchored", "high pressure", "flammable",
         "toxic gas", "well kick", "fire", "electrocution",
-        "struck by", "caught between", "collapse"
+        "struck by", "caught between", "collapse",
+        "leak", "leaking", "burst", "rupture", "blast", "blasted",
+        "gas leak", "oil spill", "overflow", "derailment",
+        "scaffold", "harness", "no helmet", "without ppe",
+        "loto", "lockout", "tagout", "dropped object",
+        "pipe blast", "valve failure", "pressure surge",
+        # Hindi/Hinglish keywords
+        "aag", "blast", "leak", "pressure", "girgaya",
+        "gir gaya", "toot gaya", "phat gaya", "gas nikal",
+        "pipe phat", "valve kharab", "helmet nahi",
     ]
 
-    # --- Negation Terms ---
+    # --- Negation Terms (English + Hindi) ---
     NEGATION_TERMS: list[str] = [
         "no", "not", "without", "avoided", "zero",
-        "never", "prevented", "none", "absent"
+        "never", "prevented", "none", "absent",
+        "nahi", "nhi", "nahin", "bina",
     ]
 
     class Config:

@@ -24,18 +24,15 @@ async def transcribe_audio_only(
     for worker review / editing before final ingestion.
     """
     content = await audio.read()
-    transcription = voice_transcriber.transcribe_audio_file(content, audio.filename or "audio.wav")
+    transcription = voice_transcriber.transcribe_audio_file(content, audio.filename or "recording.m4a")
     text = transcription.get("text", "")
-
-    if not text or len(text.strip()) < 3:
-        text = "Annular BOP secondary valve seal weeping hydraulic fluid under 1800 PSI vibration at Well Pad 7."
 
     return {
         "text": text,
         "language": transcription.get("language", "en"),
         "confidence": transcription.get("confidence", 0.95),
-        "duration_seconds": transcription.get("duration", 4.2),
-        "status": "TRANSCRIBED",
+        "duration_seconds": transcription.get("duration", 3.0),
+        "status": "TRANSCRIBED" if text else "NO_SPEECH_DETECTED",
     }
 
 

@@ -28,7 +28,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 
-const API = 'http://localhost:8000';
+const API = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000';
 
 interface BaghjanEvent {
   day: number;
@@ -166,7 +166,7 @@ export default function BaghjanReplayPage() {
 
         {/* Playback Controls */}
         <div className="flex items-center gap-2">
-          <button
+          <button type="button" suppressHydrationWarning
             onClick={() => {
               if (activeIdx >= HISTORIC_BAGHJAN_TIMELINE.length - 1) setActiveIdx(0);
               setIsPlaying(!isPlaying);
@@ -181,7 +181,7 @@ export default function BaghjanReplayPage() {
             {isPlaying ? 'Pause Timeline' : 'Auto-Play 14-Day Replay'}
           </button>
 
-          <button
+          <button type="button" suppressHydrationWarning
             onClick={() => { setIsPlaying(false); setActiveIdx(0); }}
             className="p-1.5 rounded-lg bg-white hover:bg-[#F0F2ED] text-[#5E7072] border border-[#C2CEC2] transition-colors cursor-pointer"
             title="Reset Timeline to Day -14"
@@ -213,7 +213,7 @@ export default function BaghjanReplayPage() {
             const isMed = evt.sif_score >= 0.5 && evt.sif_score < 0.75;
 
             return (
-              <button
+              <button type="button" suppressHydrationWarning
                 key={idx}
                 onClick={() => { setIsPlaying(false); setActiveIdx(idx); }}
                 className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative ${

@@ -72,7 +72,7 @@ interface ReportDetail {
   actions: Action[];
 }
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000');
 
 const ENTITY_BADGE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   EQUIPMENT: { bg: 'bg-[#E8F4F0]', text: 'text-[#0A6B63]', border: 'border-[#BCE3DC]' },
@@ -121,6 +121,29 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
     fetchReport();
   }, [reportId]);
 
+  const handleResolve = async () => {
+    try {
+      setIsSubmittingFeedback(true);
+      setFeedbackSuccess(null);
+      const res = await fetch(`${API}/api/reports/${reportId}/resolve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (res.ok) {
+        setFeedbackSuccess('✅ Incident marked as RESOLVED by Safety Officer!');
+        if (report) {
+          setReport({ ...report, status: 'RESOLVED' });
+        }
+        window.dispatchEvent(new CustomEvent('sanket:new_report', { detail: { id: reportId, status: 'RESOLVED' } }));
+        await fetchReport();
+      }
+    } catch (err) {
+      console.error('Resolve error:', err);
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
+  };
+
   const handleFeedback = async (action: 'AGREE' | 'UPGRADE' | 'DOWNGRADE', correctedLabel: 'HIGH' | 'MEDIUM' | 'LOW') => {
     try {
       setIsSubmittingFeedback(true);
@@ -136,7 +159,11 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
         }),
       });
       if (res.ok) {
-        setFeedbackSuccess(`Feedback recorded: Label adjusted to ${correctedLabel}`);
+        setFeedbackSuccess(`✅ Decision Recorded: Label set to ${correctedLabel} & Incident RESOLVED!`);
+        if (report) {
+          setReport({ ...report, sif_label: correctedLabel, status: 'RESOLVED' });
+        }
+        window.dispatchEvent(new CustomEvent('sanket:new_report', { detail: { id: reportId, status: 'RESOLVED' } }));
         await fetchReport();
       }
     } catch (err) {
@@ -163,8 +190,12 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
         }),
       });
       if (res.ok) {
-        setActionSuccess('CAPA Work Order generated and dispatched!');
+        setActionSuccess('✅ CAPA Work Order Generated & Dispatched!');
         setActionNotes('');
+        if (report) {
+          setReport({ ...report, status: 'RESOLVED' });
+        }
+        window.dispatchEvent(new CustomEvent('sanket:new_report', { detail: { id: reportId, status: 'RESOLVED' } }));
         await fetchReport();
       }
     } catch (err) {
@@ -224,7 +255,21 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
         </div>
 
         <div className="flex items-center gap-2">
-          <button
+          <button suppressHydrationWarning
+            type="button"
+            disabled={isSubmittingFeedback || report.status === 'RESOLVED'}
+            onClick={handleResolve}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold shadow-xs transition-all cursor-pointer ${
+              report.status === 'RESOLVED'
+                ? 'bg-[#EDFAF4] text-[#1B8A6C] border border-[#BFEADB]'
+                : 'bg-[#0A6B63] hover:bg-[#085B54] text-white'
+            }`}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            {report.status === 'RESOLVED' ? 'Incident Resolved ✓' : 'Mark as Resolved & Close'}
+          </button>
+
+          <button type="button" suppressHydrationWarning
             onClick={handleDownloadPDF}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#C2CEC2] hover:bg-[#F0F2ED] rounded-lg text-xs font-semibold text-[#1A2B2D] shadow-xs transition-colors cursor-pointer"
           >
@@ -286,6 +331,21 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
               <div className="font-semibold text-[#1A2B2D] text-xs flex items-center gap-1">
                 <Clock className="w-3 h-3 text-[#0A6B63]" />
                 {report.shift || 'DAY'}
+              </div>
+            </div>
+            <div className="h-6 w-px bg-[#C2CEC2]" />
+            <div>
+              <div className="text-[10px] uppercase font-semibold text-[#5E7072]">Status</div>
+              <div className="font-semibold text-xs">
+                {report.status === 'RESOLVED' ? (
+                  <span className="text-[#1B8A6C] font-bold flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> RESOLVED
+                  </span>
+                ) : (
+                  <span className="text-[#D4820A] font-bold flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5" /> IN REVIEW
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -437,7 +497,7 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
             </p>
 
             <div className="space-y-2">
-              <input
+              <input suppressHydrationWarning
                 type="text"
                 value={feedbackReason}
                 onChange={(e) => setFeedbackReason(e.target.value)}
@@ -445,26 +505,45 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
                 className="w-full px-3 py-2 text-xs border border-[#C2CEC2] rounded-lg focus:outline-none focus:border-[#0A6B63] bg-[#F7F8F5]"
               />
               <div className="grid grid-cols-3 gap-1.5">
-                <button
+                <button suppressHydrationWarning
+                  type="button"
                   disabled={isSubmittingFeedback}
                   onClick={() => handleFeedback('AGREE', sifLabel as any)}
-                  className="px-2.5 py-1.5 bg-[#0A6B63] hover:bg-[#085B54] text-white rounded-lg text-xs font-semibold shadow-xs transition-colors disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
+                  className="px-2.5 py-2 bg-[#0A6B63] hover:bg-[#085B54] text-white rounded-lg text-xs font-semibold shadow-xs transition-colors disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
                 >
                   <Check className="w-3 h-3" /> Confirm
                 </button>
-                <button
+                <button suppressHydrationWarning
+                  type="button"
                   disabled={isSubmittingFeedback}
                   onClick={() => handleFeedback('UPGRADE', 'HIGH')}
-                  className="px-2.5 py-1.5 bg-[#D63B3B] hover:bg-[#B92525] text-white rounded-lg text-xs font-semibold shadow-xs transition-colors disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
+                  className="px-2.5 py-2 bg-[#D63B3B] hover:bg-[#B92525] text-white rounded-lg text-xs font-semibold shadow-xs transition-colors disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
                 >
                   <ArrowUp className="w-3 h-3" /> Upgrade
                 </button>
-                <button
+                <button suppressHydrationWarning
+                  type="button"
                   disabled={isSubmittingFeedback}
                   onClick={() => handleFeedback('DOWNGRADE', 'LOW')}
-                  className="px-2.5 py-1.5 bg-[#5E7072] hover:bg-[#475759] text-white rounded-lg text-xs font-semibold shadow-xs transition-colors disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
+                  className="px-2.5 py-2 bg-[#5E7072] hover:bg-[#475759] text-white rounded-lg text-xs font-semibold shadow-xs transition-colors disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
                 >
                   <ArrowDown className="w-3 h-3" /> Downgrade
+                </button>
+              </div>
+
+              <div className="pt-2 border-t border-[#E0E6E0]">
+                <button suppressHydrationWarning
+                  type="button"
+                  disabled={isSubmittingFeedback || report.status === 'RESOLVED'}
+                  onClick={handleResolve}
+                  className={`w-full py-2 px-3 rounded-lg text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer ${
+                    report.status === 'RESOLVED'
+                      ? 'bg-[#EDFAF4] text-[#1B8A6C] border border-[#BFEADB]'
+                      : 'bg-[#0A6B63] hover:bg-[#085B54] text-white'
+                  }`}
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  {report.status === 'RESOLVED' ? 'Incident Marked as Resolved ✓' : 'Mark as Resolved & Close'}
                 </button>
               </div>
             </div>
@@ -511,7 +590,7 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
                 </div>
                 <div>
                   <label className="text-[10px] font-semibold text-[#5E7072] uppercase">Assignee</label>
-                  <input
+                  <input suppressHydrationWarning
                     type="text"
                     value={actionAssignee}
                     onChange={(e) => setActionAssignee(e.target.value)}
@@ -522,7 +601,7 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
 
               <div>
                 <label className="text-[10px] font-semibold text-[#5E7072] uppercase">Instructions / SLA Notes</label>
-                <textarea
+                <textarea suppressHydrationWarning
                   value={actionNotes}
                   onChange={(e) => setActionNotes(e.target.value)}
                   placeholder="e.g. Inspect flange seal, calibrate detector, re-tag LOTO..."
@@ -531,7 +610,7 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
                 />
               </div>
 
-              <button
+              <button suppressHydrationWarning
                 type="submit"
                 disabled={isCreatingAction}
                 className="w-full py-2 bg-[#0A6B63] hover:bg-[#085B54] text-white rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"

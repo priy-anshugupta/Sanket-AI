@@ -20,7 +20,7 @@ import {
   RadioTower
 } from 'lucide-react';
 
-const API = 'http://localhost:8000';
+const API = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000';
 
 const CHANNEL_DETAILS = {
   roip_walkie: {
@@ -207,13 +207,9 @@ export default function FieldReporterPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        setInputText(data.text || '');
-      } else {
-        setInputText("Annular BOP valve seal weeping hydraulic fluid under 1800 PSI vibration at Well Pad 7.");
+        if (data.text) setInputText(data.text);
       }
-    } catch {
-      setInputText("Annular BOP valve seal weeping hydraulic fluid under 1800 PSI vibration at Well Pad 7.");
-    } finally {
+    } catch {} finally {
       setIsTranscribing(false);
     }
   };
@@ -360,14 +356,14 @@ export default function FieldReporterPage() {
       {liveSuccessMsg && (
         <div className="p-3 rounded-xl bg-[#0A6B63] text-white text-xs font-bold flex items-center justify-between shadow-lg animate-in fade-in">
           <span>{liveSuccessMsg}</span>
-          <button onClick={() => setLiveSuccessMsg(null)} className="text-white/80 hover:text-white">✕</button>
+          <button type="button" suppressHydrationWarning onClick={() => setLiveSuccessMsg(null)} className="text-white/80 hover:text-white">✕</button>
         </div>
       )}
 
       {/* ── 3 Field Input Channels (DYNAMIC SWITCHER) ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
         
-        <button
+        <button suppressHydrationWarning
           type="button"
           onClick={() => handleSelectChannel('roip_walkie')}
           className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
@@ -392,7 +388,7 @@ export default function FieldReporterPage() {
           </p>
         </button>
 
-        <button
+        <button suppressHydrationWarning
           type="button"
           onClick={() => handleSelectChannel('is_terminal')}
           className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
@@ -417,7 +413,7 @@ export default function FieldReporterPage() {
           </p>
         </button>
 
-        <button
+        <button suppressHydrationWarning
           type="button"
           onClick={() => handleSelectChannel('rig_kiosk')}
           className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
@@ -469,7 +465,7 @@ export default function FieldReporterPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {activeChannel.presets.map((preset, idx) => (
-                <button
+                <button suppressHydrationWarning
                   key={idx}
                   type="button"
                   onClick={() => handleSelectPreset(preset)}
@@ -527,7 +523,7 @@ export default function FieldReporterPage() {
               </p>
             </div>
 
-            <button
+            <button suppressHydrationWarning
               type="button"
               onClick={isRecording ? stopRecording : startRecording}
               disabled={isTranscribing}
@@ -547,7 +543,7 @@ export default function FieldReporterPage() {
             <label className="block text-[11px] font-semibold text-[#1A2B2D] mb-1">
               Observation Text ({activeChannel.name})
             </label>
-            <textarea
+            <textarea suppressHydrationWarning
               rows={3}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
@@ -559,7 +555,7 @@ export default function FieldReporterPage() {
 
           {/* Submit Actions (Sandbox vs Live) */}
           <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#D8E0D8]/60">
-            <button
+            <button suppressHydrationWarning
               type="button"
               onClick={() => { setInputText(''); setResult(null); }}
               className="px-3 py-1.5 rounded-lg border border-[#C2CEC2] text-xs font-medium text-[#5E7072] hover:bg-[#F0F2ED] cursor-pointer"
@@ -568,7 +564,7 @@ export default function FieldReporterPage() {
             </button>
 
             <div className="flex items-center gap-2">
-              <button
+              <button suppressHydrationWarning
                 type="button"
                 onClick={handleTestAI}
                 disabled={isSubmitting || !inputText.trim()}
@@ -578,7 +574,7 @@ export default function FieldReporterPage() {
                 {isSubmitting ? 'Evaluating...' : 'Test AI (Sandbox)'}
               </button>
 
-              <button
+              <button suppressHydrationWarning
                 type="button"
                 onClick={handleTransmitLive}
                 disabled={isSubmitting || !inputText.trim()}

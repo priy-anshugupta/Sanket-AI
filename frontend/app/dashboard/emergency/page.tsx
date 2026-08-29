@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { 
   ShieldAlert, 
   Radio, 
@@ -21,7 +22,7 @@ import {
   User
 } from 'lucide-react';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000';
 
 interface Contact {
   role: string;
@@ -189,8 +190,34 @@ const INGESTION_CHANNELS = [
 ];
 
 export default function EmergencyCommandPage() {
+  const searchParams = useSearchParams();
+  const queryLocation = searchParams?.get('location') || searchParams?.get('site');
+
   const [activeTab, setActiveTab] = useState<'playbook' | 'roip' | 'channels'>('playbook');
-  const [selectedLocation, setSelectedLocation] = useState('Baghjan Well #5');
+  const [selectedLocation, setSelectedLocation] = useState(() => {
+    if (queryLocation) {
+      const q = queryLocation.toLowerCase();
+      if (q.includes('well pad') || q.includes('pad 7') || q.includes('wellpad')) return 'Well Pad 7';
+      if (q.includes('moran')) return 'Moran OCS-3';
+      if (q.includes('digboi')) return 'Digboi Rig #2';
+      if (q.includes('geleki')) return 'Geleki GGS-1';
+      if (q.includes('lakwa')) return 'Lakwa Well #12';
+      if (q.includes('baghjan')) return 'Baghjan Well #5';
+    }
+    return 'Well Pad 7'; // Default to active operational Well Pad 7
+  });
+
+  useEffect(() => {
+    if (queryLocation) {
+      const q = queryLocation.toLowerCase();
+      if (q.includes('well pad') || q.includes('pad 7') || q.includes('wellpad')) setSelectedLocation('Well Pad 7');
+      else if (q.includes('moran')) setSelectedLocation('Moran OCS-3');
+      else if (q.includes('digboi')) setSelectedLocation('Digboi Rig #2');
+      else if (q.includes('geleki')) setSelectedLocation('Geleki GGS-1');
+      else if (q.includes('lakwa')) setSelectedLocation('Lakwa Well #12');
+      else if (q.includes('baghjan')) setSelectedLocation('Baghjan Well #5');
+    }
+  }, [queryLocation]);
   const [checklistsState, setChecklistsState] = useState<Record<string, ChecklistItem[]>>(() => {
     const init: Record<string, ChecklistItem[]> = {};
     Object.keys(LOCATION_THREATS).forEach(loc => {
@@ -218,7 +245,7 @@ export default function EmergencyCommandPage() {
   useEffect(() => {
     const fetchLatest = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/reports?limit=15`);
+        const res = await fetch(`${API_BASE}/api/reports?limit=15&sort_by=latest`);
         if (res.ok) {
           const data = await res.json();
           const reports: any[] = data.reports || [];
@@ -226,12 +253,12 @@ export default function EmergencyCommandPage() {
           const matched = reports.find(r => 
             r.location && r.location.toLowerCase().includes(selectedLocation.split(' ')[0].toLowerCase())
           );
-          if (matched && matched.sif_score >= 0.7) {
+          if (matched && (matched.sif_score >= 0.50 || matched.sif_label === 'HIGH' || matched.sif_label === 'MEDIUM')) {
             setLiveWorkerReport({
               id: matched.id,
               text: matched.raw_text,
               sif_score: matched.sif_score,
-              sif_label: matched.sif_label || 'HIGH',
+              sif_label: matched.sif_label || (matched.sif_score >= 0.75 ? 'HIGH' : 'MEDIUM'),
               created_at: 'LIVE SYNC',
               iogp_rule: matched.iogp_rule || 'Critical SIF Precursor'
             });
@@ -328,7 +355,7 @@ export default function EmergencyCommandPage() {
 
         {/* Tab Controls */}
         <div className="flex items-center gap-1.5 bg-[#F0F2ED] p-1 rounded-lg">
-          <button
+          <button type="button" suppressHydrationWarning
             onClick={() => setActiveTab('playbook')}
             className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'playbook'
@@ -338,7 +365,7 @@ export default function EmergencyCommandPage() {
           >
             <ShieldAlert className="h-3.5 w-3.5 text-[#D63B3B]" /> SWA Playbook
           </button>
-          <button
+          <button type="button" suppressHydrationWarning
             onClick={() => setActiveTab('roip')}
             className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'roip'
@@ -348,7 +375,7 @@ export default function EmergencyCommandPage() {
           >
             <Mic className="h-3.5 w-3.5 text-[#0A6B63]" /> RoIP Radio Bridge
           </button>
-          <button
+          <button type="button" suppressHydrationWarning
             onClick={() => setActiveTab('channels')}
             className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'channels'
@@ -368,7 +395,7 @@ export default function EmergencyCommandPage() {
             <AlertOctagon className="w-5 h-5 shrink-0 animate-pulse" />
             <span>{swaToast}</span>
           </div>
-          <button onClick={() => setSwaToast(null)} className="text-white/80 hover:text-white font-bold text-sm px-2 cursor-pointer">✕</button>
+          <button type="button" suppressHydrationWarning onClick={() => setSwaToast(null)} className="text-white/80 hover:text-white font-bold text-sm px-2 cursor-pointer">✕</button>
         </div>
       )}
 
@@ -436,7 +463,7 @@ export default function EmergencyCommandPage() {
 
               {/* SWA Danger Button */}
               <div className="pt-1">
-                <button
+                <button type="button" suppressHydrationWarning
                   onClick={handleTriggerSWA}
                   className="w-full py-3 px-5 rounded-lg bg-[#D63B3B] hover:bg-[#B92525] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
                 >
@@ -551,7 +578,7 @@ export default function EmergencyCommandPage() {
               </div>
               <div className="grid grid-cols-2 gap-1.5">
                 {['Baghjan Well #5', 'Well Pad 7', 'Moran OCS-3', 'Geleki Processing'].map((loc) => (
-                  <button
+                  <button type="button" suppressHydrationWarning
                     key={loc}
                     onClick={() => setSelectedLocation(loc)}
                     className={`px-3 py-2 rounded-lg text-xs font-medium transition-all text-left truncate cursor-pointer ${
@@ -610,7 +637,7 @@ export default function EmergencyCommandPage() {
                 Frequency: <strong className="text-[#1A2B2D]">156.800 MHz (VHF Ch-09)</strong> · Location: <strong>{selectedLocation}</strong>
               </div>
 
-              <button
+              <button type="button" suppressHydrationWarning
                 onClick={handleSimulateRoIP}
                 disabled={isSimulatingAudio}
                 className="py-2.5 px-5 rounded-lg bg-[#0A6B63] hover:bg-[#085B54] text-white font-semibold text-xs shadow-xs transition-all flex items-center justify-center gap-2 mx-auto disabled:opacity-50 cursor-pointer"
@@ -641,7 +668,7 @@ export default function EmergencyCommandPage() {
                     <Flame className="w-4 h-4 text-[#D63B3B]" />
                     <span className="font-bold text-[#D63B3B]">Classified: HIGH SIF ({liveWorkerReport ? Math.round(liveWorkerReport.sif_score * 100) : activeThreat.sifPercent}% Risk)</span>
                   </div>
-                  <button
+                  <button type="button" suppressHydrationWarning
                     onClick={handleTriggerSWA}
                     className="px-3 py-1 bg-[#D63B3B] hover:bg-[#B92525] text-white rounded-md font-bold text-xs cursor-pointer shadow-xs"
                   >

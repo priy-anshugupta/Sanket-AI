@@ -24,11 +24,13 @@ import {
   Flame,
   CheckCircle2,
   Clock,
-  ExternalLink
+  ExternalLink,
+  Shield,
+  HardHat
 } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Triage Queue', icon: ClipboardList, shortcut: 'F9' },
@@ -95,10 +97,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   ]);
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState<number>(3);
+  const [isMobileScreen, setIsMobileScreen] = useState(false);
+  const [systemStatus, setSystemStatus] = useState<any>(null);
 
   const lastSeenIdRef = useRef<string | null>(null);
   const isInitialFetchRef = useRef<boolean>(true);
   const notificationDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const checkScreen = () => {
+      const isMob = window.innerWidth < 768 || /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      setIsMobileScreen(isMob);
+    };
+    checkScreen();
+    window.addEventListener('resize', checkScreen);
+    return () => window.removeEventListener('resize', checkScreen);
+  }, []);
 
   useEffect(() => {
     try {
@@ -116,6 +130,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     } catch {
       setCurrentUser({ full_name: 'Rajesh Kumar', role: 'hse_manager', username: 'rajesh' });
     }
+  }, []);
+
+  useEffect(() => {
+    const fetchSys = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/system/airgap`);
+        if (res.ok) {
+          const d = await res.json();
+          setSystemStatus(d);
+        }
+      } catch {}
+    };
+    fetchSys();
+    const interval = setInterval(fetchSys, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   // Close notification dropdown when clicking outside
@@ -202,28 +231,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         if (latest.id !== lastSeenIdRef.current) {
           lastSeenIdRef.current = latest.id;
           
-          // Only pop up emergency red toast if it is genuinely a HIGH SIF precursor!
-          const isHighSif = latest.sif_label === 'HIGH' || (latest.sif_score && latest.sif_score >= 0.75);
-          
-          if (isHighSif) {
-            const newAlert: LiveAlert = {
-              id: latest.id,
-              raw_text: latest.raw_text,
-              sif_score: latest.sif_score || 0.92,
-              sif_label: 'HIGH',
-              location: latest.location || 'Well Pad 7 (Upper Assam)',
-              iogp_rule: latest.iogp_rule || 'Energy Isolation',
-              reporter: 'Bikash Das (OIL-OP-4491 · Rig Floor)',
-              created_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            };
+          const isHighSif = latest.sif_label === 'HIGH' || (latest.sif_score && latest.sif_score >= 0.70);
 
-            setActiveAlert(newAlert);
-            setNotifications(prev => [newAlert, ...prev.slice(0, 19)]);
-            setUnreadCount(c => c + 1);
+          const newAlert: LiveAlert = {
+            id: latest.id,
+            raw_text: latest.raw_text,
+            sif_score: latest.sif_score || 0.88,
+            sif_label: latest.sif_label || (isHighSif ? 'HIGH' : 'MEDIUM'),
+            location: latest.location || 'Well Pad 7 (Upper Assam)',
+            iogp_rule: latest.iogp_rule || 'Energy Isolation & Barrier Integrity',
+            reporter: 'Bikash Das (OIL-OP-4491 · Rig Floor)',
+            created_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          };
 
-            if (alertSoundEnabled) {
-              playChime(880, 1174, 0.35);
-            }
+          // Always add to notification bell dropdown & increment unread counter
+          setNotifications(prev => [newAlert, ...prev.filter(n => n.id !== newAlert.id).slice(0, 29)]);
+          setUnreadCount(c => c + 1);
+
+          // Pop up floating alert banner
+          setActiveAlert(newAlert);
+          if (alertSoundEnabled) {
+            playChime(880, 1174, 0.35);
           }
 
           window.dispatchEvent(new CustomEvent('sanket:new_report', { detail: latest }));
@@ -247,6 +275,47 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const currentNav = NAV_ITEMS.find(i => pathname === i.href || (i.href !== '/dashboard' && pathname?.startsWith(i.href))) || NAV_ITEMS[0];
 
+  // ── MOBILE LOCKOUT SCREEN FOR SAFETY MANAGER DASHBOARD ──
+  if (isMobileScreen) {
+    return (
+      <div className="min-h-screen w-full bg-[#0F1B1D] text-white p-6 flex flex-col items-center justify-center text-center space-y-5 selection:bg-[#0A6B63]">
+        <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400">
+          <Shield className="w-8 h-8" />
+        </div>
+        
+        <div className="space-y-2 max-w-sm">
+          <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase bg-red-500/10 text-red-400 border border-red-500/30">
+            🔒 OISD-189 Security Restriction
+          </span>
+          <h1 className="text-lg font-heading font-bold text-white mt-1">
+            HQ Command Center Restricted on Mobile
+          </h1>
+          <p className="text-xs text-[#8BA4A7] leading-relaxed">
+            Per Oil India Limited Operational Safety Standards, the <strong>Safety Manager Command Dashboard</strong> is restricted to authorized Desktop & Control Room workstations.
+          </p>
+        </div>
+
+        <div className="w-full max-w-xs space-y-3 pt-2">
+          <Link
+            href="/worker"
+            className="w-full py-3 bg-[#0A6B63] hover:bg-[#085B54] text-white font-bold text-xs rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95"
+          >
+            <HardHat className="w-4 h-4" />
+            Switch to Field Worker Terminal
+          </Link>
+
+          <Link
+            href="/login"
+            className="w-full py-2.5 bg-[#1D3234] hover:bg-[#233D3F] text-[#8BA4A7] hover:text-white font-semibold text-xs rounded-xl border border-[#264245] flex items-center justify-center gap-1.5 transition-all"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            Return to Login Portal
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen w-full bg-[#F7F8F5] overflow-hidden text-[#1A2B2D]">
       
@@ -269,7 +338,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   {activeAlert.sif_label === 'HIGH' ? 'CRITICAL SIF PRECURSOR INGESTED' : 'SAFETY INCIDENT DETECTED'}
                 </span>
               </div>
-              <button 
+              <button type="button" suppressHydrationWarning 
                 onClick={() => setActiveAlert(null)}
                 className="text-slate-400 hover:text-white transition-colors cursor-pointer p-1 rounded-md hover:bg-white/10"
               >
@@ -298,7 +367,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <button
+                  <button type="button" suppressHydrationWarning
                     onClick={() => {
                       setActiveAlert(null);
                       router.push(`/dashboard/report/${activeAlert.id}`);
@@ -317,7 +386,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* ── Mobile Backdrop ── */}
       {isNavigationOpen && (
-        <button
+        <button type="button" suppressHydrationWarning
           aria-label="Close navigation"
           onClick={() => setIsNavigationOpen(false)}
           className="fixed inset-0 z-30 bg-black/40 lg:hidden backdrop-blur-xs"
@@ -351,7 +420,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </p>
               </div>
             </Link>
-            <button
+            <button type="button" suppressHydrationWarning
               aria-label="Close navigation"
               onClick={() => setIsNavigationOpen(false)}
               className="rounded-lg p-1.5 text-[#5E7072] hover:bg-[#F0F2ED] lg:hidden cursor-pointer"
@@ -367,7 +436,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 Safety Operations
               </span>
               
-              <button
+              <button type="button" suppressHydrationWarning
                 onClick={toggleSound}
                 title={alertSoundEnabled ? "Mute audio alarms" : "Enable audio alarms"}
                 className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold transition-all cursor-pointer ${
@@ -441,16 +510,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <span className="text-[#5E7072]">3s POLL SYNC</span>
           </div>
 
-          {/* Sovereign Air-Gap Badge */}
-          <div className="px-3 py-2 rounded-lg bg-[#EDFAF4] border border-[#BFEADB] flex items-center justify-between">
+          {/* Dynamic System Mode Badge */}
+          <div className={`px-3 py-2 rounded-lg border flex items-center justify-between ${
+            systemStatus && !systemStatus.is_airgapped
+              ? 'bg-blue-50/70 border-blue-200 text-blue-800'
+              : 'bg-[#EDFAF4] border-[#BFEADB] text-[#1B8A6C]'
+          }`}>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-[#1B8A6C]" />
+              <div className={`w-2 h-2 rounded-full ${
+                systemStatus && !systemStatus.is_airgapped ? 'bg-blue-600 animate-pulse' : 'bg-[#1B8A6C]'
+              }`} />
               <div>
-                <div className="text-[11px] font-semibold text-[#1B8A6C]">SOVEREIGN AIR-GAP</div>
-                <div className="text-[10px] font-mono text-[#1B8A6C]/80">0 KB/s OUT · LOCAL</div>
+                <div className="text-[11px] font-semibold">
+                  {systemStatus && !systemStatus.is_airgapped ? 'HYBRID ONLINE' : 'SOVEREIGN AIR-GAP'}
+                </div>
+                <div className="text-[10px] font-mono opacity-80">
+                  {systemStatus && !systemStatus.is_airgapped ? `${systemStatus.outbound_kbps || '1.6'} KB/s · GPT-4O` : '0 KB/s OUT · LOCAL'}
+                </div>
               </div>
             </div>
-            <Radio className="w-3.5 h-3.5 text-[#1B8A6C]" />
+            <Radio className="w-3.5 h-3.5" />
           </div>
 
           {/* User Profile Pill */}
@@ -469,7 +548,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
             </div>
 
-            <button
+            <button type="button" suppressHydrationWarning
               onClick={handleLogout}
               title="Sign Out"
               className="p-1.5 text-[#5E7072] hover:text-[#D63B3B] hover:bg-[#FDF2F2] rounded-md transition-colors cursor-pointer"
@@ -488,7 +567,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           
           {/* Left Title & Mobile Menu */}
           <div className="flex items-center gap-3">
-            <button
+            <button type="button" suppressHydrationWarning
               aria-label="Open navigation"
               onClick={() => setIsNavigationOpen(true)}
               className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#C2CEC2] text-[#3E5052] lg:hidden cursor-pointer hover:bg-[#F0F2ED]"
@@ -512,7 +591,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex items-center gap-2.5">
             
             {/* Sound Switch Button */}
-            <button
+            <button type="button" suppressHydrationWarning
               onClick={toggleSound}
               title={alertSoundEnabled ? "Audio chime active" : "Audio chime muted"}
               className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-semibold transition-all border cursor-pointer ${
@@ -527,7 +606,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             {/* Notification Center Dropdown */}
             <div className="relative" ref={notificationDropdownRef}>
-              <button
+              <button type="button" suppressHydrationWarning
                 onClick={() => {
                   setIsNotificationDrawerOpen(!isNotificationDrawerOpen);
                   if (!isNotificationDrawerOpen) setUnreadCount(0);
@@ -610,7 +689,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                   {/* Dropdown Footer */}
                   <div className="p-2.5 bg-[#F0F2ED] border-t border-[#C2CEC2] flex items-center justify-between text-xs">
-                    <button
+                    <button type="button" suppressHydrationWarning
                       onClick={() => setNotifications([])}
                       className="text-[11px] text-[#5E7072] hover:text-[#D63B3B] font-semibold cursor-pointer"
                     >
@@ -630,10 +709,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               )}
             </div>
 
-            {/* Sovereign Air-Gap Pill */}
-            <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#EDFAF4] border border-[#BFEADB] text-[11px] font-mono font-semibold text-[#1B8A6C]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#1B8A6C] animate-pulse" />
-              <span>AIR-GAPPED</span>
+            {/* Dynamic System Status Pill */}
+            <div className={`hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-mono font-semibold ${
+              systemStatus && !systemStatus.is_airgapped
+                ? 'bg-blue-50 border-blue-200 text-blue-700'
+                : 'bg-[#EDFAF4] border-[#BFEADB] text-[#1B8A6C]'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                systemStatus && !systemStatus.is_airgapped ? 'bg-blue-600' : 'bg-[#1B8A6C]'
+              }`} />
+              <span>{systemStatus && !systemStatus.is_airgapped ? 'HYBRID ONLINE · GPT-4O' : 'AIR-GAPPED'}</span>
             </div>
 
           </div>

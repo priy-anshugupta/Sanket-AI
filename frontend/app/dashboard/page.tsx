@@ -16,7 +16,7 @@ import {
   Flame
 } from 'lucide-react';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000';
 
 interface Report {
   id: string;
@@ -70,8 +70,8 @@ export default function TriageDashboard() {
     }
   };
 
-  const fetchReports = async () => {
-    setLoading(true);
+  const fetchReports = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -89,24 +89,24 @@ export default function TriageDashboard() {
     } catch {
       // Offline fallback
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchSummary();
-    fetchReports();
+    fetchReports(false); // Show loading spinner only on initial mount or filter change
 
     const handleLiveReport = (e: any) => {
       fetchSummary();
-      fetchReports();
+      fetchReports(true); // Silent update on live event
     };
 
     window.addEventListener('sanket:new_report', handleLiveReport);
     const interval = setInterval(() => {
       fetchSummary();
-      fetchReports();
-    }, 3000);
+      fetchReports(true); // Silent background polling without flickering spinner
+    }, 4000);
 
     return () => {
       window.removeEventListener('sanket:new_report', handleLiveReport);
@@ -202,7 +202,7 @@ export default function TriageDashboard() {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
+          <button type="button" suppressHydrationWarning
             onClick={() => { fetchSummary(); fetchReports(); }}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#C2CEC2] bg-white hover:bg-[#F0F2ED] text-[#3E5052] text-xs font-semibold shadow-xs transition-colors"
           >
@@ -210,7 +210,7 @@ export default function TriageDashboard() {
             Refresh
           </button>
 
-          <button
+          <button type="button" suppressHydrationWarning
             onClick={() => setShowIngest(true)}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#0A6B63] hover:bg-[#085B54] text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
           >
@@ -281,7 +281,7 @@ export default function TriageDashboard() {
             { id: 'MEDIUM', label: 'Medium' },
             { id: 'LOW', label: 'Low / Non-SIF' },
           ].map((f) => (
-            <button
+            <button type="button" suppressHydrationWarning
               key={f.id}
               onClick={() => { setFilter(f.id); setPage(1); }}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
@@ -297,7 +297,7 @@ export default function TriageDashboard() {
 
         <div className="relative">
           <Search className="w-4 h-4 absolute left-3 top-2.5 text-[#94A3A5]" />
-          <input
+          <input suppressHydrationWarning
             type="text"
             placeholder="Search equipment, location, hazard..."
             value={search}
@@ -336,7 +336,7 @@ export default function TriageDashboard() {
                   <td colSpan={8} className="text-center py-14 text-[#94A3A5] text-xs">
                     <FileText className="mx-auto mb-2 h-5 w-5 text-[#94A3A5]" />
                     <div className="font-semibold text-[#3E5052]">No safety reports match the current view.</div>
-                    <button onClick={() => { setFilter(''); setSearch(''); }} className="mt-2 text-xs font-semibold text-[#0A6B63] hover:underline">Clear filters</button>
+                    <button type="button" suppressHydrationWarning onClick={() => { setFilter(''); setSearch(''); }} className="mt-2 text-xs font-semibold text-[#0A6B63] hover:underline">Clear filters</button>
                   </td>
                 </tr>
               ) : (
@@ -390,7 +390,17 @@ export default function TriageDashboard() {
 
                     {/* Status */}
                     <td>
-                      {report.sif_label === 'HIGH' ? (
+                      {report.status === 'RESOLVED' || report.status === 'CLOSED' ? (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#EDFAF4] text-[#1B8A6C] border border-[#BFEADB]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#1B8A6C]" />
+                          RESOLVED
+                        </span>
+                      ) : report.status === 'ACTION_DISPATCHED' ? (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#E8F4F0] text-[#0A6B63] border border-[#BCE3DC]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#0A6B63]" />
+                          CAPA ACTIVE
+                        </span>
+                      ) : report.sif_label === 'HIGH' ? (
                         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#FDF2F2] text-[#D63B3B] border border-[#F5C6C6]">
                           <span className="w-1.5 h-1.5 rounded-full bg-[#D63B3B]" />
                           SWA ACTIVE
@@ -443,12 +453,12 @@ export default function TriageDashboard() {
                 <h3 className="font-heading font-bold text-base text-[#1A2B2D]">Ingest Safety Observations</h3>
                 <p className="text-xs text-[#5E7072]">Multilingual neural pipeline (Assamese, Hindi, English)</p>
               </div>
-              <button onClick={() => setShowIngest(false)} className="text-[#94A3A5] hover:text-[#1A2B2D] font-bold text-base">✕</button>
+              <button type="button" suppressHydrationWarning onClick={() => setShowIngest(false)} className="text-[#94A3A5] hover:text-[#1A2B2D] font-bold text-base">✕</button>
             </div>
 
             {/* Ingest Mode Tabs */}
             <div className="grid grid-cols-2 p-1 bg-[#F0F2ED] rounded-lg">
-              <button
+              <button suppressHydrationWarning
                 type="button"
                 onClick={() => setIngestTab('batch')}
                 className={`py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${
@@ -461,7 +471,7 @@ export default function TriageDashboard() {
                 Batch Dataset Import
               </button>
 
-              <button
+              <button suppressHydrationWarning
                 type="button"
                 onClick={() => setIngestTab('single')}
                 className={`py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${
@@ -512,7 +522,7 @@ export default function TriageDashboard() {
                 )}
 
                 <div className="pt-1">
-                  <button
+                  <button suppressHydrationWarning
                     type="button"
                     onClick={handleBatchIngest500}
                     disabled={ingesting}
@@ -574,7 +584,7 @@ export default function TriageDashboard() {
 
                 <div>
                   <label className="block text-[11px] font-medium text-[#1A2B2D] mb-1">Observation Narrative (Assamese / Hindi / English)</label>
-                  <textarea
+                  <textarea suppressHydrationWarning
                     rows={3}
                     value={ingestText}
                     onChange={(e) => setIngestText(e.target.value)}
@@ -585,14 +595,14 @@ export default function TriageDashboard() {
                 </div>
 
                 <div className="flex items-center justify-end gap-2 pt-1">
-                  <button
+                  <button suppressHydrationWarning
                     type="button"
                     onClick={() => setShowIngest(false)}
                     className="px-3.5 py-2 rounded-lg border border-[#C2CEC2] text-xs font-medium text-[#5E7072] hover:bg-[#F0F2ED]"
                   >
                     Cancel
                   </button>
-                  <button
+                  <button suppressHydrationWarning
                     type="submit"
                     disabled={ingesting}
                     className="px-4 py-2 rounded-lg bg-[#0A6B63] hover:bg-[#085B54] text-white text-xs font-semibold shadow-xs disabled:opacity-50 cursor-pointer"

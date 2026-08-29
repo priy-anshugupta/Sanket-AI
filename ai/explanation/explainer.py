@@ -16,17 +16,29 @@ class LLMExplainer:
     Only runs for reports with sif_score >= 0.50.
     """
 
-    PROMPT_TEMPLATE = """You are an industrial safety expert analyzing a safety incident report.
+    PROMPT_TEMPLATE = """You are a DGMS-certified senior safety expert at Oil India Limited, trained on OISD-189, IOGP Life-Saving Rules, and API RP 754 SIF precursor methodology.
 
-Given this safety incident report and its SIF classification of {sif_label} (score: {sif_score}):
+INCIDENT REPORT: "{text}"
 
-Report: "{text}"
+SIF CLASSIFICATION: {sif_label} (score: {sif_score:.0%})
+NEAREST KNOWN PRECURSOR: "{matched_anchor}"
 
-Most similar known precursor: "{matched_anchor}"
+TASK: Produce a precise 3-sentence analysis:
+1. WHAT happened — identify the specific equipment, energy source, and failure mechanism from the report text only.
+2. WHY this is dangerous — explain the barrier failure chain and SIF fatality pathway per IOGP/OISD standards.
+3. IMMEDIATE ACTION — state the mandatory response per DGMS/OISD (e.g., Stop Work Authority, LOTO, area evacuation radius, pressure bleed-off).
 
-Explain in exactly 2 sentences why this event has serious injury or fatality potential.
-Reference the specific barrier failure and energy source identified.
-Be concise, factual, and cite specific hazards from the report text. Do not hallucinate details not present in the report."""
+GUARDRAILS:
+- ONLY cite facts explicitly stated in the report text. Do NOT invent equipment names, pressures, or locations not mentioned.
+- If the report is in Hindi/Hinglish/Assamese, still analyze in English.
+- If the report describes a routine/safe activity, explain why SIF risk is low.
+- Be specific: name the barrier (e.g., "BOP annular seal"), the energy source (e.g., "1800 PSI wellbore pressure"), and the IOGP rule violated."""
+
+    SYSTEM_PROMPT = """You are a senior Oil & Gas industrial safety analyst at Oil India Limited with 20+ years field experience in Upper Assam oilfields.
+You are trained on DGMS (Directorate General of Mines Safety) regulations, OISD-189 safety standards, IOGP 9 Life-Saving Rules, and API RP 754 SIF precursor framework.
+You analyze safety incident reports and provide grounded, factual explanations.
+NEVER hallucinate or fabricate details not present in the report.
+Answer in exactly 3 concise, technical sentences."""
 
     async def explain(
         self,
@@ -37,12 +49,11 @@ Be concise, factual, and cite specific hazards from the report text. Do not hall
         entities: list[dict] = None,
     ) -> str | None:
         """
-        Generate a 2-sentence grounded explanation.
-
-        Routes to Groq API (online) or Ollama (offline) based on AI_MODE.
+        Generate a grounded 3-sentence explanation with DGMS/OISD guardrails.
+        Routes to GPT-4o (online) or Groq/Ollama based on AI_MODE.
         """
         prompt = self.PROMPT_TEMPLATE.format(
-            text=text[:500],  # Limit context window
+            text=text[:800],
             sif_label=sif_label,
             sif_score=sif_score,
             matched_anchor=matched_anchor,
@@ -59,9 +70,9 @@ Be concise, factual, and cite specific hazards from the report text. Do not hall
         return await self._explain_ollama(prompt)
 
     async def _explain_openai(self, prompt: str) -> str | None:
-        """Call OpenAI API for grounded explanation."""
+        """Call OpenAI GPT-4o for grounded industrial safety explanation."""
         try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            async with httpx.AsyncClient(timeout=25.0) as client:
                 response = await client.post(
                     "https://api.openai.com/v1/chat/completions",
                     headers={
@@ -69,20 +80,20 @@ Be concise, factual, and cite specific hazards from the report text. Do not hall
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": settings.OPENAI_MODEL or "gpt-4o-mini",
+                        "model": settings.OPENAI_MODEL or "gpt-4o",
                         "messages": [
-                            {"role": "system", "content": "You are a senior Oil & Gas industrial safety analyst. Answer in exactly 2 concise sentences."},
+                            {"role": "system", "content": self.SYSTEM_PROMPT},
                             {"role": "user", "content": prompt},
                         ],
-                        "temperature": 0.2,
-                        "max_tokens": 150,
+                        "temperature": 0.15,
+                        "max_tokens": 300,
                     },
                 )
                 response.raise_for_status()
                 data = response.json()
                 return data["choices"][0]["message"]["content"].strip()
         except Exception as e:
-            print(f"[Explainer] OpenAI API error: {e}")
+            print(f"[Explainer] OpenAI GPT-4o error: {e}")
             return None
 
     async def _explain_groq(self, prompt: str) -> str | None:
