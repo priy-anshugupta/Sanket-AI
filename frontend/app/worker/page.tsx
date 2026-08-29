@@ -14,7 +14,11 @@ import {
   RefreshCw,
   AlertOctagon,
   Flame,
-  CheckCircle2
+  CheckCircle2,
+  Shield,
+  FileCheck,
+  Radio,
+  Sparkles
 } from 'lucide-react';
 
 const API = 'http://localhost:8000';
@@ -42,11 +46,19 @@ export default function FieldWorkerTerminal() {
   const [submittedReports, setSubmittedReports] = useState<WorkerReport[]>([
     {
       id: 'REP-W7-01',
-      text: 'Routine grease top-up completed on mud pump #2 bearings.',
+      text: 'Routine grease top-up completed on mud pump #2 bearings. Gauges normal.',
       time: '08:45 AM',
       sif_label: 'LOW',
       sif_score: 0.15,
       status: 'VERIFIED SAFE'
+    },
+    {
+      id: 'REP-W7-02',
+      text: 'BOP secondary valve seal weeping hydraulic fluid under 1800 PSI vibration.',
+      time: '11:15 AM',
+      sif_label: 'HIGH',
+      sif_score: 0.94,
+      status: 'SWA ESCALATED'
     }
   ]);
 
@@ -86,26 +98,26 @@ export default function FieldWorkerTerminal() {
     {
       id: 'kick',
       icon: '🚨',
-      label: 'Gas Kick / 1800 PSI',
-      presetText: 'Annular BOP secondary valve seal weeping hydraulic fluid under 1800 PSI vibration during pipe tripping at Well Pad 7.'
+      label: 'Gas Kick / Surge',
+      presetText: 'Annular BOP valve seal weeping hydraulic fluid under 1800 PSI vibration during drilling.'
     },
     {
       id: 'gas',
       icon: '💨',
-      label: 'H2S / Methane Vapor',
-      presetText: 'Strong rotten egg H2S smell detected near cellar pit during kill-line test at Well Pad 7.'
+      label: 'H2S / Gas Smell',
+      presetText: 'Strong H2S smell detected near cellar pit during well pressure test.'
     },
     {
       id: 'crane',
       icon: '🏗️',
-      label: 'Unsafe Crane / Lifting',
-      presetText: 'Crawler crane moving 5-ton drill collar over active wellhead manifold without ground spotter.'
+      label: 'Unsafe Crane Lift',
+      presetText: 'Crane moving heavy 5-ton drill collar over wellhead manifold without ground spotter.'
     },
     {
       id: 'ppe',
       icon: '🛑',
-      label: 'PPE / Slip / Barrier',
-      presetText: 'Worn out staircase safety handrail loose on mud tank inspection walkway. Oil weeping on floor.'
+      label: 'Broken Rail / Slip',
+      presetText: 'Staircase safety handrail loose on mud tank walkway. Oil spilled on floor.'
     }
   ];
 
@@ -142,8 +154,8 @@ export default function FieldWorkerTerminal() {
       timerRef.current = setInterval(() => setRecordingSeconds(p => p + 1), 1000);
       setTimeout(() => {
         stopRecording();
-        setInputText('Annular BOP secondary valve seal weeping hydraulic fluid under 1800 PSI vibration at Well Pad 7.');
-      }, 3000);
+        setInputText('BOP secondary valve seal weeping hydraulic fluid under 1800 PSI vibration at Well Pad 7.');
+      }, 2500);
     }
   };
 
@@ -165,10 +177,10 @@ export default function FieldWorkerTerminal() {
         const d = await res.json();
         setInputText(d.text || '');
       } else {
-        setInputText('Annular BOP secondary valve seal weeping hydraulic fluid under 1800 PSI vibration at Well Pad 7.');
+        setInputText('BOP secondary valve seal weeping hydraulic fluid under 1800 PSI vibration at Well Pad 7.');
       }
     } catch {
-      setInputText('Annular BOP secondary valve seal weeping hydraulic fluid under 1800 PSI vibration at Well Pad 7.');
+      setInputText('BOP secondary valve seal weeping hydraulic fluid under 1800 PSI vibration at Well Pad 7.');
     } finally {
       setIsTranscribing(false);
     }
@@ -201,8 +213,8 @@ export default function FieldWorkerTerminal() {
             
             const isHigh = rep.sif_label === 'HIGH';
             const feedbackText = isHigh 
-              ? `🚨 SIF CRITICAL ALERT (${rep.sif_score?.toFixed(2)}): Escalated to Toolpusher Horen Gogoi & Duliajan Control Room. Prepare for SWA.`
-              : `✅ Observation Logged: Risk Score ${rep.sif_score?.toFixed(2)} (${rep.sif_label}). Shift Supervisor notified.`;
+              ? `🚨 CRITICAL ALERT (SIF ${Math.round((rep.sif_score || 0.94) * 100)}%): Escalated to Rig Supervisor & Duliajan Control Room.`
+              : `✅ Report Logged (Low Risk). Shift Supervisor notified.`;
 
             setLastResult({
               sif_score: rep.sif_score || 0.94,
@@ -228,11 +240,11 @@ export default function FieldWorkerTerminal() {
               sif_score: 0.94,
               sif_label: 'HIGH',
               iogp_rule: 'Energy Isolation',
-              feedback: '🚨 SIF CRITICAL PRECURSOR ESCALATED TO CONTROL ROOM.'
+              feedback: '🚨 CRITICAL ALERT: Escalated to Control Room.'
             });
           }
           setIsSubmitting(false);
-        }, 1200);
+        }, 1000);
       }
     } catch {
       alert('Network error connecting to SANKET server');
@@ -241,239 +253,306 @@ export default function FieldWorkerTerminal() {
   };
 
   const handleEmergencySWA = () => {
-    setSwaToast('🛑 EMERGENCY SWA DISPATCHED: Toolpusher & Rig Siren Triggered! Halt operations immediately.');
+    setSwaToast('🛑 STOP WORK ORDER SENT: Rig Siren & Supervisor Alerted!');
     setTimeout(() => setSwaToast(null), 6000);
   };
 
   return (
-    <div className="min-h-screen bg-[#0F1B1D] text-[#F7F8F5] flex justify-center p-3 sm:p-5 font-sans select-none">
-      <div className="w-full max-w-md space-y-3.5 pb-8">
+    <div className="min-h-screen bg-[#0F1B1D] text-[#F7F8F5] p-3 sm:p-6 font-sans select-none">
+      <div className="w-full max-w-5xl mx-auto space-y-4 pb-8">
         
-        {/* ── Top ATEX Terminal Header ── */}
-        <div className="bg-[#162829] p-3.5 rounded-xl border border-[#264245] shadow-sm flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="relative w-8 h-8 flex items-center justify-center shrink-0">
+        {/* ── Top Header ── */}
+        <div className="bg-[#162829] p-3.5 sm:p-4 rounded-xl border border-[#264245] shadow-md flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="relative w-9 h-9 flex items-center justify-center shrink-0">
               <Image
                 src="/assets/sanket_logo_derrick.png"
                 alt="SANKET AI Logo"
-                width={32}
-                height={32}
+                width={36}
+                height={36}
                 className="object-contain"
                 priority
               />
             </div>
             <div>
-              <div className="flex items-center gap-1 leading-none">
-                <span className="font-heading font-bold text-sm tracking-tight text-white">SANKET</span>
-                <span className="font-heading font-bold text-sm text-[#1B8A6C]">· FIELD</span>
+              <div className="flex items-center gap-2 leading-none">
+                <span className="font-heading font-bold text-base tracking-tight text-white">SANKET</span>
+                <span className="font-heading font-bold text-base text-[#1B8A6C]">· FIELD</span>
               </div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-[#8BA4A7] mt-0.5">
-                Zone 1/2 IS Terminal
+              <p className="text-[11px] text-[#8BA4A7] mt-1 font-medium">
+                Oil India Limited · Rig #4 (Well Pad 7)
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-[10px] font-semibold flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="flex items-center gap-2.5">
+            <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-[11px] font-semibold flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               ONLINE
             </span>
 
             <button
               onClick={handleLogout}
               title="Logout"
-              className="p-1.5 rounded-lg bg-[#1D3234] hover:bg-[#264245] text-[#8BA4A7] hover:text-white transition-colors cursor-pointer border border-[#264245]"
+              className="p-2 rounded-lg bg-[#1D3234] hover:bg-[#264245] text-[#8BA4A7] hover:text-white transition-colors cursor-pointer border border-[#264245] flex items-center gap-1 text-xs"
             >
-              <LogOut className="w-3.5 h-3.5" />
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">Sign Out</span>
             </button>
-          </div>
-        </div>
-
-        {/* ── Worker Profile Card ── */}
-        <div className="bg-[#162829] p-3.5 rounded-xl border border-[#264245] shadow-xs space-y-2.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#0A6B63] text-white font-bold flex items-center justify-center text-xs">
-                {currentUser?.full_name?.charAt(0) || 'B'}
-              </div>
-              <div>
-                <h2 className="text-xs font-bold text-white leading-tight">
-                  {currentUser?.full_name || 'Bikash Das'}
-                </h2>
-                <div className="text-[10px] font-mono text-[#8BA4A7]">
-                  Badge: <span className="text-white font-semibold">OIL-OP-4491</span>
-                </div>
-              </div>
-            </div>
-
-            <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono text-[10px] font-semibold">
-              DAY SHIFT
-            </span>
-          </div>
-
-          <div className="p-2 rounded-lg bg-[#1D3234] border border-[#264245] flex items-center justify-between text-xs font-mono">
-            <div className="flex items-center gap-1.5 text-[#8BA4A7]">
-              <MapPin className="w-3.5 h-3.5 text-[#1B8A6C]" />
-              <span>Well Pad 7 (Upper Assam)</span>
-            </div>
-            <span className="text-[#1B8A6C] font-semibold">RIG #4</span>
           </div>
         </div>
 
         {swaToast && (
-          <div className="p-3 rounded-lg bg-[#D63B3B] text-white text-xs font-semibold flex items-center justify-between shadow-lg">
-            <div className="flex items-center gap-2">
-              <AlertOctagon className="w-4 h-4 fill-white shrink-0" />
+          <div className="p-3.5 rounded-xl bg-[#D63B3B] text-white text-xs font-semibold flex items-center justify-between shadow-xl border border-[#B92525]">
+            <div className="flex items-center gap-2.5">
+              <AlertOctagon className="w-5 h-5 fill-white shrink-0 animate-bounce" />
               <span>{swaToast}</span>
             </div>
-            <button onClick={() => setSwaToast(null)} className="text-white font-bold">✕</button>
+            <button onClick={() => setSwaToast(null)} className="text-white font-bold px-2 cursor-pointer">✕</button>
           </div>
         )}
 
-        {/* ── Giant PTT Voice Hazard Logger ── */}
-        <div className="bg-[#162829] p-4 rounded-xl border border-[#264245] shadow-xs space-y-3.5">
-          <div className="flex items-center justify-between border-b border-[#264245] pb-2">
-            <span className="text-xs font-semibold text-white flex items-center gap-1.5">
-              <Volume2 className="w-3.5 h-3.5 text-[#1B8A6C]" />
-              Report Safety Hazard
-            </span>
-            <span className="text-[10px] font-mono text-[#8BA4A7]">PTT VOICE AI</span>
-          </div>
+        {/* ── Main Grid ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+          
+          {/* ── LEFT COLUMN: Voice & Hazard Logger (7 Cols) ── */}
+          <div className="lg:col-span-7 space-y-4">
+            
+            {/* Worker Profile Strip */}
+            <div className="bg-[#162829] p-3.5 rounded-xl border border-[#264245] shadow-xs flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-[#0A6B63] text-white font-bold flex items-center justify-center text-sm">
+                  {currentUser?.full_name?.charAt(0) || 'B'}
+                </div>
+                <div>
+                  <h2 className="text-xs font-bold text-white">
+                    {currentUser?.full_name || 'Bikash Das'} (Rig Operator)
+                  </h2>
+                  <div className="text-[11px] text-[#8BA4A7] mt-0.5">
+                    Badge: <strong className="text-white">OIL-OP-4491</strong> · Shift: <strong className="text-amber-400">Day Shift</strong>
+                  </div>
+                </div>
+              </div>
 
-          {/* Big Push-To-Talk Button */}
-          <div className="flex flex-col items-center justify-center py-1">
-            <button
-              type="button"
-              onClick={isRecording ? stopRecording : startRecording}
-              disabled={isTranscribing}
-              className={`w-24 h-24 rounded-full flex flex-col items-center justify-center gap-1 transition-all shadow-lg cursor-pointer border-2 ${
-                isRecording
-                  ? 'bg-[#D63B3B] text-white border-[#F5C6C6] scale-105 animate-pulse'
-                  : 'bg-[#0A6B63] hover:bg-[#085B54] text-white border-[#1B8A6C]'
-              }`}
-            >
-              {isRecording ? (
-                <>
-                  <Square className="w-7 h-7 fill-white" />
-                  <span className="text-[10px] font-mono font-bold">{recordingSeconds}s STOP</span>
-                </>
-              ) : (
-                <>
-                  <Mic className="w-7 h-7" />
-                  <span className="text-[10px] font-bold uppercase tracking-wide">HOLD PTT</span>
-                </>
-              )}
-            </button>
-            <p className="text-[11px] text-[#8BA4A7] mt-2 font-mono">
-              {isRecording ? '🔴 Listening... Speak clearly' : isTranscribing ? '⚡ Transcribing with Whisper...' : 'Tap to speak (Hindi / English / Assamese)'}
-            </p>
-          </div>
+              <div className="flex items-center gap-1.5 text-xs text-[#1B8A6C] bg-[#1D3234] px-2.5 py-1 rounded-lg border border-[#264245]">
+                <Radio className="w-3.5 h-3.5" />
+                <span>Radio Ch-09</span>
+              </div>
+            </div>
 
-          {/* 4 Quick-Select Hazard Pre-fills */}
-          <div className="space-y-1">
-            <div className="text-[10px] font-medium uppercase text-[#8BA4A7]">Quick Tap Category:</div>
-            <div className="grid grid-cols-2 gap-1.5">
-              {quickTags.map((tag) => (
+            {/* Voice Hazard Logger */}
+            <div className="bg-[#162829] p-4 sm:p-5 rounded-xl border border-[#264245] shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-[#264245] pb-2">
+                <span className="text-xs font-bold text-white flex items-center gap-2">
+                  <Volume2 className="w-4 h-4 text-[#1B8A6C]" />
+                  Report Safety Hazard
+                </span>
+                <span className="text-[10px] text-[#1B8A6C] font-semibold bg-[#1D3234] px-2 py-0.5 rounded border border-[#264245]">
+                  VOICE ENABLED
+                </span>
+              </div>
+
+              {/* Big Push-To-Talk Button */}
+              <div className="flex flex-col items-center justify-center py-2">
                 <button
-                  key={tag.id}
                   type="button"
-                  onClick={() => handleSelectTag(tag)}
-                  className={`p-2 rounded-lg border text-left transition-all text-xs font-medium flex items-center gap-1.5 cursor-pointer ${
-                    selectedTag === tag.id
-                      ? 'bg-[#0A6B63]/25 border-[#0A6B63] text-white'
-                      : 'bg-[#1D3234] border-[#264245] text-[#8BA4A7] hover:text-white'
+                  onClick={isRecording ? stopRecording : startRecording}
+                  disabled={isTranscribing}
+                  className={`w-28 h-28 rounded-full flex flex-col items-center justify-center gap-1.5 transition-all shadow-xl cursor-pointer border-3 ${
+                    isRecording
+                      ? 'bg-[#D63B3B] text-white border-[#F5C6C6] scale-105 animate-pulse'
+                      : 'bg-[#0A6B63] hover:bg-[#085B54] text-white border-[#1B8A6C] hover:scale-102'
                   }`}
                 >
-                  <span className="text-sm">{tag.icon}</span>
-                  <span className="truncate">{tag.label}</span>
+                  {isRecording ? (
+                    <>
+                      <Square className="w-8 h-8 fill-white" />
+                      <span className="text-[11px] font-bold">{recordingSeconds}s STOP</span>
+                    </>
+                  ) : (
+                    <>
+                      <Mic className="w-8 h-8" />
+                      <span className="text-[11px] font-bold uppercase tracking-wider">TAP TO SPEAK</span>
+                    </>
+                  )}
                 </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Observation Text Input Area */}
-          <div>
-            <textarea
-              rows={3}
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder="Describe hazard condition (equipment, pressure, leak, barrier)..."
-              className="w-full p-2.5 rounded-lg bg-[#1D3234] border border-[#264245] text-xs text-white placeholder-[#5E7072] focus:outline-none focus:border-[#0A6B63] leading-relaxed"
-            />
-          </div>
-
-          {/* Submit Observation Button */}
-          <button
-            type="button"
-            onClick={handleSubmitObservation}
-            disabled={isSubmitting || !inputText.trim()}
-            className="w-full py-2.5 rounded-lg bg-[#0A6B63] hover:bg-[#085B54] text-white font-semibold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-xs disabled:opacity-50 cursor-pointer"
-          >
-            {isSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-            {isSubmitting ? 'Transmitting into SIF Pipeline...' : 'Transmit Safety Observation'}
-          </button>
-        </div>
-
-        {/* ── Real-Time SIF Result Box ── */}
-        {lastResult && (
-          <div className={`p-3 rounded-lg border space-y-1.5 ${
-            lastResult.sif_label === 'HIGH'
-              ? 'bg-[#FDF2F2]/10 border-[#F5C6C6]/30 text-[#F5C6C6]'
-              : 'bg-[#EDFAF4]/10 border-[#BFEADB]/30 text-[#BFEADB]'
-          }`}>
-            <div className="flex items-center justify-between text-xs font-bold">
-              <span className="flex items-center gap-1.5">
-                {lastResult.sif_label === 'HIGH' ? <Flame className="w-3.5 h-3.5 text-[#D63B3B]" /> : <CheckCircle2 className="w-3.5 h-3.5 text-[#1B8A6C]" />}
-                {lastResult.sif_label} SIF ({lastResult.sif_score.toFixed(2)})
-              </span>
-              <span className="text-[10px] font-mono bg-white/10 px-1.5 py-0.5 rounded">
-                {lastResult.iogp_rule}
-              </span>
-            </div>
-            <p className="text-xs leading-relaxed font-normal text-slate-200">
-              {lastResult.feedback}
-            </p>
-          </div>
-        )}
-
-        {/* ── My Shift Observations History ── */}
-        <div className="bg-[#162829] p-3.5 rounded-xl border border-[#264245] shadow-xs space-y-2.5">
-          <div className="flex items-center justify-between border-b border-[#264245] pb-2">
-            <span className="text-xs font-semibold text-white flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-[#8BA4A7]" />
-              My Observations (Today)
-            </span>
-            <span className="text-[10px] font-mono text-[#8BA4A7]">{submittedReports.length} Submitted</span>
-          </div>
-
-          <div className="space-y-1.5">
-            {submittedReports.map((rep) => (
-              <div key={rep.id} className="p-2.5 rounded-lg bg-[#1D3234] border border-[#264245] space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono font-bold ${
-                    rep.sif_label === 'HIGH' ? 'bg-[#D63B3B]/20 text-[#F5C6C6]' : 'bg-[#1B8A6C]/20 text-[#BFEADB]'
-                  }`}>
-                    {rep.sif_label} ({rep.sif_score.toFixed(2)})
-                  </span>
-                  <span className="text-[10px] font-mono text-[#8BA4A7]">{rep.time}</span>
-                </div>
-                <p className="text-xs text-slate-300 line-clamp-2 italic">
-                  "{rep.text}"
+                <p className="text-xs text-[#8BA4A7] mt-3 font-medium text-center">
+                  {isRecording ? '🔴 Listening... Speak clearly' : isTranscribing ? '⚡ Converting voice to text...' : 'Speak in Hindi, Assamese or English'}
                 </p>
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* ── Emergency Stop Work Authority (SWA) Red Bar ── */}
-        <button
-          type="button"
-          onClick={handleEmergencySWA}
-          className="w-full py-3 rounded-lg bg-[#D63B3B] hover:bg-[#B92525] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg cursor-pointer"
-        >
-          <AlertOctagon className="w-4 h-4 fill-white" />
-          Emergency Stop Work Authority (SWA)
-        </button>
+              {/* 4 Quick-Select Hazard Pre-fills */}
+              <div className="space-y-1.5">
+                <div className="text-[11px] font-semibold uppercase text-[#8BA4A7]">Quick Tap Hazard:</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {quickTags.map((tag) => (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      onClick={() => handleSelectTag(tag)}
+                      className={`p-2.5 rounded-lg border text-left transition-all text-xs font-medium flex items-center gap-2 cursor-pointer ${
+                        selectedTag === tag.id
+                          ? 'bg-[#0A6B63]/30 border-[#1B8A6C] text-white ring-1 ring-[#1B8A6C]'
+                          : 'bg-[#1D3234] border-[#264245] text-[#8BA4A7] hover:text-white hover:bg-[#264245]'
+                      }`}
+                    >
+                      <span className="text-base">{tag.icon}</span>
+                      <span className="truncate">{tag.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Observation Text Input Area */}
+              <div>
+                <textarea
+                  rows={2}
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  placeholder="Or type hazard notes here..."
+                  className="w-full p-3 rounded-lg bg-[#1D3234] border border-[#264245] text-xs text-white placeholder-[#5E7072] focus:outline-none focus:border-[#0A6B63] leading-relaxed"
+                />
+              </div>
+
+              {/* Submit Observation Button */}
+              <button
+                type="button"
+                onClick={handleSubmitObservation}
+                disabled={isSubmitting || !inputText.trim()}
+                className="w-full py-3 rounded-lg bg-[#0A6B63] hover:bg-[#085B54] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-xs disabled:opacity-50 cursor-pointer transition-all"
+              >
+                {isSubmitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                {isSubmitting ? 'Sending to Control Room...' : 'Send Hazard Report'}
+              </button>
+            </div>
+
+            {/* Real-Time SIF Result Box */}
+            {lastResult && (
+              <div className={`p-3.5 rounded-xl border space-y-1.5 shadow-md ${
+                lastResult.sif_label === 'HIGH'
+                  ? 'bg-[#FDF2F2]/10 border-[#F5C6C6]/40 text-[#F5C6C6]'
+                  : 'bg-[#EDFAF4]/10 border-[#BFEADB]/40 text-[#BFEADB]'
+              }`}>
+                <div className="flex items-center justify-between text-xs font-bold">
+                  <span className="flex items-center gap-1.5">
+                    {lastResult.sif_label === 'HIGH' ? <Flame className="w-4 h-4 text-[#D63B3B]" /> : <CheckCircle2 className="w-4 h-4 text-[#1B8A6C]" />}
+                    {lastResult.sif_label} RISK ({Math.round(lastResult.sif_score * 100)}%)
+                  </span>
+                  <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded">
+                    {lastResult.iogp_rule}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-200">
+                  {lastResult.feedback}
+                </p>
+              </div>
+            )}
+
+            {/* Emergency Stop Work Authority (SWA) Red Bar */}
+            <button
+              type="button"
+              onClick={handleEmergencySWA}
+              className="w-full py-3 rounded-xl bg-[#D63B3B] hover:bg-[#B92525] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl cursor-pointer transition-all border border-[#F5C6C6]/30"
+            >
+              <AlertOctagon className="w-4 h-4 fill-white" />
+              Emergency Stop Work (SWA Lockdown)
+            </button>
+
+          </div>
+
+          {/* ── RIGHT COLUMN: Shift Status & History (5 Cols) ── */}
+          <div className="lg:col-span-5 space-y-4">
+            
+            {/* Active Permit & Gas Level */}
+            <div className="bg-[#162829] p-4 rounded-xl border border-[#264245] shadow-xs space-y-3">
+              <div className="flex items-center justify-between border-b border-[#264245] pb-2">
+                <span className="text-xs font-bold text-white flex items-center gap-2">
+                  <FileCheck className="w-4 h-4 text-[#0A6B63]" />
+                  Active Shift Permit
+                </span>
+                <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-semibold">
+                  AUTHORIZED
+                </span>
+              </div>
+
+              <div className="space-y-1.5 text-xs text-[#8BA4A7]">
+                <div className="flex justify-between">
+                  <span>Permit:</span>
+                  <strong className="text-white">ePTW-048 (Drilling & BOP)</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span>Supervisor:</span>
+                  <strong className="text-emerald-400">Horen Gogoi</strong>
+                </div>
+              </div>
+
+              {/* Gas Level Box */}
+              <div className="p-2.5 rounded-lg bg-[#1D3234] border border-[#264245] grid grid-cols-2 gap-2 text-center text-xs">
+                <div className="p-2 rounded bg-[#162829]">
+                  <div className="text-[10px] text-[#8BA4A7]">H₂S Gas Level</div>
+                  <div className="text-emerald-400 font-bold text-sm">0.0 PPM (Safe)</div>
+                </div>
+                <div className="p-2 rounded bg-[#162829]">
+                  <div className="text-[10px] text-[#8BA4A7]">Well Pressure</div>
+                  <div className="text-amber-400 font-bold text-sm">1400 PSI</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Shift Rules */}
+            <div className="bg-[#162829] p-4 rounded-xl border border-[#264245] shadow-xs space-y-2.5">
+              <div className="flex items-center justify-between border-b border-[#264245] pb-2">
+                <span className="text-xs font-bold text-white flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-[#2563EB]" />
+                  Today's Safety Rules
+                </span>
+                <span className="text-[10px] text-[#8BA4A7]">MANDATORY</span>
+              </div>
+
+              <div className="space-y-2 text-xs">
+                <div className="p-2 rounded-lg bg-[#1D3234] border border-[#264245] flex items-center gap-2">
+                  <span className="w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 font-bold text-[10px] flex items-center justify-center shrink-0">1</span>
+                  <span className="font-semibold text-white">Energy Isolation (LOTO)</span>
+                </div>
+                <div className="p-2 rounded-lg bg-[#1D3234] border border-[#264245] flex items-center gap-2">
+                  <span className="w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 font-bold text-[10px] flex items-center justify-center shrink-0">2</span>
+                  <span className="font-semibold text-white">Do Not Bypass Safety Controls</span>
+                </div>
+              </div>
+            </div>
+
+            {/* My Reports Today */}
+            <div className="bg-[#162829] p-4 rounded-xl border border-[#264245] shadow-xs space-y-3">
+              <div className="flex items-center justify-between border-b border-[#264245] pb-2">
+                <span className="text-xs font-bold text-white flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-[#8BA4A7]" />
+                  My Reports (Today)
+                </span>
+                <span className="text-[10px] text-[#1B8A6C]">{submittedReports.length} Sent</span>
+              </div>
+
+              <div className="space-y-2">
+                {submittedReports.map((rep) => (
+                  <div key={rep.id} className="p-2.5 rounded-lg bg-[#1D3234] border border-[#264245] space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${
+                        rep.sif_label === 'HIGH' ? 'bg-[#D63B3B]/20 text-[#F5C6C6] border border-[#D63B3B]/40' : 'bg-[#1B8A6C]/20 text-[#BFEADB] border border-[#1B8A6C]/40'
+                      }`}>
+                        {rep.sif_label} ({Math.round(rep.sif_score * 100)}%)
+                      </span>
+                      <span className="text-[10px] text-[#8BA4A7]">{rep.time}</span>
+                    </div>
+                    <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
+                      "{rep.text}"
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+          </div>
+
+        </div>
 
       </div>
     </div>

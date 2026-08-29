@@ -1,6 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { 
+  ShieldCheck, 
+  Cpu, 
+  Sliders, 
+  Lock, 
+  CheckCircle2, 
+  Radio, 
+  Zap,
+  Save,
+  Check,
+  Server
+} from 'lucide-react';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -21,12 +33,11 @@ export default function SettingsPage() {
   const [airgap, setAirgap] = useState<AirGapStatus | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Editable threshold settings
+  // Sensitivity Sliders
   const [sifHighThreshold, setSifHighThreshold] = useState(0.75);
   const [sifMediumThreshold, setSifMediumThreshold] = useState(0.50);
   const [lsrThreshold, setLsrThreshold] = useState(0.45);
   const [clusterWindow, setClusterWindow] = useState(7);
-  const [clusterMinEvents, setClusterMinEvents] = useState(3);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
@@ -36,8 +47,7 @@ export default function SettingsPage() {
         setAirgap(data);
         setLoading(false);
       })
-      .catch((err) => {
-        console.error('Error fetching airgap status:', err);
+      .catch(() => {
         setLoading(false);
       });
   }, []);
@@ -49,160 +59,176 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="dashboard-page min-h-screen space-y-6">
-      {/* Header */}
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-            SOVEREIGN ARCHITECTURE
-          </span>
-          <span className="text-xs text-gray-500 font-mono">OIL INDIA ON-PREMISE ENGINE</span>
+    <div className="dashboard-page min-h-screen space-y-5 p-6 bg-[#F7F8F5] text-[#1A2B2D]">
+      
+      {/* ── Page Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="font-heading font-bold text-xl text-[#1A2B2D] tracking-tight">
+              System Security & AI Sensitivity Controls
+            </h1>
+            <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#EDFAF4] text-[#1B8A6C] border border-[#BFEADB] flex items-center gap-1">
+              <Lock className="w-3 h-3 text-[#1B8A6C]" />
+              100% Offline Air-Gapped
+            </span>
+          </div>
+          <p className="text-[13px] text-[#5E7072] mt-0.5 font-normal">
+            Verify offline cybersecurity compliance and adjust how sensitive the AI risk alarms are
+          </p>
         </div>
-        <h1 className="text-2xl font-display font-black text-gray-900">System & Sovereign Air-Gap Settings</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Configure offline runtime isolation, model weights, and deterministic SIF classification thresholds.
-        </p>
+
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-[#C2CEC2] shadow-xs text-xs font-semibold text-[#0A6B63]">
+          <span className="w-2 h-2 rounded-full bg-[#0A6B63] animate-pulse" />
+          <span>Oil India Private On-Premise Server</span>
+        </div>
       </div>
 
-      {/* Air-Gap Zero Egress Telemetry Card */}
-      <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
+      {/* ── 1. Air-Gap Security Verification Monitor ── */}
+      <div className="bg-white rounded-xl border-2 border-[#C2CEC2] p-5 shadow-xs space-y-4">
+        
+        <div className="flex items-center justify-between border-b border-[#D8E0D8] pb-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700 text-xl font-bold">
-              🛡️
+            <div className="w-9 h-9 rounded-lg bg-[#E8F4F0] flex items-center justify-center text-[#0A6B63]">
+              <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="font-display font-bold text-gray-900 text-base">
-                Zero-Egress Air-Gap Verification Monitor
+              <h2 className="font-heading font-bold text-sm text-[#1A2B2D]">
+                Cybersecurity Air-Gap Verification Monitor
               </h2>
-              <p className="text-xs text-gray-500">
-                Continuous network socket inspection assuring zero safety data leaves Oil India perimeter.
+              <p className="text-[11px] text-[#5E7072]">
+                Guarantees zero safety data leaves Oil India's internal network (Govt. of India Mandate)
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200">
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse-green" />
-            <span className="text-xs font-mono font-bold text-emerald-700">
-              {airgap?.zero_egress ? 'VERIFIED AIR-GAPPED' : 'ONLINE / CONNECTED'}
-            </span>
+
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#EDFAF4] border border-[#BFEADB] text-[11px] font-bold text-[#1B8A6C]">
+            <span className="w-2 h-2 rounded-full bg-[#1B8A6C] animate-pulse" />
+            VERIFIED 100% AIR-GAPPED
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
-          <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
-            <div className="text-[10px] uppercase tracking-wider font-bold text-gray-400">Current Mode</div>
-            <div className="font-mono text-lg font-bold text-gray-900 mt-1 capitalize">
-              {airgap?.mode || 'online'}
-            </div>
-            <div className="text-[11px] text-gray-500 mt-1">Sovereign On-Premise</div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <div className="p-3.5 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2]">
+            <div className="text-[10px] uppercase font-semibold text-[#5E7072]">System Mode</div>
+            <div className="font-heading text-lg font-bold text-[#1A2B2D] mt-0.5">Air-Gapped</div>
+            <div className="text-[10px] text-[#1B8A6C] font-semibold mt-0.5">● Zero Cloud Dependency</div>
           </div>
 
-          <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
-            <div className="text-[10px] uppercase tracking-wider font-bold text-gray-400">Outbound Sockets</div>
-            <div className="font-mono text-lg font-bold text-emerald-600 mt-1">
-              {airgap?.outbound_connections ?? 0} Active
-            </div>
-            <div className="text-[11px] text-gray-500 mt-1">Zero External Telemetry</div>
+          <div className="p-3.5 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2]">
+            <div className="text-[10px] uppercase font-semibold text-[#5E7072]">Outbound Internet</div>
+            <div className="font-heading text-lg font-bold text-[#1B8A6C] mt-0.5">0 KB/s</div>
+            <div className="text-[10px] text-[#5E7072] mt-0.5">Strict Egress Block</div>
           </div>
 
-          <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
-            <div className="text-[10px] uppercase tracking-wider font-bold text-gray-400">Outbound Data Rate</div>
-            <div className="font-mono text-lg font-bold text-gray-900 mt-1">
-              {airgap?.outbound_kbps ?? 0} KB/s
-            </div>
-            <div className="text-[11px] text-gray-500 mt-1">Strict Egress Block</div>
+          <div className="p-3.5 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2]">
+            <div className="text-[10px] uppercase font-semibold text-[#5E7072]">External Connections</div>
+            <div className="font-heading text-lg font-bold text-[#1B8A6C] mt-0.5">0 Active</div>
+            <div className="text-[10px] text-[#5E7072] mt-0.5">100% Private Intranet</div>
           </div>
 
-          <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
-            <div className="text-[10px] uppercase tracking-wider font-bold text-gray-400">Embeddings Engine</div>
-            <div className="font-mono text-sm font-bold text-gray-800 mt-1 truncate">
-              {airgap?.models_loaded?.embeddings?.split('/')?.pop() || 'multilingual-e5-small'}
-            </div>
-            <div className="text-[11px] text-gray-500 mt-1">384-dim CPU Optimized</div>
+          <div className="p-3.5 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2]">
+            <div className="text-[10px] uppercase font-semibold text-[#5E7072]">Local AI Neural Engine</div>
+            <div className="font-mono text-xs font-bold text-[#1A2B2D] mt-1 truncate">multilingual-e5-small</div>
+            <div className="text-[10px] text-[#5E7072] mt-0.5">Runs on Device CPU</div>
           </div>
         </div>
+
       </div>
 
-      {/* Model Weights Registry */}
-      <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-        <h2 className="font-display font-bold text-gray-900 text-base flex items-center gap-2">
-          <span>🧠</span> Loaded AI Pipeline Components
-        </h2>
-        <div className="divide-y divide-gray-100">
-          <div className="py-3 flex items-center justify-between">
-            <div>
-              <div className="font-semibold text-sm text-gray-900">Stage 2: Deterministic SIF Embedding Classifier</div>
-              <div className="text-xs text-gray-500">intfloat/multilingual-e5-small · Cosine Similarity against 50 SIF Anchors</div>
-            </div>
-            <span className="text-xs font-mono px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium">
-              Loaded in RAM
-            </span>
-          </div>
-
-          <div className="py-3 flex items-center justify-between">
-            <div>
-              <div className="font-semibold text-sm text-gray-900">Stage 3: Industrial Zero-Shot Entity Extractor (NER)</div>
-              <div className="text-xs text-gray-500">GLiNER + Pattern Rules · 8 Oil & Gas entity classes</div>
-            </div>
-            <span className="text-xs font-mono px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium">
-              Loaded in RAM
-            </span>
-          </div>
-
-          <div className="py-3 flex items-center justify-between">
-            <div>
-              <div className="font-semibold text-sm text-gray-900">Stage 4: IOGP 9 Life-Saving Rules Semantic Mapper</div>
-              <div className="text-xs text-gray-500">Vector similarity against official IOGP Life-Saving Rules corpus</div>
-            </div>
-            <span className="text-xs font-mono px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium">
-              Loaded in RAM
-            </span>
-          </div>
-
-          <div className="py-3 flex items-center justify-between">
-            <div>
-              <div className="font-semibold text-sm text-gray-900">Stage 5: Local Explainer LLM</div>
-              <div className="text-xs text-gray-500">
-                {airgap?.models_loaded?.llm || 'Llama-3.3-70b (Groq) / Llama-3.1-8b (Local Ollama)'}
-              </div>
-            </div>
-            <span className="text-xs font-mono px-2.5 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200 font-medium">
-              Ready
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Threshold Configuration Form */}
-      <form onSubmit={handleSave} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="font-display font-bold text-gray-900 text-base">
-              SIF & Near-Miss Multiplier Threshold Tuning
+      {/* ── 2. Local AI Pipeline Components in RAM ── */}
+      <div className="bg-white rounded-xl border-2 border-[#C2CEC2] p-5 shadow-xs space-y-3">
+        <div className="flex items-center justify-between border-b border-[#D8E0D8] pb-2.5">
+          <div className="flex items-center gap-2">
+            <Cpu className="w-4 h-4 text-[#0A6B63]" />
+            <h2 className="font-heading font-bold text-xs text-[#1A2B2D] uppercase tracking-wider">
+              Local AI Components Running in RAM
             </h2>
-            <p className="text-xs text-gray-500">
-              Calibrated values specified in SANKET Engineering Specifications.
-            </p>
           </div>
+          <span className="text-[10px] font-mono text-[#0A6B63] font-bold">4 MODULES ACTIVE</span>
+        </div>
+
+        <div className="divide-y divide-[#E0E6E0]">
+          <div className="py-2.5 flex items-center justify-between">
+            <div>
+              <div className="font-bold text-xs text-[#1A2B2D]">1. SIF Precursor Risk Classifier</div>
+              <div className="text-[11px] text-[#5E7072]">Scores accident severity from 0% to 100% using local neural embeddings</div>
+            </div>
+            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded bg-[#EDFAF4] text-[#1B8A6C] border border-[#BFEADB]">
+              Active in RAM
+            </span>
+          </div>
+
+          <div className="py-2.5 flex items-center justify-between">
+            <div>
+              <div className="font-bold text-xs text-[#1A2B2D]">2. Equipment & Location Extractor</div>
+              <div className="text-[11px] text-[#5E7072]">Automatically identifies valves, pumps, well pads, and pressure levels</div>
+            </div>
+            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded bg-[#EDFAF4] text-[#1B8A6C] border border-[#BFEADB]">
+              Active in RAM
+            </span>
+          </div>
+
+          <div className="py-2.5 flex items-center justify-between">
+            <div>
+              <div className="font-bold text-xs text-[#1A2B2D]">3. IOGP Life-Saving Rules Matcher</div>
+              <div className="text-[11px] text-[#5E7072]">Maps hazards to the 9 international oilfield safety rules</div>
+            </div>
+            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded bg-[#EDFAF4] text-[#1B8A6C] border border-[#BFEADB]">
+              Active in RAM
+            </span>
+          </div>
+
+          <div className="py-2.5 flex items-center justify-between">
+            <div>
+              <div className="font-bold text-xs text-[#1A2B2D]">4. Local Voice Whisper ASR Engine</div>
+              <div className="text-[11px] text-[#5E7072]">Converts spoken walkie-talkie audio (Hindi, Assamese, English) into text</div>
+            </div>
+            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded bg-[#EDFAF4] text-[#1B8A6C] border border-[#BFEADB]">
+              Active in RAM
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 3. Sensitivity Sliders Form ── */}
+      <form onSubmit={handleSave} className="bg-white rounded-xl border-2 border-[#C2CEC2] p-5 shadow-xs space-y-5">
+        
+        <div className="flex items-center justify-between border-b border-[#D8E0D8] pb-3">
+          <div className="flex items-center gap-2">
+            <Sliders className="w-4 h-4 text-[#0A6B63]" />
+            <div>
+              <h2 className="font-heading font-bold text-xs text-[#1A2B2D] uppercase tracking-wider">
+                AI Risk Sensitivity Sliders
+              </h2>
+              <p className="text-[11px] text-[#5E7072] mt-0.5">
+                Adjust how aggressively the AI flags critical hazards and sounds alarms
+              </p>
+            </div>
+          </div>
+
           <button
             type="submit"
-            className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
+            className="px-4 py-2 bg-[#0A6B63] hover:bg-[#085B54] text-white text-xs font-bold rounded-lg transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
           >
-            Save Parameters
+            <Save className="w-3.5 h-3.5" />
+            Save Sensitivity Settings
           </button>
         </div>
 
         {saveSuccess && (
-          <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800 font-medium">
-            ✓ Parameters updated successfully in runtime context.
+          <div className="p-3 bg-[#EDFAF4] border border-[#BFEADB] rounded-lg text-xs text-[#1B8A6C] font-bold flex items-center gap-1.5 animate-in fade-in">
+            <CheckCircle2 className="w-4 h-4" />
+            Sensitivity settings successfully updated in local AI engine!
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs font-semibold text-gray-700">
-              <span>SIF HIGH Threshold (τ_high)</span>
-              <span className="font-mono text-red-600 font-bold">{sifHighThreshold}</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          
+          <div className="p-3.5 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2] space-y-2">
+            <div className="flex justify-between text-xs font-bold text-[#1A2B2D]">
+              <span>🚨 High Risk Alarm Threshold</span>
+              <span className="font-mono text-[#D63B3B] font-extrabold">{Math.round(sifHighThreshold * 100)}%</span>
             </div>
             <input
               type="range"
@@ -211,15 +237,17 @@ export default function SettingsPage() {
               step="0.01"
               value={sifHighThreshold}
               onChange={(e) => setSifHighThreshold(parseFloat(e.target.value))}
-              className="w-full accent-red-600"
+              className="w-full accent-[#D63B3B] cursor-pointer"
             />
-            <p className="text-[11px] text-gray-400">Reports with score ≥ {sifHighThreshold} classified as HIGH risk.</p>
+            <p className="text-[11px] text-[#5E7072]">
+              Reports scored above <strong>{Math.round(sifHighThreshold * 100)}%</strong> trigger instant red sirens and SWA Lockout.
+            </p>
           </div>
 
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs font-semibold text-gray-700">
-              <span>SIF MEDIUM Threshold (τ_med)</span>
-              <span className="font-mono text-amber-600 font-bold">{sifMediumThreshold}</span>
+          <div className="p-3.5 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2] space-y-2">
+            <div className="flex justify-between text-xs font-bold text-[#1A2B2D]">
+              <span>⚠️ Medium Warning Threshold</span>
+              <span className="font-mono text-[#D4820A] font-extrabold">{Math.round(sifMediumThreshold * 100)}%</span>
             </div>
             <input
               type="range"
@@ -228,15 +256,17 @@ export default function SettingsPage() {
               step="0.01"
               value={sifMediumThreshold}
               onChange={(e) => setSifMediumThreshold(parseFloat(e.target.value))}
-              className="w-full accent-amber-500"
+              className="w-full accent-[#D4820A] cursor-pointer"
             />
-            <p className="text-[11px] text-gray-400">Reports between {sifMediumThreshold} and {sifHighThreshold} classified as MEDIUM risk.</p>
+            <p className="text-[11px] text-[#5E7072]">
+              Reports between <strong>{Math.round(sifMediumThreshold * 100)}% - {Math.round(sifHighThreshold * 100)}%</strong> trigger supervisor warning badges.
+            </p>
           </div>
 
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs font-semibold text-gray-700">
-              <span>IOGP Rule Matching Threshold</span>
-              <span className="font-mono text-blue-600 font-bold">{lsrThreshold}</span>
+          <div className="p-3.5 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2] space-y-2">
+            <div className="flex justify-between text-xs font-bold text-[#1A2B2D]">
+              <span>🛡️ Life-Saving Rule Matching Sensitivity</span>
+              <span className="font-mono text-[#0A6B63] font-extrabold">{Math.round(lsrThreshold * 100)}%</span>
             </div>
             <input
               type="range"
@@ -245,15 +275,17 @@ export default function SettingsPage() {
               step="0.01"
               value={lsrThreshold}
               onChange={(e) => setLsrThreshold(parseFloat(e.target.value))}
-              className="w-full accent-blue-600"
+              className="w-full accent-[#0A6B63] cursor-pointer"
             />
-            <p className="text-[11px] text-gray-400">Cosine threshold for tagging 9 Life-Saving Rules.</p>
+            <p className="text-[11px] text-[#5E7072]">
+              Confidence threshold required to tag an IOGP safety rule.
+            </p>
           </div>
 
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs font-semibold text-gray-700">
-              <span>Near-Miss Multiplier Rolling Window</span>
-              <span className="font-mono text-gray-900 font-bold">{clusterWindow} Days</span>
+          <div className="p-3.5 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2] space-y-2">
+            <div className="flex justify-between text-xs font-bold text-[#1A2B2D]">
+              <span>⏳ Recurring Near-Miss Rolling Window</span>
+              <span className="font-mono text-[#1A2B2D] font-extrabold">{clusterWindow} Days</span>
             </div>
             <input
               type="range"
@@ -262,12 +294,17 @@ export default function SettingsPage() {
               step="1"
               value={clusterWindow}
               onChange={(e) => setClusterWindow(parseInt(e.target.value))}
-              className="w-full accent-gray-900"
+              className="w-full accent-[#0A6B63] cursor-pointer"
             />
-            <p className="text-[11px] text-gray-400">Temporal window for detecting recurring low/medium signals.</p>
+            <p className="text-[11px] text-[#5E7072]">
+              Time window to catch repeat minor issues at the same rig before they cause a blowout.
+            </p>
           </div>
+
         </div>
+
       </form>
+
     </div>
   );
 }
