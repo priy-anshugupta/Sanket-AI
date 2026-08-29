@@ -186,7 +186,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     const checkLatestReports = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/reports?limit=1&page=1`);
+        const res = await fetch(`${API_BASE}/api/reports?limit=1&page=1&sort_by=latest`);
         if (!res.ok) return;
         const data = await res.json();
         const latest = data.reports?.[0];
@@ -202,23 +202,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         if (latest.id !== lastSeenIdRef.current) {
           lastSeenIdRef.current = latest.id;
           
-          const newAlert: LiveAlert = {
-            id: latest.id,
-            raw_text: latest.raw_text,
-            sif_score: latest.sif_score || 0.92,
-            sif_label: latest.sif_label || 'HIGH',
-            location: latest.location || 'Well Pad 7 (Upper Assam)',
-            iogp_rule: latest.iogp_rule || 'Energy Isolation',
-            reporter: 'Bikash Das (OIL-OP-4491 · Rig Floor)',
-            created_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          };
+          // Only pop up emergency red toast if it is genuinely a HIGH SIF precursor!
+          const isHighSif = latest.sif_label === 'HIGH' || (latest.sif_score && latest.sif_score >= 0.75);
+          
+          if (isHighSif) {
+            const newAlert: LiveAlert = {
+              id: latest.id,
+              raw_text: latest.raw_text,
+              sif_score: latest.sif_score || 0.92,
+              sif_label: 'HIGH',
+              location: latest.location || 'Well Pad 7 (Upper Assam)',
+              iogp_rule: latest.iogp_rule || 'Energy Isolation',
+              reporter: 'Bikash Das (OIL-OP-4491 · Rig Floor)',
+              created_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            };
 
-          setActiveAlert(newAlert);
-          setNotifications(prev => [newAlert, ...prev.slice(0, 19)]);
-          setUnreadCount(c => c + 1);
+            setActiveAlert(newAlert);
+            setNotifications(prev => [newAlert, ...prev.slice(0, 19)]);
+            setUnreadCount(c => c + 1);
 
-          if (alertSoundEnabled) {
-            playChime(880, 1174, 0.35);
+            if (alertSoundEnabled) {
+              playChime(880, 1174, 0.35);
+            }
           }
 
           window.dispatchEvent(new CustomEvent('sanket:new_report', { detail: latest }));

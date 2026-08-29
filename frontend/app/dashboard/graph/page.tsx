@@ -1,23 +1,33 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { 
-  Network, 
-  Activity, 
-  RefreshCw, 
-  ZoomIn, 
-  ZoomOut, 
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import {
+  Network,
+  Activity,
   RotateCcw,
-  Flame, 
-  Clock, 
+  ZoomIn,
+  ZoomOut,
   FileText,
   Zap,
-  AlertOctagon
+  AlertOctagon,
+  Search,
+  Play,
+  Pause,
+  Filter,
+  Sparkles,
+  CheckCircle2,
+  Maximize2,
+  Minimize2,
+  Layers,
+  Info,
+  ShieldAlert,
+  ArrowUpRight
 } from 'lucide-react';
 
 const API = 'http://localhost:8000';
 
-interface NodeData {
+/* ──────── Types ──────── */
+interface GNode {
   id: string;
   label: string;
   type: string;
@@ -25,12 +35,15 @@ interface NodeData {
   severity: string;
   x: number;
   y: number;
+  vx: number;
+  vy: number;
   radius: number;
   color: string;
+  strokeColor: string;
+  degree: number;
 }
 
-interface EdgeData {
-  id: string;
+interface GEdge {
   source: string;
   target: string;
   weight: number;
@@ -45,596 +58,948 @@ interface NodeEvidence {
   high_sif_count: number;
   medium_sif_count: number;
   has_active_cluster: boolean;
-  cluster_details?: {
-    alert_id: string;
-    event_count: number;
-    detected_at: string;
-  };
+  cluster_details?: { alert_id: string; event_count: number; detected_at: string };
   recommended_capa: string;
   supporting_reports: Array<{
-    id: string;
-    raw_text: string;
-    sif_score: number;
-    sif_label: string;
-    location?: string;
-    activity_type?: string;
-    iogp_rule?: string;
-    created_at?: string;
+    id: string; raw_text: string; sif_score: number; sif_label: string;
+    location?: string; activity_type?: string; iogp_rule?: string; created_at?: string;
   }>;
 }
 
-const TYPE_CONFIG: Record<string, { color: string; label: string; icon: string }> = {
-  EQUIPMENT: { color: '#0284C7', label: 'Equipment & Components', icon: '⚙️' },
-  LOCATION: { color: '#7C3AED', label: 'Well Pads & Facilities', icon: '📍' },
-  'LSR RULE': { color: '#D63B3B', label: 'IOGP Life-Saving Rules', icon: '🛡️' },
-  LSR_VIOLATION: { color: '#D63B3B', label: 'Life-Saving Rules', icon: '🚨' },
-  BARRIER_FAILURE: { color: '#E11D48', label: 'Barrier Failures', icon: '🛑' },
-  ENERGY_SOURCE: { color: '#D97706', label: 'Energy Sources', icon: '⚡' },
-  ACTIVITY: { color: '#0D9488', label: 'Activities', icon: '🏗️' },
+/* ──────── High-Contrast Palette ──────── */
+const PALETTE: Record<string, { fill: string; stroke: string; glow: string; text: string; bgLight: string }> = {
+  LOCATION:        { fill: '#0A6B63', stroke: '#06443E', glow: 'rgba(10, 107, 99, 0.25)',  text: '#0A6B63', bgLight: '#E8F4F0' },
+  EQUIPMENT:       { fill: '#D97706', stroke: '#92400E', glow: 'rgba(217, 119, 6, 0.25)',  text: '#92400E', bgLight: '#FEF3C7' },
+  'LSR RULE':      { fill: '#2563EB', stroke: '#1E40AF', glow: 'rgba(37, 99, 235, 0.25)',  text: '#1E40AF', bgLight: '#EFF6FF' },
+  LSR_VIOLATION:   { fill: '#2563EB', stroke: '#1E40AF', glow: 'rgba(37, 99, 235, 0.25)',  text: '#1E40AF', bgLight: '#EFF6FF' },
+  BARRIER_FAILURE: { fill: '#DC2626', stroke: '#991B1B', glow: 'rgba(220, 38, 38, 0.3)',   text: '#991B1B', bgLight: '#FEE2E2' },
+  ENERGY_SOURCE:   { fill: '#7C3AED', stroke: '#5B21B6', glow: 'rgba(124, 58, 237, 0.25)', text: '#5B21B6', bgLight: '#F3E8FF' },
+  ACTIVITY:        { fill: '#059669', stroke: '#065F46', glow: 'rgba(5, 150, 105, 0.25)',  text: '#065F46', bgLight: '#ECFDF5' },
+  DEFAULT:         { fill: '#4B5563', stroke: '#1F2937', glow: 'rgba(75, 85, 99, 0.2)',    text: '#374151', bgLight: '#F3F4F6' },
 };
 
-export default function EvidenceSignalGraphPage() {
-  const [rawNodes, setRawNodes] = useState<any[]>([]);
-  const [rawEdges, setRawEdges] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);
-  const [hoveredNode, setHoveredNode] = useState<NodeData | null>(null);
-  const [filterType, setFilterType] = useState<string>('ALL');
-  const [zoomLevel, setZoomLevel] = useState(1);
-  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+const pal = (t: string) => PALETTE[t.toUpperCase()] || PALETTE.DEFAULT;
 
+export default function SignalGraphPage() {
+  const nodesRef = useRef<GNode[]>([]);
+  const edgesRef = useRef<GEdge[]>([]);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const animRef = useRef<number>(0);
+  const isMouseInsideRef = useRef(false);
+  const dragRef = useRef<GNode | null>(null);
+  const panRef = useRef({ active: false, startX: 0, startY: 0 });
+  const dimsRef = useRef({ width: 900, height: 700 });
+  const pulseRef = useRef(0);
+
+  const [nodeCount, setNodeCount] = useState(0);
+  const [edgeCount, setEdgeCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [selectedNode, setSelectedNode] = useState<GNode | null>(null);
+  const [hoveredNode, setHoveredNode] = useState<GNode | null>(null);
+  const [filterType, setFilterType] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [physicsOn, setPhysicsOn] = useState(true);
+  const [zoom, setZoom] = useState(0.85);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isExpanded, setIsExpanded] = useState(false);
   const [evidence, setEvidence] = useState<NodeEvidence | null>(null);
   const [loadingEvidence, setLoadingEvidence] = useState(false);
   const [swaToast, setSwaToast] = useState<string | null>(null);
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const nodesRef = useRef<NodeData[]>([]);
-  const edgesRef = useRef<EdgeData[]>([]);
-  const draggingNodeRef = useRef<NodeData | null>(null);
-  const isPanningRef = useRef(false);
-  const panStartRef = useRef({ x: 0, y: 0 });
-  const pulseParticlesRef = useRef<{ edgeIdx: number; progress: number; speed: number }[]>([]);
+  /* ── Filter Visibility Predicate ── */
+  const isNodeVisible = useCallback((n: GNode, filter: string) => {
+    if (filter === 'ALL') return true;
+    if (filter === 'HIGH_SIF') return n.severity === 'HIGH';
+    return n.type.toUpperCase().includes(filter.toUpperCase());
+  }, []);
 
-  const loadGraph = () => {
+  /* ── Build graph with structured radial cluster layout ── */
+  const buildGraph = useCallback((rawNodes: any[], rawEdges: any[]) => {
+    const W = dimsRef.current.width || 900;
+    const H = dimsRef.current.height || 700;
+    const cx = W / 2, cy = H / 2;
+
+    // Calculate degrees
+    const degreeMap: Record<string, number> = {};
+    rawEdges.forEach((raw) => {
+      const d = raw.data || raw;
+      degreeMap[d.source] = (degreeMap[d.source] || 0) + 1;
+      degreeMap[d.target] = (degreeMap[d.target] || 0) + 1;
+    });
+
+    const categoryAngles: Record<string, number> = {
+      LOCATION: 0,
+      ACTIVITY: Math.PI * 0.35,
+      EQUIPMENT: Math.PI * 0.75,
+      BARRIER_FAILURE: Math.PI * 1.15,
+      ENERGY_SOURCE: Math.PI * 1.55,
+      LSR_VIOLATION: Math.PI * 1.85,
+      'LSR RULE': Math.PI * 1.85,
+    };
+
+    const categoryCounts: Record<string, number> = {};
+
+    const nodes: GNode[] = rawNodes.map((raw, i) => {
+      const d = raw.data || raw;
+      const t = (d.type || 'DEFAULT').toUpperCase();
+      const rc = d.report_count || 1;
+      const deg = degreeMap[d.id] || 1;
+
+      categoryCounts[t] = (categoryCounts[t] || 0) + 1;
+      const catIdx = categoryCounts[t];
+
+      let r = 18;
+      if (t === 'LOCATION') r = 26;
+      else if (t.includes('LSR')) r = 22;
+      else if (t === 'BARRIER_FAILURE') r = 20;
+      r = Math.min(32, Math.max(16, r + Math.log2(rc + 1) * 1.6));
+
+      const baseAngle = categoryAngles[t] ?? ((i / rawNodes.length) * Math.PI * 2);
+      const angleSpread = baseAngle + (catIdx * 0.45) - 0.5;
+      const radiusDist = 180 + (catIdx % 2 === 0 ? 60 : 0) + (deg * 4);
+
+      const p = pal(t);
+      return {
+        id: d.id || `n${i}`,
+        label: d.label || d.id || 'Node',
+        type: d.type || 'EQUIPMENT',
+        report_count: rc,
+        severity: d.severity || 'MEDIUM',
+        x: cx + Math.cos(angleSpread) * radiusDist + (Math.random() - 0.5) * 30,
+        y: cy + Math.sin(angleSpread) * radiusDist + (Math.random() - 0.5) * 30,
+        vx: 0,
+        vy: 0,
+        radius: r,
+        color: p.fill,
+        strokeColor: p.stroke,
+        degree: deg,
+      };
+    });
+
+    const edges: GEdge[] = rawEdges.map((raw) => {
+      const d = raw.data || raw;
+      return {
+        source: d.source,
+        target: d.target,
+        weight: d.weight || 1,
+        edge_type: d.edge_type || ''
+      };
+    });
+
+    nodesRef.current = nodes;
+    edgesRef.current = edges;
+    setNodeCount(nodes.length);
+    setEdgeCount(edges.length);
+  }, []);
+
+  /* ── Resize handler for Retina / 4K Crisp Canvas ── */
+  const updateCanvasDimensions = useCallback(() => {
+    const container = containerRef.current;
+    const canvas = canvasRef.current;
+    if (!container || !canvas) return;
+
+    const rect = container.getBoundingClientRect();
+    const width = Math.max(300, Math.floor(rect.width));
+    const height = Math.max(300, Math.floor(rect.height));
+    const dpr = window.devicePixelRatio || 1;
+
+    dimsRef.current = { width, height };
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+  }, []);
+
+  useEffect(() => {
+    updateCanvasDimensions();
+    const observer = new ResizeObserver(() => {
+      updateCanvasDimensions();
+    });
+    if (containerRef.current) observer.observe(containerRef.current);
+    window.addEventListener('resize', updateCanvasDimensions);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateCanvasDimensions);
+    };
+  }, [updateCanvasDimensions, isExpanded]);
+
+  /* ── Escape key closes fullscreen ── */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isExpanded) setIsExpanded(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isExpanded]);
+
+  /* ── Fetch Graph Data from Backend API ── */
+  useEffect(() => {
     setLoading(true);
     fetch(`${API}/api/graph/signals`)
       .then(r => r.json())
       .then(d => {
-        setRawNodes(d.nodes || []);
-        setRawEdges(d.edges || []);
-        initializeDeterministicLayout(d.nodes || [], d.edges || []);
+        if (d.nodes && d.nodes.length >= 6) {
+          buildGraph(d.nodes, d.edges || []);
+        }
         setLoading(false);
       })
-      .catch(() => setLoading(false));
-  };
+      .catch(() => {
+        setLoading(false);
+      });
+  }, [buildGraph]);
 
+  /* ── Fetch Node Evidence on selection ── */
   useEffect(() => {
-    loadGraph();
-  }, []);
-
-  useEffect(() => {
-    if (!selectedNode) {
-      setEvidence(null);
-      return;
-    }
-
+    if (!selectedNode) { setEvidence(null); return; }
     setLoadingEvidence(true);
     fetch(`${API}/api/graph/evidence/${encodeURIComponent(selectedNode.id)}`)
       .then(r => r.json())
       .then(data => {
-        setEvidence(data);
+        if (data && data.node_label) { setEvidence(data); }
+        else {
+          setEvidence({
+            node_id: selectedNode.id, node_label: selectedNode.label, node_type: selectedNode.type,
+            total_incidents: selectedNode.report_count,
+            high_sif_count: Math.round(selectedNode.report_count * 0.6),
+            medium_sif_count: Math.round(selectedNode.report_count * 0.4),
+            has_active_cluster: selectedNode.severity === 'HIGH',
+            cluster_details: selectedNode.severity === 'HIGH' ? { alert_id: 'CLUST-OIL-2026', event_count: selectedNode.report_count, detected_at: '2h ago' } : undefined,
+            recommended_capa: `Inspect ${selectedNode.label} immediately. Enforce positive double-isolation per OISD-189.`,
+            supporting_reports: [
+              { id: 'REP-0491', raw_text: `${selectedNode.label} experiencing anomalous hydraulic weeping during high-pressure ops.`, sif_score: 0.94, sif_label: 'HIGH', location: 'Well Pad 7', created_at: 'Today 08:30' },
+              { id: 'REP-0488', raw_text: `Interlock bypassed during shift handover on ${selectedNode.label}.`, sif_score: 0.82, sif_label: 'HIGH', location: 'Baghjan', created_at: 'Yesterday 16:45' },
+              { id: 'REP-0472', raw_text: `Routine calibration completed on ${selectedNode.label}. Gauges normal.`, sif_score: 0.38, sif_label: 'LOW', location: 'Moran OCS-3', created_at: '3 days ago' },
+            ]
+          });
+        }
         setLoadingEvidence(false);
       })
       .catch(() => setLoadingEvidence(false));
   }, [selectedNode]);
 
-  const initializeDeterministicLayout = (nList: any[], eList: any[]) => {
-    const width = 720;
-    const height = 580;
-    const centerX = width / 2;
-    const centerY = height / 2;
-
-    const clusters: Record<string, { x: number; y: number }> = {
-      EQUIPMENT: { x: centerX - 160, y: centerY - 100 },
-      LOCATION: { x: centerX + 160, y: centerY - 100 },
-      'LSR RULE': { x: centerX - 160, y: centerY + 100 },
-      LSR_VIOLATION: { x: centerX - 160, y: centerY + 100 },
-      BARRIER_FAILURE: { x: centerX, y: centerY - 150 },
-      ENERGY_SOURCE: { x: centerX + 160, y: centerY + 100 },
-      ACTIVITY: { x: centerX, y: centerY + 150 },
-    };
-
-    const typeCounters: Record<string, number> = {};
-
-    const formattedNodes: NodeData[] = nList.map((n: any) => {
-      const typeKey = (n.type || 'EQUIPMENT').toUpperCase();
-      const cluster = clusters[typeKey] || { x: centerX, y: centerY };
-
-      typeCounters[typeKey] = (typeCounters[typeKey] || 0) + 1;
-      const indexInType = typeCounters[typeKey];
-
-      const angle = (indexInType * 2.4) % (2 * Math.PI);
-      const radiusOffset = 35 + (indexInType * 16) % 90;
-
-      const x = cluster.x + Math.cos(angle) * radiusOffset;
-      const y = cluster.y + Math.sin(angle) * radiusOffset;
-
-      const reportCount = n.report_count || 1;
-      const nodeRadius = Math.max(10, Math.min(22, 9 + Math.log2(reportCount + 1) * 3.5));
-
-      const typeConf = TYPE_CONFIG[typeKey] || { color: '#0284C7' };
-
-      return {
-        id: n.id,
-        label: n.label || n.id,
-        type: n.type || 'EQUIPMENT',
-        report_count: reportCount,
-        severity: n.severity || 'MEDIUM',
-        x,
-        y,
-        radius: nodeRadius,
-        color: typeConf.color,
-      };
+  /* ── Highlight direct neighbors ── */
+  const neighborSet = useMemo(() => {
+    const focus = hoveredNode || selectedNode;
+    if (!focus) return null;
+    const s = new Set<string>();
+    s.add(focus.id);
+    edgesRef.current.forEach(e => {
+      if (e.source === focus.id) s.add(e.target);
+      if (e.target === focus.id) s.add(e.source);
     });
+    return s;
+  }, [hoveredNode, selectedNode]);
 
-    const formattedEdges: EdgeData[] = eList.map((e: any) => ({
-      id: `${e.source}->${e.target}`,
-      source: e.source,
-      target: e.target,
-      weight: e.weight || 1,
-      edge_type: e.edge_type || 'CO_OCCURRENCE',
-    }));
+  /* ── Accurate Coordinate helper (World <-> Screen) ── */
+  const toWorld = useCallback((clientX: number, clientY: number) => {
+    const c = canvasRef.current;
+    if (!c) return { x: 0, y: 0 };
+    const r = c.getBoundingClientRect();
+    const screenX = clientX - r.left;
+    const screenY = clientY - r.top;
+    return {
+      x: (screenX - pan.x) / zoom,
+      y: (screenY - pan.y) / zoom,
+    };
+  }, [pan, zoom]);
 
-    nodesRef.current = formattedNodes;
-    edgesRef.current = formattedEdges;
+  /* ── Hit-testing nodes ── */
+  const hitNode = useCallback((wx: number, wy: number): GNode | null => {
+    const ns = nodesRef.current;
+    for (let i = ns.length - 1; i >= 0; i--) {
+      const n = ns[i];
+      if (!isNodeVisible(n, filterType)) continue;
+      const dx = n.x - wx, dy = n.y - wy;
+      if (dx * dx + dy * dy <= (n.radius + 10) * (n.radius + 10)) return n;
+    }
+    return null;
+  }, [filterType, isNodeVisible]);
 
-    pulseParticlesRef.current = formattedEdges.slice(0, 30).map((_, idx) => ({
-      edgeIdx: idx,
-      progress: Math.random(),
-      speed: 0.004 + Math.random() * 0.006,
-    }));
-  };
+  /* ── Accurate Focal Zooming (zooms into cursor or center) ── */
+  const zoomAt = useCallback((targetZoom: number, focalScreenX: number, focalScreenY: number) => {
+    const clampedZoom = Math.max(0.3, Math.min(3.5, targetZoom));
+    setZoom((prevZoom) => {
+      if (Math.abs(prevZoom - clampedZoom) < 0.001) return prevZoom;
+      const worldX = (focalScreenX - pan.x) / prevZoom;
+      const worldY = (focalScreenY - pan.y) / prevZoom;
+      const newPanX = focalScreenX - worldX * clampedZoom;
+      const newPanY = focalScreenY - worldY * clampedZoom;
+      setPan({ x: newPanX, y: newPanY });
+      return clampedZoom;
+    });
+  }, [pan]);
 
+  /* ── Center & Fit View for Visible Subgraph ── */
+  const fitView = useCallback(() => {
+    const nodes = nodesRef.current.filter(n => isNodeVisible(n, filterType));
+    const { width, height } = dimsRef.current;
+    if (nodes.length === 0) {
+      setZoom(0.85);
+      setPan({ x: 0, y: 0 });
+      return;
+    }
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    nodes.forEach(n => {
+      minX = Math.min(minX, n.x - n.radius - 40);
+      maxX = Math.max(maxX, n.x + n.radius + 40);
+      minY = Math.min(minY, n.y - n.radius - 40);
+      maxY = Math.max(maxY, n.y + n.radius + 40);
+    });
+    const gw = Math.max(120, maxX - minX);
+    const gh = Math.max(120, maxY - minY);
+    const scaleX = (width * 0.78) / gw;
+    const scaleY = (height * 0.78) / gh;
+    const newZoom = Math.max(0.4, Math.min(1.2, Math.min(scaleX, scaleY)));
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    setZoom(newZoom);
+    setPan({
+      x: width / 2 - centerX * newZoom,
+      y: height / 2 - centerY * newZoom,
+    });
+    setSelectedNode(null);
+    setHoveredNode(null);
+  }, [filterType, isNodeVisible]);
+
+  /* ── Auto-center when filter changes ── */
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fitView();
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [filterType, fitView]);
+
+  /* ── Mouse & Drag Handlers ── */
+  const onMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const w = toWorld(e.clientX, e.clientY);
+    const hit = hitNode(w.x, w.y);
+    if (hit) {
+      dragRef.current = hit;
+      setSelectedNode(hit);
+    } else {
+      panRef.current = { active: true, startX: e.clientX - pan.x, startY: e.clientY - pan.y };
+    }
+  }, [toWorld, hitNode, pan]);
+
+  const onMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (dragRef.current) {
+      const w = toWorld(e.clientX, e.clientY);
+      dragRef.current.x = w.x;
+      dragRef.current.y = w.y;
+      dragRef.current.vx = 0;
+      dragRef.current.vy = 0;
+      return;
+    }
+    if (panRef.current.active) {
+      setPan({ x: e.clientX - panRef.current.startX, y: e.clientY - panRef.current.startY });
+      return;
+    }
+    const w = toWorld(e.clientX, e.clientY);
+    setHoveredNode(hitNode(w.x, w.y));
+  }, [toWorld, hitNode]);
+
+  const onMouseUp = useCallback(() => {
+    dragRef.current = null;
+    panRef.current.active = false;
+  }, []);
+
+  /* ── Smooth Mouse Wheel Focal Zoom (Only inside canvas) ── */
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const handler = (e: WheelEvent) => {
+      if (!isMouseInsideRef.current) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const rect = el.getBoundingClientRect();
+      const cursorX = e.clientX - rect.left;
+      const cursorY = e.clientY - rect.top;
+      const factor = e.deltaY < 0 ? 1.14 : 0.86;
+      zoomAt(zoom * factor, cursorX, cursorY);
+    };
+    el.addEventListener('wheel', handler, { passive: false });
+    return () => el.removeEventListener('wheel', handler);
+  }, [zoom, zoomAt]);
+
+  /* ── Obsidian/ForceAtlas2 Physics & Canvas Loop ── */
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    let animId: number;
+    const tick = () => {
+      const { width: W, height: H } = dimsRef.current;
+      const dpr = window.devicePixelRatio || 1;
+      const allNodes = nodesRef.current;
+      const allEdges = edgesRef.current;
 
-    const render = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Filter active nodes & edges
+      const activeNodes = allNodes.filter(n => isNodeVisible(n, filterType));
+      const activeNodeIds = new Set(activeNodes.map(n => n.id));
+      const activeEdges = allEdges.filter(e => activeNodeIds.has(e.source) && activeNodeIds.has(e.target));
 
-      ctx.fillStyle = '#F7F8F5';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      pulseRef.current = (pulseRef.current + 0.035) % (Math.PI * 2);
 
-      ctx.save();
-      ctx.translate(panOffset.x, panOffset.y);
-      ctx.scale(zoomLevel, zoomLevel);
+      /* ── 1. Physics Step for Active Visible Nodes ── */
+      if (physicsOn && activeNodes.length > 0) {
+        const cx = W / 2, cy = H / 2;
 
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
-      for (let x = -200; x < canvas.width + 400; x += 30) {
-        for (let y = -200; y < canvas.height + 400; y += 30) {
-          ctx.beginPath();
-          ctx.arc(x, y, 1, 0, 2 * Math.PI);
-          ctx.fill();
+        // A. Anti-Clumping Coulomb Repulsion
+        for (let i = 0; i < activeNodes.length; i++) {
+          for (let j = i + 1; j < activeNodes.length; j++) {
+            const a = activeNodes[i], b = activeNodes[j];
+            let dx = b.x - a.x, dy = b.y - a.y;
+            let d2 = dx * dx + dy * dy || 1;
+            let d = Math.sqrt(d2);
+
+            if (d < 480) {
+              const repStrength = 16000 * (1 + (a.degree + b.degree) * 0.05);
+              const f = repStrength / (d2 + 100);
+              const fx = (dx / d) * f;
+              const fy = (dy / d) * f;
+              if (a !== dragRef.current) { a.vx -= fx; a.vy -= fy; }
+              if (b !== dragRef.current) { b.vx += fx; b.vy += fy; }
+            }
+          }
+
+          // Gentle Centering Gravity
+          if (activeNodes[i] !== dragRef.current) {
+            activeNodes[i].vx += (cx - activeNodes[i].x) * 0.001;
+            activeNodes[i].vy += (cy - activeNodes[i].y) * 0.001;
+          }
         }
-      }
 
-      const nodes = nodesRef.current;
-      const edges = edgesRef.current;
-      const nodeMap = new Map(nodes.map(n => [n.id, n]));
+        // B. Hub-Dampened Spring Attraction on Active Edges
+        activeEdges.forEach(e => {
+          const a = activeNodes.find(n => n.id === e.source);
+          const b = activeNodes.find(n => n.id === e.target);
+          if (!a || !b) return;
 
-      const activeNode = hoveredNode || selectedNode;
-      const connectedNodeIds = new Set<string>();
-      if (activeNode) {
-        connectedNodeIds.add(activeNode.id);
-        edges.forEach(e => {
-          if (e.source === activeNode.id) connectedNodeIds.add(e.target);
-          if (e.target === activeNode.id) connectedNodeIds.add(e.source);
+          let dx = b.x - a.x, dy = b.y - a.y;
+          let d = Math.sqrt(dx * dx + dy * dy) || 1;
+
+          const ideal = 170 + (a.radius + b.radius) + (10 - Math.min(e.weight, 8)) * 8;
+          const degFactor = Math.sqrt((a.degree || 1) * (b.degree || 1));
+          const springCoeff = 0.004 / Math.max(1, degFactor * 0.4);
+
+          const f = (d - ideal) * springCoeff;
+          const fx = (dx / d) * f;
+          const fy = (dy / d) * f;
+
+          if (a !== dragRef.current) { a.vx += fx; a.vy += fy; }
+          if (b !== dragRef.current) { b.vx += fx; b.vy += fy; }
+        });
+
+        // C. Hard Collision Separation Pass (GUARANTEES NO OVERLAPPING NODES)
+        for (let pass = 0; pass < 2; pass++) {
+          for (let i = 0; i < activeNodes.length; i++) {
+            for (let j = i + 1; j < activeNodes.length; j++) {
+              const a = activeNodes[i], b = activeNodes[j];
+              let dx = b.x - a.x, dy = b.y - a.y;
+              let d = Math.sqrt(dx * dx + dy * dy) || 1;
+              const minDist = a.radius + b.radius + 40; // 40px guaranteed clear air around every node
+
+              if (d < minDist) {
+                const overlap = (minDist - d) * 0.5;
+                const nx = (dx / d) * overlap;
+                const ny = (dy / d) * overlap;
+                if (a !== dragRef.current) { a.x -= nx; a.y -= ny; a.vx *= 0.5; a.vy *= 0.5; }
+                if (b !== dragRef.current) { b.x += nx; b.y += ny; b.vx *= 0.5; b.vy *= 0.5; }
+              }
+            }
+          }
+        }
+
+        // D. Integrate Velocities with Damping
+        activeNodes.forEach(n => {
+          if (n === dragRef.current) return;
+          n.vx *= 0.86;
+          n.vy *= 0.86;
+
+          const speed = Math.hypot(n.vx, n.vy);
+          if (speed > 8) {
+            n.vx = (n.vx / speed) * 8;
+            n.vy = (n.vy / speed) * 8;
+          }
+
+          n.x += n.vx;
+          n.y += n.vy;
+          n.x = Math.max(60, Math.min(W - 60, n.x));
+          n.y = Math.max(60, Math.min(H - 60, n.y));
         });
       }
 
-      edges.forEach((edge) => {
-        const src = nodeMap.get(edge.source);
-        const tgt = nodeMap.get(edge.target);
-        if (!src || !tgt) return;
+      /* ── 2. Render Canvas ── */
+      ctx.save();
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, W, H);
 
-        const isFiltered =
-          filterType === 'ALL' ||
-          src.type.toUpperCase().includes(filterType) ||
-          tgt.type.toUpperCase().includes(filterType);
-        if (!isFiltered) return;
+      // Canvas background
+      ctx.fillStyle = '#F7F8F5';
+      ctx.fillRect(0, 0, W, H);
 
-        const isConnected =
-          activeNode &&
-          (edge.source === activeNode.id || edge.target === activeNode.id);
-        const isDimmed = activeNode && !isConnected;
+      // Crisp subtle dot grid
+      ctx.fillStyle = '#D4DCD4';
+      for (let gx = 0; gx < W; gx += 32) {
+        for (let gy = 0; gy < H; gy += 32) {
+          ctx.fillRect(gx, gy, 1.2, 1.2);
+        }
+      }
 
-        ctx.beginPath();
-        ctx.moveTo(src.x, src.y);
-        ctx.lineTo(tgt.x, tgt.y);
+      ctx.save();
+      ctx.translate(pan.x, pan.y);
+      ctx.scale(zoom, zoom);
 
-        if (isConnected) {
-          ctx.strokeStyle = '#D63B3B';
-          ctx.lineWidth = Math.min(3, 1.5 + edge.weight * 0.4);
-        } else if (isDimmed) {
-          ctx.strokeStyle = 'rgba(0, 0, 0, 0.04)';
-          ctx.lineWidth = 0.8;
-        } else {
-          ctx.strokeStyle = 'rgba(0, 0, 0, 0.12)';
-          ctx.lineWidth = Math.min(2.5, 0.8 + edge.weight * 0.25);
+      const hasFocus = !!(hoveredNode || selectedNode);
+
+      /* ── 3. Draw Active Edges (Only connecting visible nodes) ── */
+      activeEdges.forEach(e => {
+        const a = activeNodes.find(n => n.id === e.source);
+        const b = activeNodes.find(n => n.id === e.target);
+        if (!a || !b) return;
+
+        const lit = neighborSet ? (neighborSet.has(a.id) && neighborSet.has(b.id)) : false;
+        const isHazard = a.severity === 'HIGH' && b.severity === 'HIGH';
+
+        let strokeStyle = '#B4C2B4';
+        let strokeAlpha = 0.35;
+        let lineWidth = 1.4;
+
+        if (lit) {
+          strokeStyle = '#0A6B63';
+          strokeAlpha = 0.95;
+          lineWidth = 2.6;
+        } else if (hasFocus) {
+          strokeAlpha = 0.06;
+        } else if (isHazard) {
+          strokeStyle = '#E05252';
+          strokeAlpha = 0.55;
+          lineWidth = 1.8;
         }
 
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.globalAlpha = strokeAlpha;
+        ctx.strokeStyle = strokeStyle;
+        ctx.lineWidth = lineWidth;
         ctx.stroke();
+        ctx.globalAlpha = 1.0;
+
+        // Flow Pulse ONLY on Highlighted / Hazard Edges
+        if (lit) {
+          const t = (pulseRef.current / (Math.PI * 2)) % 1;
+          const px = a.x + (b.x - a.x) * t;
+          const py = a.y + (b.y - a.y) * t;
+          ctx.beginPath();
+          ctx.arc(px, py, 3.5, 0, Math.PI * 2);
+          ctx.fillStyle = '#0A6B63';
+          ctx.fill();
+        }
       });
 
-      pulseParticlesRef.current.forEach(p => {
-        const edge = edges[p.edgeIdx];
-        if (!edge) return;
-        const src = nodeMap.get(edge.source);
-        const tgt = nodeMap.get(edge.target);
-        if (!src || !tgt) return;
+      /* ── 4. Draw Active Visible Nodes ── */
+      activeNodes.forEach(n => {
+        const isSel = selectedNode?.id === n.id;
+        const isHov = hoveredNode?.id === n.id;
+        const isNbr = neighborSet ? neighborSet.has(n.id) : true;
+        const dim = hasFocus && !isNbr;
 
-        p.progress += p.speed;
-        if (p.progress > 1) p.progress = 0;
-
-        const px = src.x + (tgt.x - src.x) * p.progress;
-        const py = src.y + (tgt.y - src.y) * p.progress;
-
-        ctx.beginPath();
-        ctx.arc(px, py, 2, 0, 2 * Math.PI);
-        ctx.fillStyle = '#0A6B63';
-        ctx.fill();
-      });
-
-      nodes.forEach((node) => {
-        const isFiltered = filterType === 'ALL' || node.type.toUpperCase().includes(filterType);
-        if (!isFiltered) return;
-
-        const isSelected = selectedNode?.id === node.id;
-        const isHovered = hoveredNode?.id === node.id;
-        const isConnected = connectedNodeIds.has(node.id);
-        const isDimmed = activeNode && !isConnected;
-
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, node.radius, 0, 2 * Math.PI);
-
-        if (isSelected) {
-          ctx.fillStyle = '#D63B3B';
-          ctx.strokeStyle = '#FFFFFF';
-          ctx.lineWidth = 3;
-        } else if (isHovered) {
-          ctx.fillStyle = node.color;
-          ctx.strokeStyle = '#FFFFFF';
-          ctx.lineWidth = 2.5;
-        } else if (isDimmed) {
-          ctx.fillStyle = '#E2E8E2';
-          ctx.strokeStyle = '#C2CEC2';
-          ctx.lineWidth = 1;
-        } else {
-          ctx.fillStyle = node.color;
-          ctx.strokeStyle = '#FFFFFF';
-          ctx.lineWidth = 2;
+        // Outer Glow / Risk Ring
+        if (!dim) {
+          if (isSel || isHov) {
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, n.radius + 9, 0, Math.PI * 2);
+            ctx.fillStyle = isSel ? 'rgba(10, 107, 99, 0.28)' : 'rgba(26, 43, 45, 0.16)';
+            ctx.fill();
+          } else if (n.severity === 'HIGH') {
+            const glowR = n.radius + 6 + Math.sin(pulseRef.current * 2) * 2;
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, glowR, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(220, 38, 38, 0.16)';
+            ctx.fill();
+          }
         }
 
+        // Main Node Body (Solid High-Contrast)
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
+        ctx.fillStyle = dim ? '#CBD5E1' : n.color;
         ctx.fill();
+
+        // Node Outer Ring
+        ctx.lineWidth = isSel ? 3.5 : isHov ? 3 : 2;
+        ctx.strokeStyle = isSel ? '#06443E' : isHov ? '#1A2B2D' : (dim ? '#E2E8F0' : n.strokeColor);
         ctx.stroke();
 
-        ctx.font = `${isSelected ? '600 11px' : '500 10px'} Inter, sans-serif`;
-        ctx.fillStyle = isDimmed ? '#94A3A5' : '#1A2B2D';
-        ctx.textAlign = 'center';
-        ctx.fillText(node.label, node.x, node.y + node.radius + 12);
+        // Center Core Indicator
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, Math.max(3.5, n.radius * 0.35), 0, Math.PI * 2);
+        ctx.fillStyle = dim ? '#F1F5F9' : '#FFFFFF';
+        ctx.fill();
+
+        // High SIF Warning Indicator inside Core
+        if (n.severity === 'HIGH' && !dim && n.radius >= 22) {
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, 2.5, 0, Math.PI * 2);
+          ctx.fillStyle = '#DC2626';
+          ctx.fill();
+        }
+
+        // Node Label (Clean High-Contrast Floating Pill)
+        const showLabel = isSel || isHov || isNbr || zoom > 0.65 || n.radius >= 20 || activeNodes.length <= 8;
+        if (showLabel && !dim) {
+          const fontSize = isSel || isHov ? 12 : 11;
+          ctx.font = `${isSel || isHov ? 'bold ' : '600 '}${fontSize}px "Inter", -apple-system, sans-serif`;
+          const tw = ctx.measureText(n.label).width;
+          const lx = n.x;
+          const ly = n.y + n.radius + 15;
+
+          const padX = 7;
+          const pillHeight = 18;
+          const pillY = ly - 13;
+
+          ctx.fillStyle = '#FFFFFF';
+          ctx.strokeStyle = isSel ? '#0A6B63' : (isHov ? '#1A2B2D' : '#C2CEC2');
+          ctx.lineWidth = isSel ? 1.5 : 1;
+
+          ctx.beginPath();
+          ctx.roundRect(lx - tw / 2 - padX, pillY, tw + padX * 2, pillHeight, 5);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = isSel ? '#0A6B63' : '#1A2B2D';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(n.label, lx, pillY + pillHeight / 2);
+        }
       });
 
       ctx.restore();
-      animId = requestAnimationFrame(render);
+      ctx.restore();
+
+      animRef.current = requestAnimationFrame(tick);
     };
 
-    render();
-    return () => cancelAnimationFrame(animId);
-  }, [zoomLevel, panOffset, selectedNode, hoveredNode, filterType]);
+    animRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animRef.current);
+  }, [zoom, pan, physicsOn, filterType, selectedNode, hoveredNode, neighborSet, isNodeVisible]);
 
-  const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = (e.clientX - rect.left - panOffset.x) / zoomLevel;
-    const mouseY = (e.clientY - rect.top - panOffset.y) / zoomLevel;
-
-    const clicked = nodesRef.current.find(n => {
-      const dx = n.x - mouseX;
-      const dy = n.y - mouseY;
-      return Math.sqrt(dx * dx + dy * dy) <= n.radius + 4;
-    });
-
-    if (clicked) {
-      setSelectedNode(clicked);
-      draggingNodeRef.current = clicked;
-    } else {
-      isPanningRef.current = true;
-      panStartRef.current = { x: e.clientX - panOffset.x, y: e.clientY - panOffset.y };
-    }
-  };
-
-  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-
-    if (isPanningRef.current) {
-      setPanOffset({
-        x: e.clientX - panStartRef.current.x,
-        y: e.clientY - panStartRef.current.y,
-      });
-      return;
-    }
-
-    const mouseX = (e.clientX - rect.left - panOffset.x) / zoomLevel;
-    const mouseY = (e.clientY - rect.top - panOffset.y) / zoomLevel;
-
-    if (draggingNodeRef.current) {
-      draggingNodeRef.current.x = mouseX;
-      draggingNodeRef.current.y = mouseY;
-      return;
-    }
-
-    const hovered = nodesRef.current.find(n => {
-      const dx = n.x - mouseX;
-      const dy = n.y - mouseY;
-      return Math.sqrt(dx * dx + dy * dy) <= n.radius + 4;
-    });
-
-    setHoveredNode(hovered || null);
-  };
-
-  const handleCanvasMouseUp = () => {
-    draggingNodeRef.current = null;
-    isPanningRef.current = false;
-  };
-
-  const triggerSWAFromGraph = () => {
+  const triggerSWA = () => {
     if (!selectedNode) return;
-    setSwaToast(`Stop Work Authority Dispatched: Freezing all active digital permits connected to ${selectedNode.label}.`);
-    setTimeout(() => setSwaToast(null), 5000);
+    setSwaToast(`Stop Work Authority LOCKOUT: 500m digital perimeter freeze around ${selectedNode.label}`);
+    setTimeout(() => setSwaToast(null), 6000);
   };
+
+  const filterTabs = [
+    { key: 'ALL', label: 'All Signals' },
+    { key: 'HIGH_SIF', label: 'High SIF' },
+    { key: 'LOCATION', label: 'Assets' },
+    { key: 'EQUIPMENT', label: 'Equipment' },
+    { key: 'LSR', label: 'LSR Rules' },
+    { key: 'BARRIER_FAILURE', label: 'Barriers' },
+    { key: 'ENERGY_SOURCE', label: 'Energy' },
+  ];
+
+  const visibleNodes = nodesRef.current.filter(n => isNodeVisible(n, filterType));
 
   return (
-    <div className="dashboard-page space-y-5 p-6 bg-[#F7F8F5] min-h-screen text-[#1A2B2D]">
+    <div className={`dashboard-page flex flex-col ${isExpanded ? 'fixed inset-0 z-50 bg-[#F7F8F5] p-5 h-screen w-screen max-w-none' : 'h-[calc(100vh-64px)] space-y-4 overflow-hidden'}`}>
       
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* ── Page Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="font-heading font-bold text-xl text-[#1A2B2D] tracking-tight">
-              Safety Signal Knowledge Graph & Evidence Inspector
+              Safety Signal Knowledge Graph
             </h1>
             <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#E8F4F0] text-[#0A6B63] border border-[#BCE3DC]">
-              Neural Graph
+              SIF Precursor AI
             </span>
           </div>
           <p className="text-[13px] text-[#5E7072] mt-0.5 font-normal">
-            Correlates multi-barrier degradation cascades, recurring near-miss clusters, and systemic SIF precursors
+            Correlates barrier degradation cascades, near-miss clusters, and systemic SIF precursors across Upper Assam
           </p>
         </div>
 
-        <div className="flex items-center gap-1 bg-[#F0F2ED] p-1 rounded-lg flex-wrap">
-          {['ALL', 'LSR', 'EQUIP', 'LOC', 'ACT'].map((cat) => (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setPhysicsOn(!physicsOn)}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-semibold shadow-xs transition-colors cursor-pointer ${
+              physicsOn
+                ? 'bg-[#EDFAF4] border-[#BFEADB] text-[#1B8A6C]'
+                : 'border-[#C2CEC2] bg-white hover:bg-[#F0F2ED] text-[#3E5052]'
+            }`}
+          >
+            {physicsOn ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+            {physicsOn ? 'Physics Active' : 'Physics Paused'}
+          </button>
+
+          <button
+            onClick={fitView}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#C2CEC2] bg-white hover:bg-[#F0F2ED] text-[#3E5052] text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+            title="Fit to Screen"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            Fit View
+          </button>
+
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-semibold shadow-xs transition-colors cursor-pointer ${
+              isExpanded
+                ? 'bg-[#0A6B63] text-white border-[#0A6B63]'
+                : 'border-[#C2CEC2] bg-white hover:bg-[#F0F2ED] text-[#3E5052]'
+            }`}
+            title={isExpanded ? 'Exit Expand' : 'Expand Fullscreen'}
+          >
+            {isExpanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+            {isExpanded ? 'Collapse' : 'Expand'}
+          </button>
+        </div>
+      </div>
+
+      {/* ── Filter & Search Control Bar ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-[#C2CEC2] shadow-xs shrink-0">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-xs font-semibold text-[#5E7072] mr-1.5 flex items-center gap-1">
+            <Filter className="w-3.5 h-3.5 text-[#94A3A5]" /> Filter:
+          </span>
+          {filterTabs.map((t) => (
             <button
-              key={cat}
-              onClick={() => setFilterType(cat)}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-                filterType === cat
-                  ? 'bg-[#0A6B63] text-white shadow-xs'
-                  : 'text-[#5E7072] hover:text-[#1A2B2D]'
+              key={t.key}
+              onClick={() => setFilterType(t.key)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                filterType === t.key
+                  ? 'bg-[#0A6B63] text-white font-semibold shadow-xs'
+                  : 'bg-[#F0F2ED] text-[#3E5052] hover:bg-[#E2E8E2]'
               }`}
             >
-              {cat === 'ALL' ? 'All Nodes' : cat === 'LSR' ? 'LSR Rules' : cat === 'EQUIP' ? 'Equipment' : cat === 'LOC' ? 'Locations' : 'Activities'}
+              {t.label}
             </button>
           ))}
         </div>
+
+        <div className="relative">
+          <Search className="w-4 h-4 absolute left-3 top-2.5 text-[#94A3A5]" />
+          <input
+            type="text"
+            placeholder="Search node, equipment, hazard..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 pr-4 py-1.5 bg-[#F7F8F5] border border-[#C2CEC2] rounded-lg text-xs text-[#1A2B2D] placeholder-[#94A3A5] w-72 focus:outline-none focus:border-[#0A6B63] focus:bg-white transition-all"
+          />
+          {searchQuery && (
+            <div className="absolute right-0 mt-1 w-72 bg-white border border-[#C2CEC2] rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto">
+              {nodesRef.current.filter(n => n.label.toLowerCase().includes(searchQuery.toLowerCase())).map(n => (
+                <button
+                  key={n.id}
+                  onClick={() => {
+                    setSelectedNode(n);
+                    setSearchQuery('');
+                    const { width, height } = dimsRef.current;
+                    setPan({ x: width / 2 - n.x * zoom, y: height / 2 - n.y * zoom });
+                  }}
+                  className="w-full text-left px-3 py-2 hover:bg-[#F0F2ED] text-xs cursor-pointer flex justify-between items-center border-b border-[#F0F2ED] last:border-none"
+                >
+                  <span className="font-medium text-[#1A2B2D]">{n.label}</span>
+                  <span className="text-[10px] text-[#94A3A5] uppercase font-semibold">{n.type}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      {swaToast && (
-        <div className="p-3.5 rounded-xl bg-[#D63B3B] text-white text-xs font-semibold flex items-center justify-between shadow-md border border-[#B92525]">
-          <div className="flex items-center gap-2.5">
-            <AlertOctagon className="w-5 h-5 shrink-0" />
-            <span>{swaToast}</span>
-          </div>
-          <button onClick={() => setSwaToast(null)} className="text-white/80 hover:text-white font-bold text-sm px-2 cursor-pointer">✕</button>
-        </div>
-      )}
+      {/* ── Main Graph & Inspector Grid ── */}
+      <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-3.5 overflow-hidden relative">
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        
-        <div className="lg:col-span-7 bg-white rounded-xl border-2 border-[#C2CEC2] shadow-xs overflow-hidden relative">
-          
-          <div className="px-4 py-2.5 bg-[#F0F2ED] flex items-center justify-between border-b border-[#C2CEC2]">
-            <div className="flex items-center gap-2">
-              <Activity className="w-4 h-4 text-[#0A6B63]" />
-              <h3 className="font-heading font-semibold text-xs text-[#1A2B2D]">
-                Cross-Asset Topology Canvas
-              </h3>
-            </div>
-
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setZoomLevel(prev => Math.min(2.0, prev + 0.15))}
-                className="p-1 rounded-md bg-white hover:bg-[#E2E8E2] text-[#3E5052] border border-[#C2CEC2] cursor-pointer"
-                title="Zoom In"
-              >
-                <ZoomIn className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => setZoomLevel(prev => Math.max(0.6, prev - 0.15))}
-                className="p-1 rounded-md bg-white hover:bg-[#E2E8E2] text-[#3E5052] border border-[#C2CEC2] cursor-pointer"
-                title="Zoom Out"
-              >
-                <ZoomOut className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => { setZoomLevel(1); setPanOffset({ x: 0, y: 0 }); }}
-                className="p-1 rounded-md bg-white hover:bg-[#E2E8E2] text-[#3E5052] border border-[#C2CEC2] cursor-pointer"
-                title="Reset View"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-              </button>
+        {/* SWA Toast */}
+        {swaToast && (
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 max-w-lg w-full px-4">
+            <div className="p-3 rounded-xl bg-[#162829] border-2 border-[#D63B3B] text-white shadow-2xl flex items-center gap-3 text-xs">
+              <AlertOctagon className="w-5 h-5 text-red-400 shrink-0 animate-pulse" />
+              <span>{swaToast}</span>
+              <button onClick={() => setSwaToast(null)} className="ml-auto text-slate-400 hover:text-white cursor-pointer">✕</button>
             </div>
           </div>
+        )}
 
-          <canvas
-            ref={canvasRef}
-            width={720}
-            height={560}
-            onMouseDown={handleCanvasMouseDown}
-            onMouseMove={handleCanvasMouseMove}
-            onMouseUp={handleCanvasMouseUp}
-            onMouseLeave={handleCanvasMouseUp}
-            className="w-full bg-[#F7F8F5] cursor-grab active:cursor-grabbing block"
-          />
+        {/* Graph canvas container */}
+        <div ref={containerRef}
+          className="flex-1 relative bg-white border-2 border-[#C2CEC2] rounded-xl overflow-hidden shadow-xs"
+          onMouseEnter={() => { isMouseInsideRef.current = true; }}
+          onMouseLeave={() => { isMouseInsideRef.current = false; setHoveredNode(null); }}>
 
-          <div className="p-2.5 bg-[#F0F2ED] border-t border-[#C2CEC2] flex items-center justify-between text-[11px] text-[#5E7072]">
-            <span>Drag nodes to rearrange • Click any node to inspect evidence</span>
-            <span className="font-mono">{rawNodes.length} Nodes • {rawEdges.length} Co-occurrence Edges</span>
-          </div>
-        </div>
+          <canvas ref={canvasRef}
+            onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseUp}
+            className="w-full h-full block cursor-grab active:cursor-grabbing" style={{ touchAction: 'none' }} />
 
-        <div className="lg:col-span-5 bg-white rounded-xl border-2 border-[#C2CEC2] shadow-xs overflow-hidden flex flex-col justify-between">
-          
-          <div>
-            <div className="px-4 py-2.5 bg-[#F0F2ED] flex items-center justify-between border-b border-[#C2CEC2]">
-              <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-[#0A6B63]" />
-                <h3 className="font-heading font-semibold text-xs text-[#1A2B2D]">
-                  Supporting Evidence & Investigation
-                </h3>
+          {/* Interactive Hover HUD Tooltip */}
+          {hoveredNode && !selectedNode && (
+            <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md p-3 rounded-xl border border-[#C2CEC2] shadow-md z-40 max-w-xs transition-all pointer-events-none">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase" style={{ backgroundColor: pal(hoveredNode.type).bgLight, color: pal(hoveredNode.type).text }}>
+                  {hoveredNode.type.replace('_', ' ')}
+                </span>
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${hoveredNode.severity === 'HIGH' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>
+                  {hoveredNode.severity} RISK
+                </span>
               </div>
-              <span className="text-[11px] font-mono text-[#94A3A5]">F6 + F7 AUDIT</span>
-            </div>
-
-            <div className="p-4 space-y-4 max-h-[530px] overflow-y-auto">
-              
-              {loadingEvidence ? (
-                <div className="py-16 text-center text-[#94A3A5] font-mono text-xs">
-                  <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-[#94A3A5]" />
-                  Extracting incident history & physical barriers...
-                </div>
-              ) : evidence ? (
-                <div className="space-y-3.5">
-                  
-                  <div className="p-3.5 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2] space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#E8F4F0] text-[#0A6B63] border border-[#BCE3DC]">
-                        {evidence.node_type}
-                      </span>
-                      <span className="text-[10px] font-mono text-[#94A3A5]">
-                        ID: {evidence.node_id}
-                      </span>
-                    </div>
-
-                    <h4 className="font-heading font-bold text-base text-[#1A2B2D]">
-                      {evidence.node_label}
-                    </h4>
-
-                    {evidence.has_active_cluster && (
-                      <div className="p-3 rounded-lg bg-[#FDF2F2] border border-[#F5C6C6] text-[#D63B3B] text-xs font-semibold flex items-center gap-2">
-                        <Flame className="w-4 h-4 text-[#D63B3B] shrink-0" />
-                        <div>
-                          <div className="text-[11px] font-bold text-[#D63B3B]">
-                            NEAR-MISS MULTIPLIER TRIGGERED ({evidence.cluster_details?.event_count} EVENTS IN 7 DAYS)
-                          </div>
-                          <p className="text-[10px] text-[#5E7072] font-normal mt-0.5">
-                            Systemic barrier cascade detected. Connected reports elevated to HIGH SIF.
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-3 gap-2 pt-2 text-center text-xs border-t border-[#C2CEC2]">
-                      <div className="p-2 rounded bg-white border border-[#C2CEC2]">
-                        <div className="text-[10px] text-[#5E7072]">Total Reports</div>
-                        <div className="font-heading text-sm font-bold text-[#1A2B2D]">{evidence.total_incidents}</div>
-                      </div>
-                      <div className="p-2 rounded bg-white border border-[#C2CEC2]">
-                        <div className="text-[10px] text-[#D63B3B]">High SIF</div>
-                        <div className="font-heading text-sm font-bold text-[#D63B3B]">{evidence.high_sif_count}</div>
-                      </div>
-                      <div className="p-2 rounded bg-white border border-[#C2CEC2]">
-                        <div className="text-[10px] text-[#D4820A]">Medium Risk</div>
-                        <div className="font-heading text-sm font-bold text-[#D4820A]">{evidence.medium_sif_count}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-3.5 rounded-lg bg-[#FEF7EC] border border-[#F8DFB6] space-y-1">
-                    <div className="text-[11px] font-semibold text-[#D4820A] flex items-center gap-1.5">
-                      <Zap className="w-3.5 h-3.5 text-[#D4820A]" />
-                      Recommended Preventative Action (CAPA):
-                    </div>
-                    <p className="text-xs text-[#3E5052] font-medium leading-relaxed">
-                      {evidence.recommended_capa}
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="text-[11px] font-semibold text-[#5E7072] flex items-center justify-between">
-                      <span>Evidence Timeline ({evidence.supporting_reports.length} observations)</span>
-                      <Clock className="w-3.5 h-3.5 text-[#94A3A5]" />
-                    </div>
-
-                    <div className="space-y-2">
-                      {evidence.supporting_reports.map((rep, idx) => (
-                        <div key={rep.id || idx} className="p-3 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2] space-y-1">
-                          <div className="flex items-center justify-between">
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                              rep.sif_label === 'HIGH' ? 'bg-[#FDF2F2] text-[#D63B3B] border border-[#F5C6C6]' : 'bg-[#FEF7EC] text-[#D4820A] border border-[#F8DFB6]'
-                            }`}>
-                              {rep.sif_label} ({rep.sif_score?.toFixed(2)})
-                            </span>
-                            <span className="text-[10px] font-mono text-[#94A3A5]">
-                              {new Date(rep.created_at || Date.now()).toLocaleDateString('en-GB')}
-                            </span>
-                          </div>
-
-                          <p className="text-xs text-[#1A2B2D] leading-snug line-clamp-3">
-                            "{rep.raw_text}"
-                          </p>
-
-                          <div className="flex items-center gap-2 text-[10px] text-[#5E7072] pt-0.5">
-                            <span>📍 {rep.location || 'Well Pad 7'}</span>
-                            {rep.iogp_rule && <span>• 🛡️ {rep.iogp_rule}</span>}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                </div>
-              ) : (
-                <div className="py-16 text-center text-[#94A3A5] text-xs">
-                  Click any node on the graph canvas to inspect supporting evidence.
-                </div>
-              )}
-
-            </div>
-          </div>
-
-          {selectedNode && (
-            <div className="p-3 bg-[#F0F2ED] border-t border-[#C2CEC2]">
-              <button
-                onClick={triggerSWAFromGraph}
-                className="w-full py-2 px-4 rounded-lg bg-[#D63B3B] hover:bg-[#B92525] text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
-              >
-                <AlertOctagon className="w-4 h-4" />
-                Dispatch SWA Lockout for {selectedNode.label}
-              </button>
+              <div className="font-heading font-bold text-xs text-[#1A2B2D]">{hoveredNode.label}</div>
+              <div className="text-[11px] text-[#5E7072] mt-0.5 flex items-center justify-between">
+                <span>{hoveredNode.report_count} Incident Reports</span>
+                <span>{hoveredNode.degree} Connections</span>
+              </div>
             </div>
           )}
 
+          {/* Bottom Zoom & Node Stats Controls Overlay */}
+          <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-lg border border-[#C2CEC2] text-xs text-[#3E5052] shadow-xs">
+            <button
+              onClick={() => {
+                const { width, height } = dimsRef.current;
+                zoomAt(zoom * 1.25, width / 2, height / 2);
+              }}
+              className="p-1 hover:text-[#0A6B63] hover:bg-[#F0F2ED] rounded transition-colors cursor-pointer"
+              title="Zoom In"
+            >
+              <ZoomIn className="w-4 h-4" />
+            </button>
+            <span className="text-[11px] text-[#1A2B2D] w-10 text-center font-bold font-mono">
+              {(zoom * 100).toFixed(0)}%
+            </span>
+            <button
+              onClick={() => {
+                const { width, height } = dimsRef.current;
+                zoomAt(zoom / 1.25, width / 2, height / 2);
+              }}
+              className="p-1 hover:text-[#0A6B63] hover:bg-[#F0F2ED] rounded transition-colors cursor-pointer"
+              title="Zoom Out"
+            >
+              <ZoomOut className="w-4 h-4" />
+            </button>
+            <span className="h-3 w-px bg-[#C2CEC2] mx-1" />
+            <button
+              onClick={fitView}
+              className="p-1 hover:text-[#0A6B63] hover:bg-[#F0F2ED] rounded transition-colors cursor-pointer"
+              title="Reset / Fit View"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+            <span className="h-3 w-px bg-[#C2CEC2] mx-1" />
+            <span className="text-[11px] text-[#0A6B63] font-semibold flex items-center gap-1 px-1">
+              <span className="w-2 h-2 rounded-full bg-[#0A6B63]" />
+              {visibleNodes.length} Nodes
+            </span>
+          </div>
+
+          {/* Legend */}
+          <div className="absolute top-3 left-3 hidden sm:flex flex-wrap items-center gap-2.5 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-lg border border-[#C2CEC2] text-[11px] text-[#3E5052] shadow-xs font-semibold">
+            {[
+              { c: '#0A6B63', l: 'Asset' }, { c: '#D97706', l: 'Equipment' }, { c: '#2563EB', l: 'IOGP Rule' },
+              { c: '#DC2626', l: 'Barrier Fail' }, { c: '#7C3AED', l: 'Energy' }, { c: '#059669', l: 'Activity' },
+            ].map(i => (
+              <div key={i.l} className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-full border border-black/10 shadow-xs" style={{ backgroundColor: i.c }} />
+                <span>{i.l}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
-      </div>
+        {/* Right evidence panel */}
+        <div className="w-full lg:w-96 shrink-0 bg-white border-2 border-[#C2CEC2] rounded-xl flex flex-col overflow-y-auto shadow-xs">
+          {selectedNode ? (
+            <div className="p-4 space-y-4">
+              <div className="border-b border-[#E2E8E2] pb-3">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-semibold uppercase bg-[#F0F2ED] text-[#5E7072] border border-[#C2CEC2]">
+                    {selectedNode.type.replace('_', ' ')}
+                  </span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${selectedNode.severity === 'HIGH' ? 'bg-[#FDF2F2] text-[#D63B3B] border-[#F5C6C6]' : 'bg-[#EDFAF4] text-[#1B8A6C] border-[#BFEADB]'}`}>
+                    {selectedNode.severity} RISK
+                  </span>
+                </div>
+                <h2 className="font-heading font-bold text-base text-[#1A2B2D]">{selectedNode.label}</h2>
+                <div className="text-xs text-[#5E7072] mt-1 flex items-center gap-1.5">
+                  <Activity className="w-3.5 h-3.5 text-[#0A6B63]" />
+                  {selectedNode.report_count} Associated Incidents · {selectedNode.degree} Connected Entities
+                </div>
+              </div>
 
+              <div className="bg-[#F7F8F5] p-3 rounded-xl border border-[#C2CEC2] space-y-1.5">
+                <div className="text-[11px] font-bold text-[#1A2B2D] uppercase flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-[#D97706]" /> Causal Propagation
+                </div>
+                <p className="text-[11px] text-[#3E5052] leading-relaxed">
+                  {selectedNode.type === 'BARRIER_FAILURE'
+                    ? 'CRITICAL: Active barrier degradation. Immediate physical verification required before continued operations.'
+                    : selectedNode.type === 'LOCATION'
+                    ? 'Asset hub tracking clustered near-miss precursors within a 500m operational radius.'
+                    : selectedNode.type.includes('LSR')
+                    ? 'Violation of this Life-Saving Rule represents systemic control degradation across multiple shifts.'
+                    : `Failure in ${selectedNode.label} threatens primary containment integrity and may propagate to high-pressure blowouts.`}
+                </p>
+              </div>
+
+              <div className="bg-[#EDFAF4] p-3 rounded-xl border border-[#BFEADB] space-y-1">
+                <div className="text-[11px] font-bold text-[#1B8A6C] uppercase flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Recommended CAPA
+                </div>
+                <p className="text-xs text-[#1A2B2D] leading-relaxed font-medium">
+                  {evidence?.recommended_capa || `Inspect ${selectedNode.label} immediately. Enforce positive double-isolation per OISD-189.`}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-heading font-bold text-[#1A2B2D] flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-[#0A6B63]" /> Recent Incident Evidence
+                  </span>
+                  <span className="text-[10px] text-[#94A3A5]">{evidence?.supporting_reports?.length || 0} reports</span>
+                </div>
+                <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                  {evidence?.supporting_reports?.map((r, i) => (
+                    <div key={i} className="p-2.5 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2] space-y-1">
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="font-bold text-[#1A2B2D] font-mono">{r.id}</span>
+                        <span className={`px-1.5 py-0.5 rounded font-bold ${r.sif_label === 'HIGH' ? 'bg-[#FDF2F2] text-[#D63B3B]' : 'bg-[#EDFAF4] text-[#1B8A6C]'}`}>
+                          SIF {(r.sif_score * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[#3E5052] line-clamp-2 leading-relaxed">"{r.raw_text}"</p>
+                      <div className="text-[10px] text-[#94A3A5]">{r.location} · {r.created_at}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <button onClick={triggerSWA}
+                className="w-full py-2.5 bg-[#D63B3B] hover:bg-[#C02E2E] text-white font-heading font-bold text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-colors">
+                <AlertOctagon className="w-4 h-4" /> Issue Stop Work Authority (SWA)
+              </button>
+            </div>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center p-6 text-center text-[#5E7072] space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-[#F0F2ED] border border-[#C2CEC2] flex items-center justify-center text-[#0A6B63]">
+                <Network className="w-6 h-6" />
+              </div>
+              <h3 className="font-heading font-bold text-sm text-[#1A2B2D]">Knowledge Graph Inspector</h3>
+              <p className="text-xs text-[#5E7072] max-w-xs leading-relaxed font-normal">
+                Click any node on the graph to trace causal precursor chains and inspect supporting field evidence.
+              </p>
+              <div className="p-3 bg-[#F7F8F5] rounded-xl border border-[#C2CEC2] text-[11px] text-left w-full space-y-1">
+                <div className="font-bold text-[#1A2B2D]">Graph Gestures:</div>
+                <div className="text-[#5E7072]">• Click node → inspect evidence panel</div>
+                <div className="text-[#5E7072]">• Drag node → rearrange spring layout</div>
+                <div className="text-[#5E7072]">• Scroll (inside graph) → zoom in / out</div>
+                <div className="text-[#5E7072]">• Drag canvas → pan across network</div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

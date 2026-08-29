@@ -103,7 +103,15 @@ export default function TriageDashboard() {
     };
 
     window.addEventListener('sanket:new_report', handleLiveReport);
-    return () => window.removeEventListener('sanket:new_report', handleLiveReport);
+    const interval = setInterval(() => {
+      fetchSummary();
+      fetchReports();
+    }, 3000);
+
+    return () => {
+      window.removeEventListener('sanket:new_report', handleLiveReport);
+      clearInterval(interval);
+    };
   }, [page, filter, search]);
 
   // Handle single manual ingestion

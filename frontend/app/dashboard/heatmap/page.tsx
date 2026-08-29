@@ -653,68 +653,76 @@ export default function DualHeatmapAndMapPage() {
 
       {/* ── Intelligence Layer Toggle Bar ── */}
       <div className="bg-white p-3.5 rounded-xl border-2 border-[#C2CEC2] shadow-xs flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-xs font-medium text-[#5E7072] mr-1 flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold text-[#5E7072] mr-1 flex items-center gap-1">
             <Layers className="w-3.5 h-3.5 text-[#0A6B63]" /> Layers:
           </span>
 
           <button
             onClick={() => setShowGasPlume(!showGasPlume)}
-            className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5 ${
               showGasPlume
-                ? 'bg-[#FDF2F2] border-[#F5C6C6] text-[#D63B3B]'
-                : 'bg-[#F7F8F5] border-[#C2CEC2] text-[#5E7072] hover:text-[#1A2B2D]'
+                ? 'bg-[#D63B3B] text-white border-[#B92525] shadow-xs ring-2 ring-[#D63B3B]/20'
+                : 'bg-[#F0F2ED] border-[#C2CEC2] text-[#5E7072] hover:bg-[#E2E8E2] hover:text-[#1A2B2D]'
             }`}
           >
-            <Wind className="w-3.5 h-3.5" /> Gas Plume
+            <Wind className="w-3.5 h-3.5" />
+            <span>Gas Plume</span>
+            <span className={`w-1.5 h-1.5 rounded-full ${showGasPlume ? 'bg-white animate-pulse' : 'bg-[#94A3A5]'}`} />
           </button>
 
           <button
             onClick={() => setShowNasaFirms(!showNasaFirms)}
-            className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5 ${
               showNasaFirms
-                ? 'bg-[#FEF7EC] border-[#F8DFB6] text-[#D4820A]'
-                : 'bg-[#F7F8F5] border-[#C2CEC2] text-[#5E7072] hover:text-[#1A2B2D]'
+                ? 'bg-[#D4820A] text-white border-[#B45309] shadow-xs ring-2 ring-[#D4820A]/20'
+                : 'bg-[#F0F2ED] border-[#C2CEC2] text-[#5E7072] hover:bg-[#E2E8E2] hover:text-[#1A2B2D]'
             }`}
           >
-            <Flame className="w-3.5 h-3.5" /> NASA Thermal
+            <Flame className="w-3.5 h-3.5" />
+            <span>NASA Thermal</span>
+            <span className={`w-1.5 h-1.5 rounded-full ${showNasaFirms ? 'bg-white animate-pulse' : 'bg-[#94A3A5]'}`} />
           </button>
 
           <button
             onClick={() => setShowFloodRisk(!showFloodRisk)}
-            className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5 ${
               showFloodRisk
-                ? 'bg-[#EDFAF4] border-[#BFEADB] text-[#1B8A6C]'
-                : 'bg-[#F7F8F5] border-[#C2CEC2] text-[#5E7072] hover:text-[#1A2B2D]'
+                ? 'bg-[#2563EB] text-white border-[#1D4ED8] shadow-xs ring-2 ring-[#2563EB]/20'
+                : 'bg-[#F0F2ED] border-[#C2CEC2] text-[#5E7072] hover:bg-[#E2E8E2] hover:text-[#1A2B2D]'
             }`}
           >
-            <Droplets className="w-3.5 h-3.5" /> Flood Inundation
+            <Droplets className="w-3.5 h-3.5" />
+            <span>Flood Inundation</span>
+            <span className={`w-1.5 h-1.5 rounded-full ${showFloodRisk ? 'bg-white animate-pulse' : 'bg-[#94A3A5]'}`} />
           </button>
 
           <button
             onClick={() => setShowPipelines(!showPipelines)}
-            className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5 ${
               showPipelines
-                ? 'bg-[#EDFAF4] border-[#BFEADB] text-[#1B8A6C]'
-                : 'bg-[#F7F8F5] border-[#C2CEC2] text-[#5E7072] hover:text-[#1A2B2D]'
+                ? 'bg-[#0A6B63] text-white border-[#085B54] shadow-xs ring-2 ring-[#0A6B63]/20'
+                : 'bg-[#F0F2ED] border-[#C2CEC2] text-[#5E7072] hover:bg-[#E2E8E2] hover:text-[#1A2B2D]'
             }`}
           >
-            <Activity className="w-3.5 h-3.5" /> Trunk Pipelines
+            <Activity className="w-3.5 h-3.5" />
+            <span>Trunk Pipelines</span>
+            <span className={`w-1.5 h-1.5 rounded-full ${showPipelines ? 'bg-white animate-pulse' : 'bg-[#94A3A5]'}`} />
           </button>
         </div>
 
         {/* Spatial SWA Radius selector */}
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-[#5E7072]">SWA Buffer:</span>
-          <div className="flex items-center gap-1 bg-[#F0F2ED] p-0.5 rounded-lg border border-[#C2CEC2]">
+          <span className="text-xs font-semibold text-[#5E7072]">SWA Buffer:</span>
+          <div className="flex items-center gap-1 bg-[#F0F2ED] p-1 rounded-lg border border-[#C2CEC2]">
             {[250, 500, 1000].map(r => (
               <button
                 key={r}
                 onClick={() => setBufferRadiusMeters(r)}
-                className={`px-2 py-0.5 rounded text-xs font-mono font-medium transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-md text-xs font-mono transition-all cursor-pointer ${
                   bufferRadiusMeters === r
-                    ? 'bg-white text-[#0A6B63] shadow-xs font-bold'
-                    : 'text-[#5E7072] hover:text-[#1A2B2D]'
+                    ? 'bg-[#0A6B63] text-white shadow-xs font-bold'
+                    : 'text-[#5E7072] hover:bg-[#E2E8E2] hover:text-[#1A2B2D] font-medium'
                 }`}
               >
                 {r}m
