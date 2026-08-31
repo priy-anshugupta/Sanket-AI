@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     # --- Keyword Boost ---
     KEYWORD_BOOST: float = 0.15
 
-    # --- Critical SIF Keywords (English + Hindi/Hinglish) ---
+    # --- Critical SIF Keywords (English + Hindi/Hinglish + Assamese) ---
     CRITICAL_KEYWORDS: list[str] = [
         "fatality", "confined space", "energized", "fall from height",
         "h2s", "h₂s", "blowout", "explosion", "crush", "amputation",
@@ -61,17 +61,25 @@ class Settings(BaseSettings):
         "scaffold", "harness", "no helmet", "without ppe",
         "loto", "lockout", "tagout", "dropped object",
         "pipe blast", "valve failure", "pressure surge",
-        # Hindi/Hinglish keywords
+        # Hindi / Hinglish keywords
         "aag", "blast", "leak", "pressure", "girgaya",
         "gir gaya", "toot gaya", "phat gaya", "gas nikal",
-        "pipe phat", "valve kharab", "helmet nahi",
+        "pipe phat", "valve kharab", "helmet nahi", "dheela",
+        # Assamese keywords (Assamese Script + Romanized)
+        "গেছ লিক", "ফাটিছে", "জুই", "বিঅ'পি", "বেয়া", "চাপ",
+        "লিক", "ভঙা", "পৰি গ'ল", "ধোঁৱা", "তেল লিক",
+        "ges leak", "phatise", "phati gol", "zui", "bop",
+        "beya", "saap", "vonga", "pori gol", "tel leak",
+        "harness nai", "helmet nai", "bop beya",
     ]
 
-    # --- Negation Terms (English + Hindi) ---
+    # --- Negation Terms (English + Hindi + Assamese) ---
     NEGATION_TERMS: list[str] = [
         "no", "not", "without", "avoided", "zero",
         "never", "prevented", "none", "absent",
         "nahi", "nhi", "nahin", "bina",
+        # Assamese negation terms
+        "nai", "nohoy", "nahoi", "nohoi", "nehi",
     ]
 
     class Config:

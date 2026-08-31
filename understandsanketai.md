@@ -126,7 +126,8 @@ graph TD
    * Phone connects to the Laptop's Wi-Fi network (IP: `10.92.126.169` or `192.168.137.1`).
 3. **Observation Logging**:
    * Worker opens `http://10.92.126.169:3000/worker` on their browser.
-   * Worker taps **TAP TO RECORD** $ightarrow$ speaks Hindi: *"Well Pad 7 mein gas pipe se leakage ho raha hai"*.
+   * Worker taps **TAP TO RECORD** $
+ightarrow$ speaks Hindi: *"Well Pad 7 mein gas pipe se leakage ho raha hai"*.
    * Phone browser captures audio into local device RAM using `MediaRecorder`.
 4. **Local Subnet Upload**:
    * Phone uploads the raw audio file over the private Wi-Fi to the laptop's backend: `http://10.92.126.169:8000/api/voice/transcribe`.
@@ -215,8 +216,16 @@ graph TD
 ### Stage 4: IOGP 9 Life-Saving Rules Mapper
 * Computes cosine similarity against the official 9 IOGP rules (Threshold cutoff: `0.45`).
 
-### Stage 5: Grounded LLM Precursor Explainer
-* Senior DGMS/OISD-189 Oil & Gas Safety Analyst prompt producing exactly 3 technical sentences (WHAT, WHY, IMMEDIATE ACTION) with strict anti-hallucination guardrails.
+### Stage 5: Chain-of-Thought (CoT) Word-by-Word Safety Guardrail & LLM Explainer
+To ensure **zero hallucination** and rigorous judgment, the AI performs a 3-step Chain-of-Thought (CoT) evaluation before generating any output:
+1. **Word-by-Word Hazard Decomposition**:
+   - Parses each word to identify the exact physical equipment (*BOP, standpipe, manifold, mud pump*), physical failure state (*weeping, leaking, vibrating, cracked*), and high-energy magnitude (*1800 PSI, 33kV, H2S toxic gas*).
+2. **Context & Negation Integrity Check**:
+   - Scans 5-token windows for negation phrases (*"no leak"*, *"nahi"*, *"nai"*, *"routine safe"*) to eliminate false positives.
+3. **DGMS / OISD-189 Grounded 3-Sentence Synthesis**:
+   - **Sentence 1 [WHAT HAPPENED]**: Cites strictly the facts present in the text with zero fabricated numbers.
+   - **Sentence 2 [WHY IT IS DANGEROUS]**: Traces the barrier breakdown pathway to a Serious Injury or Fatality (SIF) per API RP 754 & IOGP rules.
+   - **Sentence 3 [MANDATORY IMMEDIATE ACTION]**: Commands the precise regulatory defense (Stop Work Authority, LOTO, 500m digital freeze, or well kill).
 
 ### Stage 6: Bipartite Causal Knowledge Graph (`NetworkX`)
 * Constructs causal edges linking Equipment, Location, Barrier Failure, and Energy Sources.
@@ -265,7 +274,9 @@ Judges often ask: *"Why does your system support both single live reports and ba
 ### ⚡ 1. The Single Live Report (The Frontline Reflex)
 * **Purpose**: Real-time triage and immediate life-saving action.
 * **Latency**: **< 50 milliseconds**.
-* **Outcome**: A worker speaks *"BOP leaking hydraulic fluid"* $ightarrow$ Control Room siren triggers immediately $ightarrow$ 500m SWA digital perimeter freeze enforced.
+* **Outcome**: A worker speaks *"BOP leaking hydraulic fluid"* $
+ightarrow$ Control Room siren triggers immediately $
+ightarrow$ 500m SWA digital perimeter freeze enforced.
 
 ### 📚 2. Batch Ingestion of 5,000 Historical Reports (The Big Picture Intelligence)
 * **Purpose**: Bootstrapping the Causal Knowledge Graph and baselining fleet-wide risk.

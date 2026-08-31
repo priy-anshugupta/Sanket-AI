@@ -54,7 +54,7 @@ class VoiceTranscriber:
                 transcription = client.audio.transcriptions.create(
                     model="whisper-1",
                     file=audio_file,
-                    prompt="Oil India Limited safety observation in Hindi, Assamese, Hinglish, or English: gas leak, pipeline rupture, BOP kick, crane lift, high pressure, fire hazard, LOTO, scaffolding.",
+                    prompt="Oil India Limited (Upper Assam Basin - Duliajan, Baghjan, Moran, Digboi) frontline safety observation in Assamese (অসমীয়া), Hindi (हिंदी), Hinglish, or English. Keywords: গেছ লিক, পাইপলাইন ফাটিছে, বিঅ'পি, জুই, চেল্টাৰ পিট, ভাল্ভ বেয়া, চাপ বাঢ়িছে, gas leak, pressure kick, BOP valve weeping, crude oil spill, H2S gas odor, scaffolding fall hazard, high voltage 33kV, pipe burst, aag, blast, valve kharab, LOTO isolation.",
                 )
 
                 text = getattr(transcription, "text", "").strip()
