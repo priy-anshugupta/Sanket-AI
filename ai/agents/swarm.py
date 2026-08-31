@@ -10,6 +10,7 @@ from ai.preprocessing.preprocessor import preprocessor
 from ai.sif.classifier import sif_classifier
 from ai.entities.extractor import entity_extractor
 from ai.lsr.mapper import lsr_mapper
+from ai.sif.guardrails import guardrail_engine
 from ai.explanation.explainer import llm_explainer
 from graph.graph_store import graph_store
 from graph.clustering import cluster_detector
@@ -32,6 +33,9 @@ class ReportState(TypedDict):
     explanation: Optional[str]
     cluster_alert: bool
     cluster_details: Optional[Dict[str, Any]]
+    consensus_confidence: Optional[float]
+    guardrail_status: Optional[str]
+    audit_notes: Optional[str]
     action_recommendation: Optional[Dict[str, Any]]
     agent_trace: List[str]
 
@@ -91,7 +95,35 @@ def rule_mapper_agent(state: ReportState) -> Dict[str, Any]:
     }
 
 
-# ─── 5. Graph Analyst Agent ───
+
+# ─── 5. Verifier Agent (Adversarial Critic) ───
+def verifier_agent(state: ReportState) -> Dict[str, Any]:
+    """
+    Adversarial Critic & Defense-in-Depth Guardrail Arbiter.
+    Reconciles Layer 1 (Physics Boundaries) with Layer 2 (Vector Embeddings).
+    """
+    consensus = guardrail_engine.reconcile_classification(
+        text=state["preprocessed_text"],
+        neural_score=state["sif_score"],
+        neural_label=state["sif_label"],
+        matched_anchor=state.get("matched_anchor_text", ""),
+    )
+    trace = state.get("agent_trace", [])
+    trace.append(
+        f"VerifierAgent: Confirmed consensus {consensus['final_sif_label']} ({consensus['final_sif_score']:.2f}) "
+        f"[Confidence: {consensus['consensus_confidence']:.0%}] -> {consensus['guardrail_status']}"
+    )
+    return {
+        "sif_score": consensus["final_sif_score"],
+        "sif_label": consensus["final_sif_label"],
+        "is_sif_precursor": consensus["is_sif_precursor"],
+        "consensus_confidence": consensus["consensus_confidence"],
+        "guardrail_status": consensus["guardrail_status"],
+        "audit_notes": consensus["audit_notes"],
+        "agent_trace": trace,
+    }
+
+# ─── 6. Graph Analyst Agent ───
 def graph_analyst_agent(state: ReportState) -> Dict[str, Any]:
     """Updates knowledge graph and inspects Near-Miss Multiplier clusters."""
     graph_store.add_report_entities(
@@ -163,16 +195,18 @@ def build_sanket_swarm() -> StateGraph:
     workflow.add_node("classifier", classifier_agent)
     workflow.add_node("entity_extractor", entity_extractor_agent)
     workflow.add_node("rule_mapper", rule_mapper_agent)
+    workflow.add_node("verifier", verifier_agent)
     workflow.add_node("graph_analyst", graph_analyst_agent)
     workflow.add_node("explainer", explainer_agent)
     workflow.add_node("action_agent", action_agent)
 
-    # Edge flow: sequential DAG
+    # Edge flow: sequential DAG with Verifier Critic
     workflow.set_entry_point("supervisor")
     workflow.add_edge("supervisor", "classifier")
     workflow.add_edge("classifier", "entity_extractor")
     workflow.add_edge("entity_extractor", "rule_mapper")
-    workflow.add_edge("rule_mapper", "graph_analyst")
+    workflow.add_edge("rule_mapper", "verifier")
+    workflow.add_edge("verifier", "graph_analyst")
     workflow.add_edge("graph_analyst", "explainer")
     workflow.add_edge("explainer", "action_agent")
     workflow.add_edge("action_agent", END)

@@ -8,6 +8,7 @@ from sentence_transformers import SentenceTransformer
 from backend.config.settings import settings
 from ai.sif.anchor_library import anchor_library
 from ai.sif.negation import negation_parser
+from ai.sif.guardrails import guardrail_engine
 
 
 class SIFClassifier:
@@ -115,10 +116,22 @@ class SIFClassifier:
         else:
             label = "LOW"
 
+        # 6. Defense-in-Depth Guardrail Consensus Arbitration
+        consensus = guardrail_engine.reconcile_classification(
+            text=text,
+            neural_score=final_score,
+            neural_label=label,
+            matched_anchor=matched_anchor["text"],
+            boosted_keywords=boosted_keywords,
+        )
+
         return {
-            "sif_score": round(final_score, 4),
-            "sif_label": label,
-            "is_sif_precursor": label in ("HIGH", "MEDIUM"),
+            "sif_score": consensus["final_sif_score"],
+            "sif_label": consensus["final_sif_label"],
+            "is_sif_precursor": consensus["is_sif_precursor"],
+            "consensus_confidence": consensus["consensus_confidence"],
+            "guardrail_status": consensus["guardrail_status"],
+            "audit_notes": consensus["audit_notes"],
             "matched_anchor_id": matched_anchor["id"],
             "matched_anchor_text": matched_anchor["text"],
             "matched_anchor_similarity": round(max_similarity, 4),

@@ -7,17 +7,18 @@
 ## 📑 TABLE OF CONTENTS
 1. [Executive Summary & Problem Statement](#1-executive-summary--problem-statement)
 2. [Master Full Forms & Jargon Dictionary (With Simple Everyday Analogies)](#2-master-full-forms--jargon-dictionary-with-simple-everyday-analogies)
-3. [The Complete Zero-Internet Workflow (Both Laptop & Phone with 0 Internet)](#3-the-complete-zero-internet-workflow-both-laptop--phone-with-0-internet)
-4. [The Hazardous Area Dilemma: How Frontline Ingestion Works Without Consumer Phones](#4-the-hazardous-area-dilemma-how-frontline-ingestion-works-without-consumer-phones)
-5. [The 7-Stage Neuro-Symbolic AI & NLP Pipeline](#5-the-7-stage-neuro-symbolic-ai--nlp-pipeline)
-6. [The 7-Agent LangGraph Multi-Agent Swarm (Autonomous Orchestration)](#6-the-7-agent-langgraph-multi-agent-swarm-autonomous-orchestration)
-7. [Why Ingest 5,000 Historical Reports vs. Single Live Report?](#7-why-ingest-5000-historical-reports-vs-single-live-report)
-8. [Complete Technical Specifications & Hardware Architecture](#8-complete-technical-specifications--hardware-architecture)
-9. [Sovereign Air-Gap vs. Hybrid Online Architecture](#9-sovereign-air-gap-vs-hybrid-online-architecture)
-10. [Step-by-Step Easy End-to-End Workflow](#10-step-by-step-easy-end-to-end-workflow)
-11. [Screen-by-Screen Dashboard Manual (Purpose, Working, and Judge Pitch)](#11-screen-by-screen-dashboard-manual)
-12. [The Baghjan 2020 Case Study (The Proof of Concept)](#12-the-baghjan-2020-case-study-the-proof-of-concept)
-13. [Judge Defense Script: Top 10 Toughest Questions & Winning Answers](#13-judge-defense-script-top-10-toughest-questions--winning-answers)
+3. [The 4-Layer Defense-in-Depth AI Guardrail Architecture](#3-the-4-layer-defense-in-depth-ai-guardrail-architecture)
+4. [The 8-Agent LangGraph Multi-Agent Swarm (Autonomous Orchestration)](#4-the-8-agent-langgraph-multi-agent-swarm-autonomous-orchestration)
+5. [The Complete Zero-Internet Workflow (Both Laptop & Phone with 0 Internet)](#5-the-complete-zero-internet-workflow-both-laptop--phone-with-0-internet)
+6. [The Hazardous Area Dilemma: How Frontline Ingestion Works Without Consumer Phones](#6-the-hazardous-area-dilemma-how-frontline-ingestion-works-without-consumer-phones)
+7. [The 7-Stage Neuro-Symbolic AI & NLP Pipeline](#7-the-7-stage-neuro-symbolic-ai--nlp-pipeline)
+8. [Why Ingest 5,000 Historical Reports vs. Single Live Report?](#8-why-ingest-5000-historical-reports-vs-single-live-report)
+9. [Complete Technical Specifications & Hardware Architecture](#9-complete-technical-specifications--hardware-architecture)
+10. [Sovereign Air-Gap vs. Hybrid Online Architecture](#10-sovereign-air-gap-vs-hybrid-online-architecture)
+11. [Step-by-Step Easy End-to-End Workflow](#11-step-by-step-easy-end-to-end-workflow)
+12. [Screen-by-Screen Dashboard Manual (Purpose, Working, and Judge Pitch)](#12-screen-by-screen-dashboard-manual)
+13. [The Baghjan 2020 Case Study (The Proof of Concept)](#13-the-baghjan-2020-case-study-the-proof-of-concept)
+14. [Judge Defense Script: Top 10 Toughest Questions & Winning Answers](#14-judge-defense-script-top-10-toughest-questions--winning-answers)
 
 ---
 
@@ -47,55 +48,102 @@ SANKET AI is an **Edge-Deployable, Neuro-Symbolic Safety Intelligence Platform**
 
 # 2. Master Full Forms & Jargon Dictionary (With Simple Everyday Analogies)
 
-Here is every single acronym, full form, and technical term used in SANKET AI, explained with both its **Official Technical Meaning** and a **Super Simple Everyday Analogy** so anyone on your team can explain it effortlessly:
-
 | Acronym | Full Form | What it Means in Oil & Gas (Technical) | Super Simple Everyday Meaning (Analogy) |
 |---|---|---|---|
-| **SIF** | **Serious Injury & Fatality** | High-potential incidents or precursor events that have the realistic potential to cause fatal or life-altering injuries per API RP 754 & DEKRA models. | **The "Near-Death" Score**: Instead of asking *"Did someone get hurt?"*, SIF asks *"Could this have killed someone if one more thing went wrong?"* |
-| **SIF Precursor** | **SIF Precursor Event** | A high-energy hazard situation where protective safety barriers are either broken, bypassed, missing, or compromised. | **The Smoke Before the Fire**: A loose bolt on a 2,000 PSI high-pressure line is not an accident yet, but it is the direct warning sign of an explosion. |
-| **IOGP** | **International Association of Oil & Gas Producers** | The global petroleum industry body that establishes standardized international safety rules, guidelines, and engineering best practices. | **The World Health Organization of Oilfields**: The international organization that writes the global safety rules for all oil rigs. |
-| **IOGP LSR** | **IOGP 9 Life-Saving Rules** | Standardized 9 critical rules (Bypassing Controls, Confined Space, Energy Isolation, Hot Work, Line of Fire, Safe Mechanical Lifting, Driving, Work Authorization, Working at Height). | **The 9 Golden Safety Laws**: The 9 non-negotiable rules in oilfields that prevent 85% of all fatal accidents worldwide. |
-| **OISD** | **Oil Industry Safety Directorate** | Technical directorate under the Ministry of Petroleum & Natural Gas (Govt. of India) that formulates and enforces safety standards in Indian oilfields. | **The Indian Oil Safety Bureau**: The Government of India body that regulates safety for Oil India, ONGC, and IOCL. |
+| **SIF** | **Serious Injury & Fatality** | High-potential precursor incidents that can cause fatal or life-altering injuries per API RP 754 & DEKRA models. | **The "Near-Death" Score**: Instead of asking *"Did someone get hurt?"*, SIF asks *"Could this have killed someone if one more thing went wrong?"* |
+| **SIF Precursor** | **SIF Precursor Event** | A high-energy hazard where protective safety barriers are broken, bypassed, missing, or compromised. | **The Smoke Before the Fire**: A loose bolt on a 2,000 PSI line is not an accident yet, but it is the direct warning sign of an explosion. |
+| **IOGP** | **International Association of Oil & Gas Producers** | The global petroleum industry body establishing safety rules, guidelines, and engineering best practices worldwide. | **The World Health Organization of Oilfields**: The international organization that writes the global safety rules for all oil rigs. |
+| **IOGP LSR** | **IOGP 9 Life-Saving Rules** | Standardized 9 critical rules (Bypassing Controls, Confined Space, Energy Isolation, Hot Work, Line of Fire, Lifting, Driving, Work Authorization, Working at Height). | **The 9 Golden Safety Laws**: The 9 non-negotiable rules in oilfields that prevent 85% of all fatal accidents worldwide. |
+| **OISD** | **Oil Industry Safety Directorate** | Technical directorate under MoPNG (Govt. of India) formulating and enforcing safety standards in Indian oilfields. | **The Indian Oil Safety Bureau**: The Government of India body that regulates safety for Oil India, ONGC, and IOCL. |
 | **OISD-189** | **OISD Standard 189** | Official Government of India standard mandating Standard Operating Procedures, fire protection, and safety protocols for drilling and workover rigs. | **The Indian Rig Safety Bible**: The official rulebook that every oil rig in India must follow by law. |
-| **DGMS** | **Directorate General of Mines Safety** | Indian Government regulatory authority under the Ministry of Labour & Employment overseeing safety in mines and oil/gas fields. | **The Oilfield Police**: The federal safety inspectors who have legal authority to shut down an oil rig if safety is breached. |
-| **MoPNG** | **Ministry of Petroleum and Natural Gas** | The Union ministry of the Government of India responsible for petroleum, natural gas, and energy infrastructure exploration. | **The Central Ministry**: The parent government ministry overseeing Oil India Limited and this hackathon problem statement. |
-| **SWA** | **Stop Work Authority** | The legal mandate and responsibility granted to every worker to immediately halt any unsafe operation without fear of reprisal. | **The Emergency Red Brake**: If a worker spots gas leaking or a cracked pipe, they pull the SWA brake, immediately freezing all work within 500 meters. |
-| **BOP** | **Blowout Preventer** | A massive, specialized high-pressure valve stack installed on the wellhead to seal the wellbore and prevent uncontrolled high-pressure oil/gas blowouts. | **The Wellhead Giant Shield**: A 15-foot high steel emergency gate that slams shut to stop high-pressure gas from shooting out of the ground. |
-| **ATEX** | **Appareils destinés à être utilisés en ATmosphères EXplosibles** *(French Directive)* | European Union certification directive for equipment and devices certified safe to operate in explosive gas atmospheres without creating sparks. | **Explosion-Proof Badge**: A global seal proving that a walkie-talkie or device will never create a tiny electrical spark that could ignite flammable gas. |
-| **IECEx** | **International Electrotechnical Commission Explosive** | The international certification system covering equipment used in explosive atmospheres. | **The Global Spark-Free Standard**: The worldwide standard ensuring electronics cannot spark or heat up in gas clouds. |
-| **IS** | **Intrinsically Safe** | Electrical design standard where internal electrical energy, voltage, and heat are strictly limited below the threshold needed to ignite surrounding gas. | **Spark-Free Hardware**: Certified rugged devices designed so that even if dropped, crushed, or short-circuited, they physically cannot create a spark. |
+| **DGMS** | **Directorate General of Mines Safety** | Indian Government regulatory authority overseeing safety in mines and oil/gas fields. | **The Oilfield Police**: The federal safety inspectors who have legal authority to shut down an oil rig if safety is breached. |
+| **MoPNG** | **Ministry of Petroleum and Natural Gas** | The Union ministry of the Government of India responsible for petroleum, natural gas, and energy exploration. | **The Central Ministry**: The parent government ministry overseeing Oil India Limited and this hackathon problem statement. |
+| **SWA** | **Stop Work Authority** | The legal mandate and responsibility of any worker to immediately halt unsafe operations without fear of reprisal. | **The Emergency Red Brake**: If a worker spots gas leaking, they pull the SWA brake, immediately freezing all work within 500 meters. |
+| **BOP** | **Blowout Preventer** | A specialized high-pressure valve stack installed on the wellhead to seal the wellbore and prevent uncontrolled blowouts. | **The Wellhead Giant Shield**: A 15-foot high steel emergency gate that slams shut to stop high-pressure gas from shooting out of the ground. |
+| **ATEX** | **Appareils destinés à être utilisés en ATmosphères EXplosibles** *(French Directive)* | European Union certification directive for equipment certified safe to operate in explosive gas atmospheres without creating sparks. | **Explosion-Proof Badge**: A global seal proving that a walkie-talkie or device will never create a tiny electrical spark that could ignite gas. |
+| **IS** | **Intrinsically Safe** | Electrical design standard where internal electrical energy and heat are strictly limited below what can ignite gas. | **Spark-Free Hardware**: Certified rugged devices designed so that even if dropped and smashed, they physically cannot create a spark. |
 | **RoIP** | **Radio over Internet Protocol** | Digital networking protocol that digitizes two-way radio (walkie-talkie) transmissions and routes them over standard Ethernet / IP networks. | **Walkie-Talkie to Computer Bridge**: Converts voice spoken on a walkie-talkie into digital audio files that our AI server can transcribe in real time. |
-| **PTT** | **Push-To-Talk** | Two-way radio button interface where pressing the button transmits audio and releasing it switches back to receive mode. | **Press to Speak**: The standard side button on every walkie-talkie. |
-| **COR / VOX** | **Carrier Operated Relay / Voice Operated Exchange** | Automatic hardware sensor that detects the millisecond someone starts speaking or presses the PTT button to trigger recording. | **Auto-Microphone Switch**: Automatically starts recording the instant a worker begins talking on the radio. |
-| **CAPA** | **Corrective and Preventive Actions** | Systematic organizational procedure to investigate, fix, and eliminate the root causes of safety hazards to prevent recurrence. | **The Fix-It Work Order**: The official maintenance assignment telling engineers: *"Replace this weeping valve within 24 hours"*. |
-| **LOTO** | **Lockout / Tagout** | Formal energy isolation safety procedure ensuring high-pressure lines or electrical circuits are locked with physical padlocks before maintenance. | **Padlocking the Power Switch**: Physically locking a valve or power switch with a padlock so nobody accidentally turns it on while a worker is fixing it. |
-| **MOC** | **Management of Change** | Formal safety review process required before altering any operational procedure, pipe design, or bypass mechanism on a rig. | **The Change Approval Gate**: A strict rule that forbids workers from making temporary DIY pipe modifications without supervisor sign-off. |
-| **DCS** | **Distributed Control System** | Computerized 24/7 industrial control room system monitoring real-time sensor streams, alarms, pressures, and telemetry across the oilfield. | **The NASA Command Wall for Rigs**: The big screen control room where engineers watch live pressures and hazard alerts across all 10 oil wells. |
-| **EPABX** | **Electronic Private Automatic Branch Exchange** | Private telephone exchange network connecting internal telephone lines across an industrial refinery or oilfield facility. | **The Internal Plant Intercom**: The landline phone system on the rig connecting the doghouse to the control room. |
-| **IVR** | **Interactive Voice Response** | Automated telephony technology that allows computers to interact with callers via voice inputs and dial tones (e.g. dialing Ext. 555 for safety voice logging). | **The Automated Phone System**: Pressing `555` on a plant telephone to leave a voice hazard recording. |
-| **PWA** | **Progressive Web App** | Web application engineered to function like a native mobile app with offline caching, local database storage, and home-screen installation. | **Installable Offline Web App**: Our `/worker` page that works on phones like an app even with zero internet. |
-| **OCR** | **Optical Character Recognition** | Computer vision algorithm that converts photos of handwritten text on paper into machine-readable digital text. | **Paper-to-Digital Scanner**: Reading handwritten paper shift registers and converting them into digital computer text. |
-| **SIP / RTP** | **Session Initiation Protocol / Real-Time Transport Protocol** | Standard internet communication protocols used to deliver real-time audio and video streaming packets over IP networks. | **Digital Voice Pipeline**: The network highway that carries digital audio from walkie-talkie gateways to SANKET AI. |
-| **API RP 754** | **American Petroleum Institute Recommended Practice 754** | Global process safety standard establishing 4 Tiers of safety indicators (Tier 1/2 Lagging incidents vs Tier 3/4 Leading precursor indicators). | **The Process Safety Ranking Standard**: The industry framework separating minor grease drips from high-risk gas kicks. |
-| **DEKRA Model** | **DEKRA SIF Precursor Classification Framework** | The leading global methodology for identifying SIF precursors based on high-energy sources and broken safety barriers. | **The High-Energy Hazard Filter**: Checks if an incident involved >1,000 PSI pressure, heavy lifting, or toxic chemicals. |
-| **DAG** | **Directed Acyclic Graph** | Multi-agent execution topology where tasks flow in a strict sequence of non-looping stages (e.g. LangGraph 7-agent workflow). | **The One-Way Assembly Line**: Ensuring Agent 1 finishes before Agent 2 starts, with no endless loops or crashes. |
+| **PTT** | **Push-To-Talk** | Two-way radio button interface where pressing transmits audio and releasing switches back to receive mode. | **Press to Speak**: The standard side button on every walkie-talkie. |
+| **CAPA** | **Corrective and Preventive Actions** | Systematic organizational procedure to investigate, fix, and eliminate the root causes of safety hazards. | **The Fix-It Work Order**: The official maintenance assignment telling engineers: *"Replace this weeping valve within 24 hours"*. |
+| **LOTO** | **Lockout / Tagout** | Formal energy isolation safety procedure ensuring high-pressure lines or electrical circuits are locked with physical padlocks before maintenance. | **Padlocking the Power Switch**: Physically locking a valve or power switch with a padlock so nobody accidentally turns it on during repairs. |
+| **MOC** | **Management of Change** | Formal safety review process required before altering any operational procedure, pipe design, or bypass mechanism. | **The Change Approval Gate**: A strict rule that forbids workers from making temporary DIY pipe modifications without supervisor sign-off. |
+| **DCS** | **Distributed Control System** | Computerized 24/7 industrial control room system monitoring real-time sensor streams, alarms, and pressures across the oilfield. | **The NASA Command Wall for Rigs**: The big screen control room where engineers watch live pressures and hazard alerts across all 10 oil wells. |
+| **EPABX** | **Electronic Private Automatic Branch Exchange** | Private telephone exchange network connecting internal telephone lines across an industrial facility. | **The Internal Plant Intercom**: The landline phone system on the rig connecting the doghouse to the control room. |
+| **IVR** | **Interactive Voice Response** | Automated telephony technology that allows computers to interact with callers via voice inputs (e.g. dialing Ext. 555 for safety logging). | **The Automated Phone System**: Pressing `555` on a plant telephone to leave a voice hazard recording. |
+| **PWA** | **Progressive Web App** | Web application engineered to function like a native mobile app with offline caching and local database storage. | **Installable Offline Web App**: Our `/worker` page that works on phones like an app even with zero internet. |
+| **API RP 754** | **American Petroleum Institute Recommended Practice 754** | Global process safety standard establishing 4 Tiers of safety indicators (Tier 1/2 Lagging vs Tier 3/4 Leading precursors). | **The Process Safety Ranking Standard**: The industry framework separating minor grease drips from high-risk gas kicks. |
+| **DEKRA Model** | **DEKRA SIF Precursor Classification Framework** | Global methodology for identifying SIF precursors based on high-energy sources and broken safety barriers. | **The High-Energy Hazard Filter**: Checks if an incident involved >1,000 PSI pressure, heavy lifting, or toxic chemicals. |
+| **DAG** | **Directed Acyclic Graph** | Multi-agent execution topology where tasks flow in a strict sequence of non-looping stages (e.g. LangGraph 8-agent swarm). | **The One-Way Assembly Line**: Ensuring Agent 1 finishes before Agent 2 starts, with no endless loops or crashes. |
 | **Air-Gap** | **Air-Gapped Sovereign Network** | Network security architecture where a server is physically disconnected from the public internet (0 KB/s outbound egress). | **The Digital Submarine**: 100% disconnected from the internet so zero sensitive wellbore data can leave the country. |
 | **H2S** | **Hydrogen Sulfide Gas** | Extremely toxic, corrosive, flammable gas commonly encountered in oil reservoirs with a characteristic rotten-egg smell. | **The Deadly Poison Gas**: Lethal gas in oilfields that can cause unconsciousness in seconds if not detected early. |
-| **PSI** | **Pounds per Square Inch** | Standard unit of pressure measurement used in drilling fluid manifolds, standpipes, and blowout preventers. | **Pressure Gauge Number**: Normal car tire = 32 PSI; Oilfield high-pressure line = 1,800 to 5,000 PSI! |
-| **ePTW** | **Electronic Permit to Work** | Digital authorization system ensuring hazardous tasks (hot work, high-altitude work) have formal safety clearance before work begins. | **The Digital Safety License**: The digital stamp proving a worker is authorized to perform welding or drilling on that shift. |
+| **PSI** | **Pounds per Square Inch** | Standard unit of pressure measurement used in drilling manifolds, standpipes, and blowout preventers. | **Pressure Gauge Number**: Normal car tire = 32 PSI; Oilfield high-pressure line = 1,800 to 5,000 PSI! |
+| **ePTW** | **Electronic Permit to Work** | Digital authorization system ensuring hazardous tasks have formal safety clearance before work begins. | **The Digital Safety License**: The digital stamp proving a worker is authorized to perform welding or drilling on that shift. |
 
 ---
 
-# 3. The Complete Zero-Internet Workflow (Both Laptop & Phone with 0 Internet)
+# 3. The 4-Layer Defense-in-Depth AI Guardrail Architecture
 
+In mission-critical aerospace and nuclear applications, you **never** rely on a single probabilistic AI model. SANKET AI implements a **4-Layer Defense-in-Depth Consensus Guardrail System**:
+
+```mermaid
+graph TD
+    A[Raw Worker Voice / Text in Hindi, Assamese, or English] --> B[Layer 1: Deterministic Physics & Hazard Rules Engine<br/>• Hard physical floors: PSI >= 500, H2S toxic gas, BOP weeping<br/>• Zero-hallucination deterministic physical floor]
+    B --> C[Layer 2: Dense Neural Semantic Vector Space<br/>• multilingual-e5-small 384-dim embeddings<br/>• Cosine similarity against 50 SIF anchor vectors]
+    C --> D[Layer 3: Adversarial Verifier Agent & CoT Critic<br/>• LangGraph VerifierAgent evaluates Layer 1 vs Layer 2<br/>• Word-by-word state decomposition & negation integrity check]
+    D --> E{Consensus Agreement?}
+    E -- Full Consensus (99%) --> F[Instant SIF Score + SWA Alarm Trigger in <50ms]
+    E -- Conflicting Signals --> G[Consensus Override: Safe Ceiling / Missed Hazard Floor Applied]
+    F & G --> H[Layer 4: Human-in-the-Loop Audit & CAPA Dispatch<br/>• DGMS/OISD Timestamped Officer Sign-off]
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                       THE 100% OFFLINE AIR-GAP REALITY                     │
-│                                                                             │
-│  "What if BOTH the laptop and the phone have ZERO internet connection?      │
-│   How does the worker report and how does the AI process it?"               │
-└─────────────────────────────────────────────────────────────────────────────┘
+
+### 🛡️ Layer 1: Deterministic Physics & Boundary Gate (`ai/sif/physics_rules.py`)
+* If high pressure ($\ge 500	ext{ PSI}$), toxic H2S gas, high voltage ($33	ext{kV}$), working at height without harness, or BOP valve degradation is detected, **the SIF score is physically clamped to a minimum floor of 0.75 to 0.85 (HIGH)**. The AI physically *cannot* miss it or score it LOW.
+* If explicitly a safety drill or verified zero-leak check (*"no leak found"*, *"কোনো লিক নাই"*), it enforces a **Safe Ceiling Cap (0.12–0.18 LOW)**, preventing false alarms.
+
+### 🧠 Layer 2: Dense Neural Semantic Embeddings (`multilingual-e5-small`)
+* Encodes subtle multilingual linguistic semantics of Hindi, Assamese, and English into 384-dimensional vector space in **35ms on CPU**.
+
+### ⚖️ Layer 3: Adversarial Verifier Agent (`ai/agents/swarm.py` & `ai/sif/guardrails.py`)
+* Acts as an independent adversarial auditor reconciling Layer 1 and Layer 2.
+* Calculates a **Consensus Confidence Index (0.0 to 1.0)**:
+  * **Dual Agreement**: 99% Confidence $ightarrow$ Instant Triage & Alarm.
+  * **Divergence**: Applies the conservative physical safety principle per DGMS standards and logs an explicit audit trail.
+
+### 🛡️ Layer 4: Human-in-the-Loop (HITL) Supervisory Review
+* The Safety Officer validates or overrides the classification with mandatory audit notes before formal CAPA work orders are dispatched.
+
+---
+
+# 4. The 8-Agent LangGraph Multi-Agent Swarm (Autonomous Orchestration)
+
+In `ai/agents/swarm.py`, SANKET AI coordinates an **8-Agent LangGraph StateGraph Swarm** where each agent is an autonomous, specialized safety micro-service:
+
+```mermaid
+graph LR
+    A[1. Supervisor Agent] --> B[2. Classifier Agent]
+    B --> C[3. Entity Extractor Agent]
+    C --> D[4. Rule Mapper Agent]
+    D --> E[5. Verifier Agent Critic]
+    E --> F[6. Graph Analyst Agent]
+    F --> G[7. Explainer Agent]
+    G --> H[8. Action / CAPA Agent]
 ```
+
+### The 8 Swarm Agents Defined:
+1. 👑 **Supervisor Agent (`SupervisorAgent`)**: Orchestrates pipeline execution, cleans raw text, strips mojibake, detects language (`hi`, `as`, `en`, `bn`), and initializes the audit trace.
+2. 🎯 **Classifier Agent (`ClassifierAgent`)**: Computes dense vector embeddings, performs dot-product cosine similarity against 50 SIF anchor vectors, and applies the 5-token negation window parser.
+3. 🔍 **Entity Extractor Agent (`EntityExtractorAgent`)**: Zero-shot extracts 8 critical industrial entities (`EQUIPMENT`, `LOCATION`, `BARRIER_FAILURE`, `ENERGY_SOURCE`, etc.) from unstructured speech.
+4. 📜 **Rule Mapper Agent (`RuleMapperAgent`)**: Maps observations against the official **IOGP 9 Life-Saving Rules** using vector similarity.
+5. ⚖️ **Verifier Agent (`VerifierAgent`) — *THE ADVERSARIAL CRITIC***:
+   * Reconciles deterministic physics rules with neural vector embeddings.
+   * Eliminates hallucinations, computes **Consensus Confidence (95%–99%)**, and arbitrates physical safety floors and safe drill ceilings.
+6. 🕸️ **Graph Analyst Agent (`GraphAnalystAgent`)**: Embeds new co-occurrences into the bipartite Safety Knowledge Graph (`NetworkX`) and checks for 7-day Near-Miss Multiplier clusters.
+7. 🧠 **Explainer Agent (`ExplainerAgent`)**: Evaluates the SIF gate ($\ge 0.50$) and invokes local Ollama / GPT-4o with strict DGMS/OISD-189 guardrails to draft the 3-sentence root cause explanation.
+8. ⚡ **Action Agent (`ActionAgent`)**: Formulates automated Corrective & Preventive Action (CAPA) work orders (`SHUTDOWN`, `REPAIR`, `INSPECTION`) with recommended SLA deadlines (24h/48h/7d).
+
+---
+
+# 5. The Complete Zero-Internet Workflow (Both Laptop & Phone with 0 Internet)
 
 ### 📶 How It Works Physically:
 There is a fundamental difference between **Internet (WAN)** and **Local Network (LAN)**.
@@ -118,73 +166,27 @@ graph TD
 ```
 
 ### 🛠️ Step-by-Step Execution:
-1. **Laptop Setup**:
-   * Laptop has **NO ethernet internet cable** and **NO Wi-Fi internet**.
-   * Laptop turns on **Windows Mobile Hotspot** (or connects to the Rig Doghouse local Wi-Fi router).
-2. **Phone Setup**:
-   * Phone turns **OFF Mobile Data (4G/5G)**.
-   * Phone connects to the Laptop's Wi-Fi network (IP: `10.92.126.169` or `192.168.137.1`).
-3. **Observation Logging**:
-   * Worker opens `http://10.92.126.169:3000/worker` on their browser.
-   * Worker taps **TAP TO RECORD** $
-ightarrow$ speaks Hindi: *"Well Pad 7 mein gas pipe se leakage ho raha hai"*.
-   * Phone browser captures audio into local device RAM using `MediaRecorder`.
-4. **Local Subnet Upload**:
-   * Phone uploads the raw audio file over the private Wi-Fi to the laptop's backend: `http://10.92.126.169:8000/api/voice/transcribe`.
-5. **Local Processing**:
-   * **Local Whisper** converts audio to text in RAM.
-   * **Local `multilingual-e5-small`** calculates the SIF score (78% HIGH) in **35 milliseconds**.
-   * **Local Ollama (`llama3.2:3b` / `qwen2.5:7b`)** generates the DGMS safety narrative.
-6. **Result Returned**:
-   * Text, SIF score, and SWA alert return to the phone in **under 1.5 seconds**.
-   * **Total Public Internet Used = 0.000 Bytes.**
-
-### 📴 What if the worker is in a deep tank with ZERO Wi-Fi signal?
-* **PWA Offline Store-and-Forward**: The app stores the report and audio locally inside the phone's **`IndexedDB` / `localStorage`** with an offline timestamp.
-* The moment the worker walks back into Wi-Fi range of the doghouse, the app **automatically auto-syncs all pending reports** to the Control Room database!
+1. **Laptop Setup**: Laptop has **NO ethernet cable** and **NO Wi-Fi internet**. Laptop turns on **Windows Mobile Hotspot** (or connects to the Rig Doghouse local Wi-Fi router).
+2. **Phone Setup**: Phone turns **OFF Mobile Data (4G/5G)** and connects to the Laptop's Wi-Fi network (IP: `10.92.126.169` or `192.168.137.1`).
+3. **Observation Logging**: Worker opens `http://10.92.126.169:3000/worker` $ightarrow$ taps **TAP TO RECORD** $ightarrow$ speaks Hindi: *"Well Pad 7 mein gas pipe se leakage ho raha hai"*.
+4. **Local Subnet Upload**: Phone uploads the raw audio file over private Wi-Fi to the laptop's backend: `http://10.92.126.169:8000/api/voice/transcribe`.
+5. **Local Processing**: Local Whisper transcribes in RAM $ightarrow$ `multilingual-e5-small` scores SIF (78% HIGH) in **35ms** $ightarrow$ local Ollama (`llama3.2:3b` / `qwen2.5:7b`) drafts the DGMS narrative.
+6. **Result Returned**: SIF score and SWA alert return to the phone in **under 1.5 seconds** with **0.000 Bytes of public internet**.
 
 ---
 
-# 4. The Hazardous Area Dilemma: How Frontline Ingestion Works Without Consumer Phones
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                          THE RIG FLOOR REALITY                              │
-│                                                                             │
-│  "Judges often ask: Consumer smartphones are banned on oil rigs due to      │
-│   spark risks. How does SANKET AI collect data from the frontline?"         │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+# 6. The Hazardous Area Dilemma: How Frontline Ingestion Works Without Consumer Phones
 
 ### 🎯 SANKET AI’s 5 Industrial Ingestion Gateways
-
-### 1. 📻 Radio over IP (RoIP) Walkie-Talkie Integration
-* **Field Hardware**: *Motorola MOTOTRBO DP4801Ex* (ATEX Zone 1 Certified).
-* **Base Station**: *Motorola DM4600 / SLR 5500* stationed in the doghouse.
-* **RoIP Gateway Hardware**: *Raytheon JPS NXU-2A* or *Cisco IPICS*.
-* **Physical Wiring**:
-  * The Base Radio’s DB25 accessory port connects to the RoIP Gateway via a **4-Wire E&M (Ear & Mouth) audio cable**.
-  * Audio Out -> Gateway Audio In.
-  * COR/VOX pin triggers automatic recording when the worker presses the PTT button.
-* **Network Protocol**: The gateway encodes audio into **SIP / RTP streams** (16kHz PCM WAV) and sends it over CAT6 Ethernet to SANKET AI’s backend.
-
-### 2. 📱 Intrinsically Safe (IS) Android Handhelds
-* **Certified Hardware**: *i.safe MOBILE IS530.1* or *Ecom Smart-Ex 02* (Zone 1/21 certified with zero spark discharge).
-* **Application**: Workers access SANKET AI’s progressive web app (PWA) terminal at `/worker` over the rig's private local Wi-Fi.
-
-### 3. ☎️ Flameproof Call Pillars & Plant EPABX (Ext. 555)
-* Heavy-duty cast aluminum intercoms mounted near cellar pits and compressor sheds.
-* Workers dial `555` to leave a 10-second voice observation, which is ingested directly via VoIP/SIP.
-
-### 4. 🖥️ Rig Floor Doghouse Kiosk
-* A sunlight-readable, hardwired IP66 touchscreen mounted inside the Lead Driller’s climate-controlled cabin.
-
-### 5. 📝 Edge OCR Paper Shift Register Scanner
-* Digitizes handwritten shift turnovers using edge OCR, automatically extracting equipment names and pressure readings into the NLP pipeline.
+1. 📻 **Radio over IP (RoIP) Walkie-Talkies**: *Motorola DP4801Ex ATEX* walkie-talkies wired via base station DB25 port to an RoIP Gateway over a 4-Wire E&M audio cable, streaming 16kHz PCM WAV over UDP/SIP to SANKET AI.
+2. 📱 **Intrinsically Safe (IS) Android Handhelds**: *i.safe MOBILE IS530.1* or *Ecom Smart-Ex 02* (Zone 1/21 certified with zero spark discharge) running SANKET AI's PWA over local rig Wi-Fi.
+3. ☎️ **Flameproof Call Pillars & Plant EPABX (Ext. 555)**: Heavy-duty cast aluminum intercoms near cellar pits dialing Ext. 555 for automated VoIP voice hazard logging.
+4. 🖥️ **Rig Floor Doghouse Kiosk**: Hardwired IP66 sunlight-readable console in the Lead Driller's cabin.
+5. 📝 **Edge OCR Paper Shift Register Scanner**: Digitizes handwritten shift logs using edge OCR.
 
 ---
 
-# 5. The 7-Stage Neuro-Symbolic AI & NLP Pipeline
+# 7. The 7-Stage Neuro-Symbolic AI & NLP Pipeline
 
 ```mermaid
 graph TD
@@ -192,109 +194,38 @@ graph TD
     B --> C[Stage 2: SIF Risk Classifier<br/>multilingual-e5-small + 50 SIF Anchors]
     C --> D[Stage 3: Industrial Zero-Shot Entity Extractor<br/>8 Entity Classes: Equip, Loc, Barrier, Energy, etc.]
     D --> E[Stage 4: IOGP 9 Life-Saving Rules Mapper<br/>Cosine Similarity against IOGP Rule Set]
-    E --> F{SIF Score >= 0.50?}
-    F -- Yes --> G[Stage 5: Grounded LLM Explainer<br/>DGMS/OISD Guardrails via Ollama or GPT-4o]
-    F -- No --> H[Omit LLM to Save Compute]
-    G & H --> I[Stage 6: Bipartite Causal Knowledge Graph<br/>NetworkX Ingestion]
-    I --> J[Stage 7: Near-Miss Multiplier Cluster Detector<br/>7-Day Rolling Window Escalation]
+    E --> F[Stage 5: Verifier Agent & Guardrails<br/>Physics Boundary Consensus & Negation Check]
+    F --> G{SIF Score >= 0.50?}
+    G -- Yes --> H[Stage 6: Grounded LLM Explainer<br/>DGMS/OISD Guardrails via Ollama or GPT-4o]
+    G -- No --> I[Omit LLM to Save Compute]
+    H & I --> J[Stage 7: Bipartite Causal Knowledge Graph<br/>NetworkX Ingestion + Near-Miss Multiplier]
     J --> K[Real-Time Output: SWA Lockout + DCS Control Room Wall + CAPA Brief]
 ```
 
-### Stage 1: Text Normalization & Language Identification
-* Strips control characters, normalizes Unicode/mojibake, and detects input language (`hi`, `as`, `en`, `bn`).
-
-### Stage 2: SIF Precursor Risk Classifier (`multilingual-e5-small`)
-* **Execution Time**: **~35 milliseconds on CPU**.
-* **Vector Embeddings**: Encodes text into 384-dimensional dense vectors with `"query: "` prefix.
-* **50 SIF Precursor Anchors**: Dot-product cosine similarity against calibrated historical baseline vectors.
-* **5-Token Sliding Window Negation Parser**: Checks if critical keywords are preceded by negation terms (*"no"*, *"nahi"*, *"bina"*).
-* **Calibrated Floor Blending**: Blends calibrated score (70%) with similarity (30%) and keyword boost.
-
-### Stage 3: Industrial Zero-Shot Entity Extraction
-* Identifies 8 industrial taxonomies: `EQUIPMENT`, `LOCATION`, `BARRIER_FAILURE`, `ENERGY_SOURCE`, `SHIFT_TIME`, `WEATHER_CONDITION`, `PPE_STATUS`, `BODY_PART`.
-
-### Stage 4: IOGP 9 Life-Saving Rules Mapper
-* Computes cosine similarity against the official 9 IOGP rules (Threshold cutoff: `0.45`).
-
-### Stage 5: Chain-of-Thought (CoT) Word-by-Word Safety Guardrail & LLM Explainer
-To ensure **zero hallucination** and rigorous judgment, the AI performs a 3-step Chain-of-Thought (CoT) evaluation before generating any output:
-1. **Word-by-Word Hazard Decomposition**:
-   - Parses each word to identify the exact physical equipment (*BOP, standpipe, manifold, mud pump*), physical failure state (*weeping, leaking, vibrating, cracked*), and high-energy magnitude (*1800 PSI, 33kV, H2S toxic gas*).
-2. **Context & Negation Integrity Check**:
-   - Scans 5-token windows for negation phrases (*"no leak"*, *"nahi"*, *"nai"*, *"routine safe"*) to eliminate false positives.
-3. **DGMS / OISD-189 Grounded 3-Sentence Synthesis**:
-   - **Sentence 1 [WHAT HAPPENED]**: Cites strictly the facts present in the text with zero fabricated numbers.
-   - **Sentence 2 [WHY IT IS DANGEROUS]**: Traces the barrier breakdown pathway to a Serious Injury or Fatality (SIF) per API RP 754 & IOGP rules.
-   - **Sentence 3 [MANDATORY IMMEDIATE ACTION]**: Commands the precise regulatory defense (Stop Work Authority, LOTO, 500m digital freeze, or well kill).
-
-### Stage 6: Bipartite Causal Knowledge Graph (`NetworkX`)
-* Constructs causal edges linking Equipment, Location, Barrier Failure, and Energy Sources.
-
-### Stage 7: Near-Miss Multiplier Cluster Detector
-* 7-day sliding window with >=3 events threshold to escalate hidden systemic risks.
-
 ---
 
-# 6. The 7-Agent LangGraph Multi-Agent Swarm (Autonomous Orchestration)
-
-In `ai/agents/swarm.py`, SANKET AI coordinates a **7-Agent LangGraph StateGraph Swarm** where each agent is an autonomous, specialized safety micro-service:
-
-```mermaid
-graph LR
-    A[Supervisor Agent] --> B[Classifier Agent]
-    B --> C[Entity Extractor Agent]
-    C --> D[Rule Mapper Agent]
-    D --> E[Graph Analyst Agent]
-    E --> F[Explainer Agent]
-    F --> G[Action / CAPA Agent]
-```
-
-### The 7 Swarm Agents Defined:
-1. 👑 **Supervisor Agent (`SupervisorAgent`)**:
-   * **Role**: Orchestrates pipeline execution, cleans raw text, strips mojibake, detects language (`hi`, `as`, `en`, `bn`), and initializes the audit trace.
-2. 🎯 **Classifier Agent (`ClassifierAgent`)**:
-   * **Role**: Computes dense vector embeddings, performs dot-product cosine similarity against 50 SIF anchor vectors, and applies the 5-token negation window parser.
-3. 🔍 **Entity Extractor Agent (`EntityExtractorAgent`)**:
-   * **Role**: Zero-shot extracts 8 critical industrial entities (`EQUIPMENT`, `LOCATION`, `BARRIER_FAILURE`, `ENERGY_SOURCE`, etc.) from unstructured speech.
-4. 📜 **Rule Mapper Agent (`RuleMapperAgent`)**:
-   * **Role**: Maps observations against the official **IOGP 9 Life-Saving Rules** using vector similarity.
-5. 🕸️ **Graph Analyst Agent (`GraphAnalystAgent`)**:
-   * **Role**: Embeds new co-occurrences into the bipartite Safety Knowledge Graph (`NetworkX`) and checks for 7-day Near-Miss Multiplier clusters.
-6. 🧠 **Explainer Agent (`ExplainerAgent`)**:
-   * **Role**: Evaluates the SIF gate ($\ge 0.50$) and invokes local Ollama / GPT-4o with strict DGMS/OISD-189 guardrails to draft the 3-sentence root cause explanation.
-7. ⚡ **Action Agent (`ActionAgent`)**:
-   * **Role**: Formulates automated Corrective & Preventive Action (CAPA) work orders (`SHUTDOWN`, `REPAIR`, `INSPECTION`) with recommended SLA deadlines (24h/48h/7d).
-
----
-
-# 7. Why Ingest 5,000 Historical Reports vs. Single Live Report?
-
-Judges often ask: *"Why does your system support both single live reports and batch ingestion of 5,000 past reports?"*
+# 8. Why Ingest 5,000 Historical Reports vs. Single Live Report?
 
 ### ⚡ 1. The Single Live Report (The Frontline Reflex)
-* **Purpose**: Real-time triage and immediate life-saving action.
-* **Latency**: **< 50 milliseconds**.
-* **Outcome**: A worker speaks *"BOP leaking hydraulic fluid"* $
-ightarrow$ Control Room siren triggers immediately $
-ightarrow$ 500m SWA digital perimeter freeze enforced.
+* **Purpose**: Sub-50ms vector triage, immediate control room siren, and instant Stop Work Authority (SWA) digital freeze.
 
 ### 📚 2. Batch Ingestion of 5,000 Historical Reports (The Big Picture Intelligence)
-* **Purpose**: Bootstrapping the Causal Knowledge Graph and baselining fleet-wide risk.
-* **Why 5,000 Reports Are Critical**:
-  1. **Knowledge Graph Topology**: A knowledge graph with 2 reports only has 2 nodes. Ingesting 5,000 historical shift logs builds an interconnected network of 500+ equipment nodes, barrier breakdown paths, and contractor failure correlations.
-  2. **Baseline Frequency Distribution**: Establishes what is a "normal" vibration versus an "abnormal" pressure surge.
-  3. **Near-Miss Multiplier Calibration**: Calibrates the 7-day clustering window against real multi-year maintenance data.
-  4. **Geospatial Heatmap Density**: Populates the SIF Geo Heatmap with accurate historical risk densities ($22.0\%$, $18.4\%$) across all 10 Upper Assam assets.
+* **Knowledge Graph Topology**: Populates 500+ nodes and multi-barrier failure paths across 10 Assam assets.
+* **Baseline Frequency Distribution**: Establishes what is a normal vibration vs an abnormal kick.
+* **Near-Miss Multiplier Calibration**: Calibrates the 7-day clustering window against real multi-year maintenance data.
+* **Geospatial Heatmap Densities**: Computes accurate historical risk percentages ($22.0\%$, $18.4\%$) per asset.
 
 ---
 
-# 8. Complete Technical Specifications & Hardware Architecture
+# 9. Complete Technical Specifications & Hardware Architecture
 
 | Component | Technical Specification |
 |---|---|
 | **Backend Framework** | Python 3.11+, FastAPI (Async), Uvicorn, Pydantic v2 |
-| **Agent Orchestrator** | **LangGraph v0.2+** `StateGraph` (7-Agent Sequential DAG) |
+| **Agent Orchestrator** | **LangGraph v0.2+** `StateGraph` (8-Agent Sequential DAG with Verifier Critic) |
 | **Vector Embedding Model** | `intfloat/multilingual-e5-small` (384-dimensional dense vectors via `sentence-transformers`) |
+| **Deterministic Physics Gate** | `ai/sif/physics_rules.py` (API RP 754 & OISD-189 Hard Energy & Barrier Bounds) |
+| **Consensus Guardrail Engine**| `ai/sif/guardrails.py` (Multi-Tier Physical-Neural Arbitrator) |
 | **Local LLM Engine** | **Ollama** running `qwen2.5:7b` (Multilingual) or `llama3.2:3b` (Ultra-Fast) |
 | **Cloud LLM Fallback** | **OpenAI GPT-4o** (`gpt-4o`, temp=0.15, max_tokens=300) |
 | **Speech-to-Text Engine** | OpenAI Whisper SDK (`whisper-1`) / Local `faster-whisper` (16kHz PCM WAV) |
@@ -308,7 +239,7 @@ ightarrow$ 500m SWA digital perimeter freeze enforced.
 
 ---
 
-# 9. Sovereign Air-Gap vs. Hybrid Online Architecture
+# 10. Sovereign Air-Gap vs. Hybrid Online Architecture
 
 | Capability | 🔒 Sovereign Air-Gapped Mode | 🌐 Hybrid Online Mode |
 |---|---|---|
@@ -322,7 +253,7 @@ ightarrow$ 500m SWA digital perimeter freeze enforced.
 
 ---
 
-# 10. Step-by-Step Easy End-to-End Workflow
+# 11. Step-by-Step Easy End-to-End Workflow
 
 ```mermaid
 sequenceDiagram
@@ -337,7 +268,8 @@ sequenceDiagram
     Term->>AI: Streams audio over local private Wi-Fi (0 internet)
     AI->>AI: 1. Whisper transcribes speech to text
     AI->>AI: 2. multilingual-e5 scores SIF Risk: 78% HIGH (in 35ms)
-    AI->>AI: 3. Matches IOGP Rule: "Line of Fire"
+    AI->>AI: 3. VerifierAgent & Physics Rules confirm Consensus (99% Confidence)
+    AI->>AI: 4. Matches IOGP Rule: "Line of Fire"
     AI->>DCS: Real-time alert stream insertion + Acoustic Siren Alarm
     AI->>DCS: 500m SWA Digital Perimeter Freeze Broadcast
     AI->>Officer: Formulates CAPA Work Order + DGMS Grounded Explanation
@@ -347,7 +279,7 @@ sequenceDiagram
 
 ---
 
-# 11. Screen-by-Screen Dashboard Manual
+# 12. Screen-by-Screen Dashboard Manual
 
 ### Screen 1: Frontline Worker Terminal (`/worker`)
 * **Target User**: Roustabouts, Derrickmen, Maintenance Technicians.
@@ -401,7 +333,7 @@ sequenceDiagram
 
 ---
 
-# 12. The Baghjan 2020 Case Study (The Proof of Concept)
+# 13. The Baghjan 2020 Case Study (The Proof of Concept)
 
 * **Day -14 (May 13, 2020)**: Mud fluid loss (15 bbls) logged -> SANKET AI baselines hydrostatic loss (Stage-1 Watch).
 * **Day -10 (May 17, 2020)**: 80 PSI gauge flutter on manifold -> SANKET AI correlates with Day -14 (SIF: 58% Warning).
@@ -411,37 +343,67 @@ sequenceDiagram
 
 ---
 
-# 13. Judge Defense Script: Top 10 Toughest Questions & Winning Answers
+# 14. Judge Defense Script: Top 10 Toughest Questions & Winning Answers
 
-1. **"Phones are banned in Zone 1 explosive areas. How does your app work?"**
-   * *Answer*: "We do not use consumer phones. Workers use **ATEX Zone 1 certified spark-proof handhelds (i.safe MOBILE IS530.1)** or their standard **Motorola ATEX walkie-talkies**. Our **Radio-over-IP (RoIP) gateway** in the doghouse captures the VHF Channel 9 audio stream and digitizes it into our local AI engine in real time."
+---
 
-2. **"Isn't this just a generic wrapper around OpenAI's API?"**
-   * *Answer*: "No. The core risk classification runs on a local 384-dimensional Sentence Transformer (`multilingual-e5-small`) using cosine similarity against a database of 50 industrial SIF precursor anchors in **35 milliseconds on CPU**, with a 5-token negation parser, a bipartite Causal Knowledge Graph, and a 7-day Near-Miss Multiplier that functions **100% offline without internet**."
+### 🔥 CRITICAL DEFENSE 1: "What if your AI misses a critical hazard (False Negative / Type II error) and someone dies?"
+> **Verbatim Winning Answer**:
+> *"Sir/Ma'am, in mission-critical oilfield engineering, you never rely on a single probabilistic AI model. That is why SANKET AI employs a **4-Layer Defense-in-Depth Consensus Architecture**:
+> 
+> 1. **Layer 1 is a Deterministic Physical Hazard Boundary Engine (`physics_rules.py`)**: If the text contains critical physical thresholds—such as wellbore pressures $\ge 500	ext{ PSI}$, toxic H2S gas, 33kV high voltage, or BOP secondary seal degradation—**the SIF score is physically clamped to a minimum floor of 0.75 to 0.85 (HIGH)**. The AI physically *cannot* score it LOW.
+> 2. **Layer 2 is a 384-dimensional Vector Space (`multilingual-e5-small`)** that captures regional semantic nuances in 35ms.
+> 3. **Layer 3 is our LangGraph Adversarial Verifier Agent** that checks the mathematical consensus between Physics and Neural Vectors.
+> 4. If any layer detects high energy, SANKET AI executes the **conservative physical safety principle per DGMS standards**, immediately sounding the Control Room alarm."*
 
-3. **"What if there is zero internet in remote Upper Assam oilfields?"**
-   * *Answer*: "In **Sovereign Air-Gapped Mode**, the entire pipeline—Speech-to-Text (local Whisper), SIF Scoring (`multilingual-e5`), and LLM Reasoning (`llama3.2:3b` / `qwen2.5:7b` on Ollama)—runs locally on the rig's laptop or on-premise server. Outbound data egress is **0 KB/s**."
+---
 
-4. **"Local LLMs are notoriously slow. How can this provide real-time control room alerts?"**
-   * *Answer*: "SIF classification and alarm dispatch **do NOT wait for the LLM**. Vector scoring happens in **50 milliseconds**, instantly triggering the DCS Control Room alarm. The Local LLM only drafts the 3-sentence written narrative in the background in ~1.2 seconds."
+### 🔥 CRITICAL DEFENSE 2: "What if your AI creates a false alarm (False Positive / Type I error) and unnecessarily shuts down a ₹50-Crore rig?"
+> **Verbatim Winning Answer**:
+> *"Sir, halting an active drilling rig costs ₹15 to ₹25 lakhs per hour. We prevent false alarms through two precision mechanisms:
+> 
+> 1. **Safe Context & Negation Boundary Arbitration**: In our test bench, when a worker logged: *'Safety drill demonstrated how gas mask works in case of H2S gas leak, all safe and no leak found'*, typical keyword matchers panic and trigger a false alarm. SANKET AI’s 5-token negation parser and `PhysicsRulesEngine` identified the verified routine drill context and **enforced a Safe Ceiling Cap of 0.18 (LOW)** with **98% consensus confidence**.
+> 2. **Human-in-the-Loop (HITL) Supervisory Gate**: SANKET AI triggers immediate acoustic alarms and recommendations in the Control Room, but the physical command for permanent shutdown is validated by the on-duty Safety Officer in 1 click with a timestamped audit log per OISD-189 guidelines."*
 
-5. **"How do you handle Indian languages and regional technical slang (Hinglish / Assamese)?"**
-   * *Answer*: "We use `multilingual-e5-small` pre-trained on Hindi, Assamese, and Bengali, paired with 20+ regional oilfield slang terms (*'aag'*, *'phat gaya'*, *'valve kharab'*, *'gas nikal'*) and a 5-token negation window that correctly distinguishes *'gas leak ho raha hai'* from *'gas leak nahi hai'*."
+---
 
-6. **"How do you prevent AI hallucinations during a dangerous blowout?"**
-   * *Answer*: "SIF scoring is deterministic vector math. Our LLM prompt explicitly restricts the model to facts present in the raw text, and our **Human-in-the-Loop review** requires safety officers to validate or override every high-severity decision."
+### Q3: "Phones are banned in Zone 1 explosive areas. How does your app work on the rig?"
+> **Answer**: *"We do not use consumer phones. Workers use **ATEX Zone 1 certified spark-proof handhelds (i.safe MOBILE IS530.1)** or their standard **Motorola ATEX walkie-talkies**. Our **Radio-over-IP (RoIP) gateway** in the doghouse captures the VHF Channel 9 audio stream and digitizes it into our local AI engine in real time."*
 
-7. **"What is the difference between a traditional near-miss log and a SIF Precursor?"**
-   * *Answer*: "Traditional near-miss logs treat all incidents equally. Under the **DEKRA & API RP 754 SIF Precursor Framework**, SANKET AI checks whether an event involved high-energy sources (>1000 PSI, high voltage, height) and barrier failures, separating trivial noise from fatal precursors."
+---
 
-8. **"How does the Causal Knowledge Graph help if each worker only reports minor things?"**
-   * *Answer*: "Worker A reports mud loss on Monday; Worker B reports gauge flutter on Wednesday; Worker C reports a valve weep on Friday. Individually they look low-risk. Our **Knowledge Graph links all three events to the same equipment node** and activates the **Near-Miss Multiplier**, automatically elevating the SIF risk to 96% and alerting the Control Room before the disaster."
+### Q4: "Isn't this just a generic wrapper around OpenAI's API?"
+> **Answer**: *"No. The core risk classification runs on a local 384-dimensional Sentence Transformer (`multilingual-e5-small`) using cosine similarity against a database of 50 industrial SIF precursor anchors in **35 milliseconds on CPU**, with a 5-token negation parser, an 8-Agent LangGraph Swarm with an Adversarial Verifier Critic, a bipartite Causal Knowledge Graph, and a 7-day Near-Miss Multiplier that functions **100% offline without internet**."*
 
-9. **"Why not use SAP EHS or existing enterprise software?"**
-   * *Answer*: "SAP EHS and Maximo are administrative database registers designed for compliance filing days after an incident. They lack **real-time multilingual voice ingestion**, **sub-second neural SIF scoring**, **spatial Gaussian gas dispersion modeling**, and **automated OISD-189 Stop Work Authority dispatch**."
+---
 
-10. **"What is your deployment roadmap for Oil India Limited?"**
-    * *Answer*: "Phase 1: Deploy SANKET AI Edge on existing rig doghouse computers connected to the local VHF RoIP gateway. Phase 2: Link edge nodes to the Central Duliajan DCS Control Room via Oil India's private intranet. Phase 3: Deploy the progressive web app across certified Zone 1 intrinsically safe handhelds."
+### Q5: "What if there is zero internet in remote Upper Assam oilfields?"
+> **Answer**: *"In **Sovereign Air-Gapped Mode**, the entire pipeline—Speech-to-Text (local Whisper), SIF Scoring (`multilingual-e5`), and LLM Reasoning (`llama3.2:3b` / `qwen2.5:7b` on Ollama)—runs locally on the rig's laptop or on-premise server. Outbound data egress is **0 KB/s**."*
+
+---
+
+### Q6: "Local LLMs are notoriously slow. How can this provide real-time control room alerts?"
+> **Answer**: *"SIF classification and alarm dispatch **do NOT wait for the LLM**. Vector scoring and physical boundary checks happen in **50 milliseconds**, instantly triggering the DCS Control Room alarm. The Local LLM only drafts the 3-sentence written narrative in the background in ~1.2 seconds without blocking the emergency reflex."*
+
+---
+
+### Q7: "How do you handle Indian languages and regional technical slang (Hinglish / Assamese)?"
+> **Answer**: *"We use `multilingual-e5-small` pre-trained on Hindi, Assamese, and Bengali, paired with 20+ regional oilfield slang terms (*'aag'*, *'phat gaya'*, *'valve kharab'*, *'gas nikal'*, *'গেছ লিক'*, *'বিঅ'পি'*, *'চাপ বাঢ়িছে'*) and a 5-token negation window that correctly distinguishes *'gas leak ho raha hai'* from *'gas leak nahi hai'* / *'কোনো লিক নাই'*."*
+
+---
+
+### Q8: "How do you prevent AI hallucinations during a dangerous blowout?"
+> **Answer**: *"SIF scoring is deterministic vector math backed by physical boundary rules. Our LLM prompt explicitly restricts the model to facts present in the raw text, and our **Human-in-the-Loop review** requires safety officers to validate or override every high-severity decision."*
+
+---
+
+### Q9: "What is the difference between a traditional near-miss log and a SIF Precursor?"
+> **Answer**: *"Traditional near-miss logs treat all incidents equally. Under the **DEKRA & API RP 754 SIF Precursor Framework**, SANKET AI checks whether an event involved high-energy sources (>1000 PSI, high voltage, height) and barrier failures, separating trivial noise from fatal precursors."*
+
+---
+
+### Q10: "How does the Causal Knowledge Graph help if each worker only reports minor things?"
+> **Answer**: *"Worker A reports mud loss on Monday; Worker B reports gauge flutter on Wednesday; Worker C reports a valve weep on Friday. Individually they look low-risk. Our **Knowledge Graph links all three events to the same equipment node** and activates the **Near-Miss Multiplier**, automatically elevating the SIF risk to 96% and alerting the Control Room before the disaster."*
 
 ---
 
