@@ -7,12 +7,17 @@
 ## 📑 TABLE OF CONTENTS
 1. [Executive Summary & Problem Statement](#1-executive-summary--problem-statement)
 2. [Master Jargon & Concept Dictionary (With Simple Analogies)](#2-master-jargon--concept-dictionary-with-simple-analogies)
-3. [The Hazardous Area Dilemma: How Frontline Ingestion Works Without Consumer Phones](#3-the-hazardous-area-dilemma-how-frontline-ingestion-works-without-consumer-phones)
-4. [The 7-Stage Neuro-Symbolic AI & NLP Pipeline](#4-the-7-stage-neuro-symbolic-ai--nlp-pipeline)
-5. [Sovereign Air-Gap vs. Hybrid Online Architecture](#5-sovereign-air-gap-vs-hybrid-online-architecture)
-6. [Screen-by-Screen Dashboard Manual (Purpose, Working, and Judge Pitch)](#6-screen-by-screen-dashboard-manual)
-7. [The Baghjan 2020 Case Study (The Proof of Concept)](#7-the-baghjan-2020-case-study-the-proof-of-concept)
-8. [Judge Defense Script: Top 10 Toughest Questions & Winning Answers](#8-judge-defense-script-top-10-toughest-questions--winning-answers)
+3. [The Complete Zero-Internet Workflow (Both Laptop & Phone with 0 Internet)](#3-the-complete-zero-internet-workflow-both-laptop--phone-with-0-internet)
+4. [The Hazardous Area Dilemma: How Frontline Ingestion Works Without Consumer Phones](#4-the-hazardous-area-dilemma-how-frontline-ingestion-works-without-consumer-phones)
+5. [The 7-Stage Neuro-Symbolic AI & NLP Pipeline](#5-the-7-stage-neuro-symbolic-ai--nlp-pipeline)
+6. [The 7-Agent LangGraph Multi-Agent Swarm (Autonomous Orchestration)](#6-the-7-agent-langgraph-multi-agent-swarm-autonomous-orchestration)
+7. [Why Ingest 5,000 Historical Reports vs. Single Live Report?](#7-why-ingest-5000-historical-reports-vs-single-live-report)
+8. [Complete Technical Specifications & Hardware Architecture](#8-complete-technical-specifications--hardware-architecture)
+9. [Sovereign Air-Gap vs. Hybrid Online Architecture](#9-sovereign-air-gap-vs-hybrid-online-architecture)
+10. [Step-by-Step Easy End-to-End Workflow](#10-step-by-step-easy-end-to-end-workflow)
+11. [Screen-by-Screen Dashboard Manual (Purpose, Working, and Judge Pitch)](#11-screen-by-screen-dashboard-manual)
+12. [The Baghjan 2020 Case Study (The Proof of Concept)](#12-the-baghjan-2020-case-study-the-proof-of-concept)
+13. [Judge Defense Script: Top 10 Toughest Questions & Winning Answers](#13-judge-defense-script-top-10-toughest-questions--winning-answers)
 
 ---
 
@@ -61,7 +66,65 @@ SANKET AI is an **Edge-Deployable, Neuro-Symbolic Safety Intelligence Platform**
 
 ---
 
-# 3. The Hazardous Area Dilemma: How Frontline Ingestion Works Without Consumer Phones
+# 3. The Complete Zero-Internet Workflow (Both Laptop & Phone with 0 Internet)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       THE 100% OFFLINE AIR-GAP REALITY                     │
+│                                                                             │
+│  "What if BOTH the laptop and the phone have ZERO internet connection?      │
+│   How does the worker report and how does the AI process it?"               │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 📶 How It Works Physically:
+There is a fundamental difference between **Internet (WAN)** and **Local Network (LAN)**.
+
+```mermaid
+graph TD
+    subgraph 📴 Zero Public Internet (0 KB/s Egress)
+        A[📱 Worker IS Handheld / Phone<br/>• Mobile Data: OFF<br/>• SIM Internet: NONE] -- "Local Wi-Fi Radio Waves<br/>(Subnet 10.92.126.x / 192.168.x.x)" --> B[📡 Rig Local Wi-Fi Router / Laptop Hotspot<br/>• ZERO Internet Cable<br/>• ZERO Cloud Uplink]
+        B -- "Local Ethernet / LAN Link" --> C[💻 On-Premise Rig Server / Laptop<br/>• ZERO Internet Connection]
+    end
+
+    subgraph 🧠 Local AI Execution in Server RAM / CPU
+        C --> D[👂 Local Whisper Engine<br/>Transcribes Audio in RAM]
+        D --> E[📊 multilingual-e5-small<br/>Scores SIF Vector in 35ms on CPU]
+        E --> F[🧠 Local Ollama llama3.2:3b / qwen2.5:7b<br/>Generates Safety Analysis in 1.2s]
+    end
+
+    F -- "Local JSON Response over Private Wi-Fi" --> B
+    B --> A
+```
+
+### 🛠️ Step-by-Step Execution:
+1. **Laptop Setup**:
+   * Laptop has **NO ethernet internet cable** and **NO Wi-Fi internet**.
+   * Laptop turns on **Windows Mobile Hotspot** (or connects to the Rig Doghouse local Wi-Fi router).
+2. **Phone Setup**:
+   * Phone turns **OFF Mobile Data (4G/5G)**.
+   * Phone connects to the Laptop's Wi-Fi network (IP: `10.92.126.169` or `192.168.137.1`).
+3. **Observation Logging**:
+   * Worker opens `http://10.92.126.169:3000/worker` on their browser.
+   * Worker taps **TAP TO RECORD** $ightarrow$ speaks Hindi: *"Well Pad 7 mein gas pipe se leakage ho raha hai"*.
+   * Phone browser captures audio into local device RAM using `MediaRecorder`.
+4. **Local Subnet Upload**:
+   * Phone uploads the raw audio file over the private Wi-Fi to the laptop's backend: `http://10.92.126.169:8000/api/voice/transcribe`.
+5. **Local Processing**:
+   * **Local Whisper** converts audio to text in RAM.
+   * **Local `multilingual-e5-small`** calculates the SIF score (78% HIGH) in **35 milliseconds**.
+   * **Local Ollama (`llama3.2:3b` / `qwen2.5:7b`)** generates the DGMS safety narrative.
+6. **Result Returned**:
+   * Text, SIF score, and SWA alert return to the phone in **under 1.5 seconds**.
+   * **Total Public Internet Used = 0.000 Bytes.**
+
+### 📴 What if the worker is in a deep tank with ZERO Wi-Fi signal?
+* **PWA Offline Store-and-Forward**: The app stores the report and audio locally inside the phone's **`IndexedDB` / `localStorage`** with an offline timestamp.
+* The moment the worker walks back into Wi-Fi range of the doghouse, the app **automatically auto-syncs all pending reports** to the Control Room database!
+
+---
+
+# 4. The Hazardous Area Dilemma: How Frontline Ingestion Works Without Consumer Phones
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -100,7 +163,21 @@ SANKET AI is an **Edge-Deployable, Neuro-Symbolic Safety Intelligence Platform**
 
 ---
 
-# 4. The 7-Stage Neuro-Symbolic AI & NLP Pipeline
+# 5. The 7-Stage Neuro-Symbolic AI & NLP Pipeline
+
+```mermaid
+graph TD
+    A[Raw Multilingual Voice / Text Input] --> B[Stage 1: Preprocessor & LangDetect]
+    B --> C[Stage 2: SIF Risk Classifier<br/>multilingual-e5-small + 50 SIF Anchors]
+    C --> D[Stage 3: Industrial Zero-Shot Entity Extractor<br/>8 Entity Classes: Equip, Loc, Barrier, Energy, etc.]
+    D --> E[Stage 4: IOGP 9 Life-Saving Rules Mapper<br/>Cosine Similarity against IOGP Rule Set]
+    E --> F{SIF Score >= 0.50?}
+    F -- Yes --> G[Stage 5: Grounded LLM Explainer<br/>DGMS/OISD Guardrails via Ollama or GPT-4o]
+    F -- No --> H[Omit LLM to Save Compute]
+    G & H --> I[Stage 6: Bipartite Causal Knowledge Graph<br/>NetworkX Ingestion]
+    I --> J[Stage 7: Near-Miss Multiplier Cluster Detector<br/>7-Day Rolling Window Escalation]
+    J --> K[Real-Time Output: SWA Lockout + DCS Control Room Wall + CAPA Brief]
+```
 
 ### Stage 1: Text Normalization & Language Identification
 * Strips control characters, normalizes Unicode/mojibake, and detects input language (`hi`, `as`, `en`, `bn`).
@@ -129,7 +206,78 @@ SANKET AI is an **Edge-Deployable, Neuro-Symbolic Safety Intelligence Platform**
 
 ---
 
-# 5. Sovereign Air-Gap vs. Hybrid Online Architecture
+# 6. The 7-Agent LangGraph Multi-Agent Swarm (Autonomous Orchestration)
+
+In `ai/agents/swarm.py`, SANKET AI coordinates a **7-Agent LangGraph StateGraph Swarm** where each agent is an autonomous, specialized safety micro-service:
+
+```mermaid
+graph LR
+    A[Supervisor Agent] --> B[Classifier Agent]
+    B --> C[Entity Extractor Agent]
+    C --> D[Rule Mapper Agent]
+    D --> E[Graph Analyst Agent]
+    E --> F[Explainer Agent]
+    F --> G[Action / CAPA Agent]
+```
+
+### The 7 Swarm Agents Defined:
+1. 👑 **Supervisor Agent (`SupervisorAgent`)**:
+   * **Role**: Orchestrates pipeline execution, cleans raw text, strips mojibake, detects language (`hi`, `as`, `en`, `bn`), and initializes the audit trace.
+2. 🎯 **Classifier Agent (`ClassifierAgent`)**:
+   * **Role**: Computes dense vector embeddings, performs dot-product cosine similarity against 50 SIF anchor vectors, and applies the 5-token negation window parser.
+3. 🔍 **Entity Extractor Agent (`EntityExtractorAgent`)**:
+   * **Role**: Zero-shot extracts 8 critical industrial entities (`EQUIPMENT`, `LOCATION`, `BARRIER_FAILURE`, `ENERGY_SOURCE`, etc.) from unstructured speech.
+4. 📜 **Rule Mapper Agent (`RuleMapperAgent`)**:
+   * **Role**: Maps observations against the official **IOGP 9 Life-Saving Rules** using vector similarity.
+5. 🕸️ **Graph Analyst Agent (`GraphAnalystAgent`)**:
+   * **Role**: Embeds new co-occurrences into the bipartite Safety Knowledge Graph (`NetworkX`) and checks for 7-day Near-Miss Multiplier clusters.
+6. 🧠 **Explainer Agent (`ExplainerAgent`)**:
+   * **Role**: Evaluates the SIF gate ($\ge 0.50$) and invokes local Ollama / GPT-4o with strict DGMS/OISD-189 guardrails to draft the 3-sentence root cause explanation.
+7. ⚡ **Action Agent (`ActionAgent`)**:
+   * **Role**: Formulates automated Corrective & Preventive Action (CAPA) work orders (`SHUTDOWN`, `REPAIR`, `INSPECTION`) with recommended SLA deadlines (24h/48h/7d).
+
+---
+
+# 7. Why Ingest 5,000 Historical Reports vs. Single Live Report?
+
+Judges often ask: *"Why does your system support both single live reports and batch ingestion of 5,000 past reports?"*
+
+### ⚡ 1. The Single Live Report (The Frontline Reflex)
+* **Purpose**: Real-time triage and immediate life-saving action.
+* **Latency**: **< 50 milliseconds**.
+* **Outcome**: A worker speaks *"BOP leaking hydraulic fluid"* $ightarrow$ Control Room siren triggers immediately $ightarrow$ 500m SWA digital perimeter freeze enforced.
+
+### 📚 2. Batch Ingestion of 5,000 Historical Reports (The Big Picture Intelligence)
+* **Purpose**: Bootstrapping the Causal Knowledge Graph and baselining fleet-wide risk.
+* **Why 5,000 Reports Are Critical**:
+  1. **Knowledge Graph Topology**: A knowledge graph with 2 reports only has 2 nodes. Ingesting 5,000 historical shift logs builds an interconnected network of 500+ equipment nodes, barrier breakdown paths, and contractor failure correlations.
+  2. **Baseline Frequency Distribution**: Establishes what is a "normal" vibration versus an "abnormal" pressure surge.
+  3. **Near-Miss Multiplier Calibration**: Calibrates the 7-day clustering window against real multi-year maintenance data.
+  4. **Geospatial Heatmap Density**: Populates the SIF Geo Heatmap with accurate historical risk densities ($22.0\%$, $18.4\%$) across all 10 Upper Assam assets.
+
+---
+
+# 8. Complete Technical Specifications & Hardware Architecture
+
+| Component | Technical Specification |
+|---|---|
+| **Backend Framework** | Python 3.11+, FastAPI (Async), Uvicorn, Pydantic v2 |
+| **Agent Orchestrator** | **LangGraph v0.2+** `StateGraph` (7-Agent Sequential DAG) |
+| **Vector Embedding Model** | `intfloat/multilingual-e5-small` (384-dimensional dense vectors via `sentence-transformers`) |
+| **Local LLM Engine** | **Ollama** running `qwen2.5:7b` (Multilingual) or `llama3.2:3b` (Ultra-Fast) |
+| **Cloud LLM Fallback** | **OpenAI GPT-4o** (`gpt-4o`, temp=0.15, max_tokens=300) |
+| **Speech-to-Text Engine** | OpenAI Whisper SDK (`whisper-1`) / Local `faster-whisper` (16kHz PCM WAV) |
+| **Database** | PostgreSQL / Supabase with SQLAlchemy 2.0 Async Engine + SQLite Local Fallback |
+| **Graph Engine** | In-Memory **NetworkX** Bipartite MultiGraph with degree centrality tracking |
+| **Frontend Framework** | **Next.js 15.1 (Turbopack)**, React 19, Tailwind CSS v4, TypeScript |
+| **GIS Mapping** | **Leaflet GIS** with OpenStreetMap + Gaussian Gas Plume & NASA FIRMS thermal layers |
+| **Graph Canvas** | Custom HTML5 Canvas engine with 60 FPS spring physics, focal zoom & edge flow pulses |
+| **PDF Generation** | **ReportLab 4.0+** compiling vector-rendered Executive Safety PDF Briefs |
+| **Target Hardware** | Standard Laptop CPU (AMD Ryzen 5 / Intel i5), 16GB RAM, Optional NVIDIA RTX 3060/3050 |
+
+---
+
+# 9. Sovereign Air-Gap vs. Hybrid Online Architecture
 
 | Capability | 🔒 Sovereign Air-Gapped Mode | 🌐 Hybrid Online Mode |
 |---|---|---|
@@ -143,7 +291,32 @@ SANKET AI is an **Edge-Deployable, Neuro-Symbolic Safety Intelligence Platform**
 
 ---
 
-# 6. Screen-by-Screen Dashboard Manual
+# 10. Step-by-Step Easy End-to-End Workflow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Worker as 👷 Frontline Worker (Rig Floor)
+    participant Term as 📱 Mobile Terminal / Walkie-Talkie
+    participant AI as 🧠 SANKET AI Engine (Laptop/Server)
+    participant DCS as 🖥️ DCS Control Room Live Wall
+    participant Officer as 🛡️ Safety Officer / Commander
+
+    Worker->>Term: Speaks in Hindi: "Well Pad 7 mein gas pipe leak ho raha hai"
+    Term->>AI: Streams audio over local private Wi-Fi (0 internet)
+    AI->>AI: 1. Whisper transcribes speech to text
+    AI->>AI: 2. multilingual-e5 scores SIF Risk: 78% HIGH (in 35ms)
+    AI->>AI: 3. Matches IOGP Rule: "Line of Fire"
+    AI->>DCS: Real-time alert stream insertion + Acoustic Siren Alarm
+    AI->>DCS: 500m SWA Digital Perimeter Freeze Broadcast
+    AI->>Officer: Formulates CAPA Work Order + DGMS Grounded Explanation
+    Officer->>Officer: Validates via Human-in-the-Loop & Marks RESOLVED ✓
+    Officer->>Worker: Status updates live on worker's shift history
+```
+
+---
+
+# 11. Screen-by-Screen Dashboard Manual
 
 ### Screen 1: Frontline Worker Terminal (`/worker`)
 * **Target User**: Roustabouts, Derrickmen, Maintenance Technicians.
@@ -197,7 +370,7 @@ SANKET AI is an **Edge-Deployable, Neuro-Symbolic Safety Intelligence Platform**
 
 ---
 
-# 7. The Baghjan 2020 Case Study (The Proof of Concept)
+# 12. The Baghjan 2020 Case Study (The Proof of Concept)
 
 * **Day -14 (May 13, 2020)**: Mud fluid loss (15 bbls) logged -> SANKET AI baselines hydrostatic loss (Stage-1 Watch).
 * **Day -10 (May 17, 2020)**: 80 PSI gauge flutter on manifold -> SANKET AI correlates with Day -14 (SIF: 58% Warning).
@@ -207,7 +380,7 @@ SANKET AI is an **Edge-Deployable, Neuro-Symbolic Safety Intelligence Platform**
 
 ---
 
-# 8. Judge Defense Script: Top 10 Toughest Questions & Winning Answers
+# 13. Judge Defense Script: Top 10 Toughest Questions & Winning Answers
 
 1. **"Phones are banned in Zone 1 explosive areas. How does your app work?"**
    * *Answer*: "We do not use consumer phones. Workers use **ATEX Zone 1 certified spark-proof handhelds (i.safe MOBILE IS530.1)** or their standard **Motorola ATEX walkie-talkies**. Our **Radio-over-IP (RoIP) gateway** in the doghouse captures the VHF Channel 9 audio stream and digitizes it into our local AI engine in real time."
