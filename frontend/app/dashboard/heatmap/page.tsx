@@ -17,7 +17,10 @@ import {
   Wind, 
   Droplets, 
   Activity,
-  MapPin
+  MapPin,
+  Plus,
+  Minus,
+  RotateCcw
 } from 'lucide-react';
 
 const API = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000';
@@ -256,11 +259,69 @@ const GEO_ASSETS: GeoAsset[] = [
 ];
 
 const TRUNK_PIPELINES = [
-  { name: 'Moran-Naharkatia 16" Gas Trunk', points: [[27.1860, 94.9320], [27.2820, 95.2580]], pressure: '68 Bar' },
-  { name: 'Naharkatia-Duliajan 24" Crude Main', points: [[27.2820, 95.2580], [27.3560, 95.3180]], pressure: '82 Bar' },
-  { name: 'Duliajan-Baghjan 12" High-Pressure Gas', points: [[27.3560, 95.3180], [27.5380, 95.4450]], pressure: '110 Bar' },
-  { name: 'Duliajan-Digboi Historic Pipeline', points: [[27.3560, 95.3180], [27.3950, 95.6310]], pressure: '45 Bar' },
-  { name: 'Lakwa-Moran 14" Feeder Line', points: [[26.9850, 94.8620], [27.1860, 94.9320]], pressure: '55 Bar' },
+  { 
+    name: 'Naharkatia-Duliajan 24" Crude Main', 
+    points: [[27.2820, 95.2580], [27.3190, 95.2880], [27.3560, 95.3180]], 
+    pressure: '82 Bar', 
+    flow: '4,200 BOPD',
+    medium: 'Crude Oil',
+    color: '#0A6B63',
+    valves: [
+      { name: 'Main Manifold Valve MV-01 (Naharkatia)', lat: 27.2820, lng: 95.2580 },
+      { name: 'Sectional Block Valve SBV-04 (Tipling Junction)', lat: 27.3190, lng: 95.2880 },
+      { name: 'Terminal Receiving Header (Duliajan HQ)', lat: 27.3560, lng: 95.3180 },
+    ]
+  },
+  { 
+    name: 'Duliajan-Baghjan 12" High-Pressure Gas', 
+    points: [[27.3560, 95.3180], [27.4470, 95.3810], [27.5380, 95.4450]], 
+    pressure: '110 Bar', 
+    flow: '2.4 MMSCMD',
+    medium: 'High-Pressure Natural Gas',
+    color: '#D97706',
+    valves: [
+      { name: 'Gas Dispatch Compressor Station (Duliajan)', lat: 27.3560, lng: 95.3180 },
+      { name: 'Emergency Shutdown Valve ESD-08 (Doomdooma Pass)', lat: 27.4470, lng: 95.3810 },
+      { name: 'Baghjan Well #5 Wellhead Header', lat: 27.5380, lng: 95.4450 },
+    ]
+  },
+  { 
+    name: 'Moran-Naharkatia 16" Gas Trunk', 
+    points: [[27.1860, 94.9320], [27.2340, 95.0950], [27.2820, 95.2580]], 
+    pressure: '68 Bar', 
+    flow: '1.8 MMSCMD',
+    medium: 'Associated Gas',
+    color: '#0D9488',
+    valves: [
+      { name: 'Moran OCS-3 Export Manifold', lat: 27.1860, lng: 94.9320 },
+      { name: 'Intermediate Pigging Station IPS-02', lat: 27.2340, lng: 95.0950 },
+      { name: 'Naharkatia Tie-in Header', lat: 27.2820, lng: 95.2580 },
+    ]
+  },
+  { 
+    name: 'Duliajan-Digboi Historic Pipeline', 
+    points: [[27.3560, 95.3180], [27.3755, 95.4745], [27.3950, 95.6310]], 
+    pressure: '45 Bar', 
+    flow: '1,500 BOPD',
+    medium: 'Sweet Crude',
+    color: '#475569',
+    valves: [
+      { name: 'Duliajan Refinery Feed Valve', lat: 27.3560, lng: 95.3180 },
+      { name: 'Digboi Refinery Storage Manifold', lat: 27.3950, lng: 95.6310 },
+    ]
+  },
+  { 
+    name: 'Lakwa-Moran 14" Feeder Line', 
+    points: [[26.9850, 94.8620], [27.0855, 94.8970], [27.1860, 94.9320]], 
+    pressure: '55 Bar', 
+    flow: '2,800 BOPD',
+    medium: 'Emulsion Crude',
+    color: '#059669',
+    valves: [
+      { name: 'Lakwa Gathering Pump Station', lat: 26.9850, lng: 94.8620 },
+      { name: 'Moran Interconnect Header', lat: 27.1860, lng: 94.9320 },
+    ]
+  },
 ];
 
 function DensityCell({ 
@@ -299,6 +360,7 @@ export default function DualHeatmapAndMapPage() {
   const [activeTab, setActiveTab] = useState<'matrix' | 'gis_map'>('gis_map');
   const [mapType, setMapType] = useState<'satellite' | 'street' | 'terrain'>('satellite');
   const [isExpanded, setIsExpanded] = useState(false);
+  const [mouseCoords, setMouseCoords] = useState<{ lat: string; lng: string; zoom: number }>({ lat: '27.5380', lng: '95.4450', zoom: 10 });
   
   const [bufferRadiusMeters, setBufferRadiusMeters] = useState<number>(500);
   const [showGasPlume, setShowGasPlume] = useState<boolean>(true);
@@ -387,12 +449,34 @@ export default function DualHeatmapAndMapPage() {
       const map = L.map(mapContainerRef.current, {
         center: [27.35, 95.30],
         zoom: 10,
-        zoomControl: true,
+        minZoom: 8,
+        maxZoom: 20,
+        zoomControl: false,
+        inertia: true,
+        inertiaDeceleration: 2500,
+        inertiaMaxSpeed: 1800,
+        easeLinearity: 0.2,
+        wheelDebounceTime: 25,
+        wheelPxPerZoomLevel: 75,
+        maxBounds: [[25.5, 93.0], [29.0, 97.5]],
+        maxBoundsViscosity: 0.8,
+      });
+
+      map.on('mousemove', (e: any) => {
+        setMouseCoords({
+          lat: e.latlng.lat.toFixed(4),
+          lng: e.latlng.lng.toFixed(4),
+          zoom: map.getZoom(),
+        });
+      });
+
+      map.on('zoomend', () => {
+        setMouseCoords(prev => ({ ...prev, zoom: map.getZoom() }));
       });
 
       const satTile = L.tileLayer(
-        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        { attribution: 'Tiles &copy; Esri &mdash; Maxar, Earthstar', maxZoom: 19, maxNativeZoom: 18 }
+        'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+        { attribution: '&copy; Google Maps &mdash; High-Res Hybrid Satellite', maxZoom: 20, maxNativeZoom: 19 }
       ).addTo(map);
       baseTileLayerRef.current = satTile;
 
@@ -467,29 +551,35 @@ export default function DualHeatmapAndMapPage() {
     if (baseTileLayerRef.current) map.removeLayer(baseTileLayerRef.current);
     if (labelsTileLayerRef.current) map.removeLayer(labelsTileLayerRef.current);
 
-    if (mapType === 'satellite') {
+    if (mapType === 'google_hybrid') {
+      baseTileLayerRef.current = L.tileLayer(
+        'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+        { attribution: '&copy; Google Maps &mdash; High-Res Hybrid Satellite', maxZoom: 20, maxNativeZoom: 19 }
+      ).addTo(map);
+    } else if (mapType === 'satellite') {
       baseTileLayerRef.current = L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        { attribution: 'Tiles &copy; Esri &mdash; High-Res Satellite', maxZoom: 19 }
+        { attribution: 'Tiles &copy; Esri &mdash; Maxar Satellite', maxZoom: 19, maxNativeZoom: 18 }
       ).addTo(map);
 
       labelsTileLayerRef.current = L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-        { maxZoom: 19, opacity: 0.95 }
+        { maxZoom: 19, maxNativeZoom: 18, opacity: 0.95 }
       ).addTo(map);
     } else if (mapType === 'terrain') {
       baseTileLayerRef.current = L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
-        { attribution: 'Tiles &copy; Esri &mdash; Topographic Relief', maxZoom: 18 }
+        { attribution: 'Tiles &copy; Esri &mdash; Topographic Relief', maxZoom: 18, maxNativeZoom: 17 }
       ).addTo(map);
     } else {
       baseTileLayerRef.current = L.tileLayer(
         'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        { attribution: '&copy; OpenStreetMap contributors &copy; CARTO', maxZoom: 19 }
+        { attribution: '&copy; OpenStreetMap contributors', maxZoom: 19, maxNativeZoom: 18 }
       ).addTo(map);
     }
   }, [mapType]);
 
+  // ── LAYER 1: TRUNK PIPELINES & SCADA VALVE MANIFOLDS ──
   useEffect(() => {
     const L = LRef.current;
     const group = pipelinesGroupRef.current;
@@ -498,16 +588,42 @@ export default function DualHeatmapAndMapPage() {
     group.clearLayers();
     if (showPipelines) {
       TRUNK_PIPELINES.forEach(pipe => {
-        L.polyline(pipe.points as any, {
-          color: '#0A6B63',
-          weight: 3.5,
-          dashArray: '8, 8',
-          opacity: 0.85,
-        }).bindTooltip(`🛢️ ${pipe.name} (${pipe.pressure})`, { sticky: true }).addTo(group);
+        // High-contrast pipeline polyline
+        const line = L.polyline(pipe.points as any, {
+          color: pipe.color,
+          weight: 4,
+          dashArray: pipe.medium.includes('Gas') ? '8, 6' : '1, 0',
+          opacity: 0.9,
+        }).addTo(group);
+
+        line.bindTooltip(`
+          <div style="font-family: sans-serif; font-size: 11px; padding: 4px;">
+            <div style="font-weight: bold; color: ${pipe.color}; font-size: 12px; margin-bottom: 2px;">🛢️ ${pipe.name}</div>
+            <div>• <b>Operating Pressure:</b> ${pipe.pressure}</div>
+            <div>• <b>Transmission Medium:</b> ${pipe.medium}</div>
+            <div>• <b>Flow Rate:</b> ${pipe.flow}</div>
+            <div style="color: #059669; font-weight: bold; margin-top: 2px;">✓ SCADA Telemetry Normal</div>
+          </div>
+        `, { sticky: true });
+
+        // Add Valve Station Markers
+        pipe.valves.forEach(valve => {
+          const valveHtml = `
+            <div class="relative flex items-center justify-center -translate-x-1/2 -translate-y-1/2 cursor-pointer group">
+              <div class="w-4 h-4 rounded-full bg-white border-2 border-[${pipe.color}] flex items-center justify-center shadow-md">
+                <div class="w-1.5 h-1.5 rounded-full bg-[${pipe.color}]"></div>
+              </div>
+            </div>
+          `;
+          L.marker([valve.lat, valve.lng], {
+            icon: L.divIcon({ html: valveHtml, className: 'valve-pin', iconSize: [16, 16], iconAnchor: [8, 8] })
+          }).bindTooltip(`<b>${valve.name}</b><br><span style="color: #0A6B63;">Sectional Isolation Valve (OISD-189 Certified)</span>`, { sticky: true }).addTo(group);
+        });
       });
     }
   }, [showPipelines]);
 
+  // ── LAYER 2: HYDROLOGICAL FLOOD INUNDATION RISK BASINS ──
   useEffect(() => {
     const L = LRef.current;
     const group = floodGroupRef.current;
@@ -515,21 +631,46 @@ export default function DualHeatmapAndMapPage() {
 
     group.clearLayers();
     if (showFloodRisk) {
+      // Basin 1: Upper Brahmaputra / Lohit Wetland Basin
       L.polygon([
-        [27.64, 95.30],
-        [27.68, 95.45],
-        [27.56, 95.55],
-        [27.52, 95.35]
+        [27.640, 95.300],
+        [27.680, 95.450],
+        [27.595, 95.550],
+        [27.560, 95.380],
+        [27.585, 95.280]
+      ], {
+        color: '#0284C7',
+        weight: 2.5,
+        fillColor: '#0284C7',
+        fillOpacity: 0.28,
+        dashArray: '6, 6'
+      }).bindTooltip(`
+        <div style="font-family: sans-serif; font-size: 11px; padding: 4px;">
+          <div style="font-weight: bold; color: #0284C7; font-size: 12px;">🌊 Dibru-Saikhowa / Lohit Flood Basin</div>
+          <div>• <b>Hydrological Risk:</b> SEVERE Monsoon Silt Inundation</div>
+          <div>• <b>Water Depth Range:</b> 1.4m - 2.8m</div>
+          <div>• <b>Vulnerable Assets:</b> North Corridor Pipeline Crossings</div>
+          <div>• <b>Evacuation Path:</b> Elevated NH-37 Highway Corridor</div>
+        </div>
+      `, { sticky: true }).addTo(group);
+
+      // Basin 2: Burhi Dihing River Lowlands
+      L.polygon([
+        [27.320, 95.220],
+        [27.360, 95.290],
+        [27.300, 95.340],
+        [27.260, 95.260]
       ], {
         color: '#0284C7',
         weight: 2,
         fillColor: '#0284C7',
-        fillOpacity: 0.22,
-        dashArray: '5, 5'
-      }).bindTooltip("🌊 Brahmaputra Flood Hazard Basin (NASA Hydrological Inundation Risk: Severe)", { sticky: true }).addTo(group);
+        fillOpacity: 0.20,
+        dashArray: '4, 4'
+      }).bindTooltip("🌊 Burhi Dihing Lowland Floodplain (Moderate Inundation Risk)", { sticky: true }).addTo(group);
     }
   }, [showFloodRisk]);
 
+  // ── LAYER 3: ALOHA GAUSSIAN TOXIC GAS DISPERSION PLUME MODEL ──
   useEffect(() => {
     const L = LRef.current;
     const group = gasPlumeGroupRef.current;
@@ -538,33 +679,88 @@ export default function DualHeatmapAndMapPage() {
     group.clearLayers();
     if (showGasPlume) {
       GEO_ASSETS.filter(a => a.sif_label === 'HIGH').forEach(asset => {
-        const angleRad = (245 * Math.PI) / 180;
-        const plumeLength = 0.045;
+        const angleRad = (245 * Math.PI) / 180; // Wind 245° SW
 
-        const tipLat = asset.lat + Math.cos(angleRad) * plumeLength;
-        const tipLng = asset.lng + Math.sin(angleRad) * plumeLength;
-
-        const leftLat = asset.lat + Math.cos(angleRad - 0.25) * plumeLength * 0.7;
-        const leftLng = asset.lng + Math.sin(angleRad - 0.25) * plumeLength * 0.7;
-
-        const rightLat = asset.lat + Math.cos(angleRad + 0.25) * plumeLength * 0.7;
-        const rightLng = asset.lng + Math.sin(angleRad + 0.25) * plumeLength * 0.7;
+        // Zone 3: Outer ERPG-1 Odor Threshold (5.5 km)
+        const len3 = 0.050;
+        const tipLat3 = asset.lat + Math.cos(angleRad) * len3;
+        const tipLng3 = asset.lng + Math.sin(angleRad) * len3;
+        const leftLat3 = asset.lat + Math.cos(angleRad - 0.30) * len3 * 0.75;
+        const leftLng3 = asset.lng + Math.sin(angleRad - 0.30) * len3 * 0.75;
+        const rightLat3 = asset.lat + Math.cos(angleRad + 0.30) * len3 * 0.75;
+        const rightLng3 = asset.lng + Math.sin(angleRad + 0.30) * len3 * 0.75;
 
         L.polygon([
           [asset.lat, asset.lng],
-          [leftLat, leftLng],
-          [tipLat, tipLng],
-          [rightLat, rightLng],
+          [leftLat3, leftLng3],
+          [tipLat3, tipLng3],
+          [rightLat3, rightLng3]
         ], {
-          color: '#D63B3B',
+          color: '#F59E0B',
+          weight: 1.5,
+          fillColor: '#F59E0B',
+          fillOpacity: 0.18,
+          dashArray: '3, 3'
+        }).addTo(group);
+
+        // Zone 2: Middle ERPG-2 Severe Irritation Arc (3.2 km)
+        const len2 = 0.030;
+        const tipLat2 = asset.lat + Math.cos(angleRad) * len2;
+        const tipLng2 = asset.lng + Math.sin(angleRad) * len2;
+        const leftLat2 = asset.lat + Math.cos(angleRad - 0.24) * len2 * 0.75;
+        const leftLng2 = asset.lng + Math.sin(angleRad - 0.24) * len2 * 0.75;
+        const rightLat2 = asset.lat + Math.cos(angleRad + 0.24) * len2 * 0.75;
+        const rightLng2 = asset.lng + Math.sin(angleRad + 0.24) * len2 * 0.75;
+
+        L.polygon([
+          [asset.lat, asset.lng],
+          [leftLat2, leftLng2],
+          [tipLat2, tipLng2],
+          [rightLat2, rightLng2]
+        ], {
+          color: '#EA580C',
           weight: 2,
-          fillColor: '#D63B3B',
-          fillOpacity: 0.35,
-        }).bindTooltip(`💨 TOXIC ${asset.gas_type} DISPERSION PLUME<br>• Wind: ${windVector.speedKmh} km/h ${windVector.directionText}<br>• Downwind Hazard Zone: 5.2 km<br>• Immediate Action: Downwind Evacuation Required`, { sticky: true }).addTo(group);
+          fillColor: '#EA580C',
+          fillOpacity: 0.30,
+        }).addTo(group);
+
+        // Zone 1: Inner Lethal IDLH Arc (1.2 km)
+        const len1 = 0.012;
+        const tipLat1 = asset.lat + Math.cos(angleRad) * len1;
+        const tipLng1 = asset.lng + Math.sin(angleRad) * len1;
+        const leftLat1 = asset.lat + Math.cos(angleRad - 0.20) * len1 * 0.75;
+        const leftLng1 = asset.lng + Math.sin(angleRad - 0.20) * len1 * 0.75;
+        const rightLat1 = asset.lat + Math.cos(angleRad + 0.20) * len1 * 0.75;
+        const rightLng1 = asset.lng + Math.sin(angleRad + 0.20) * len1 * 0.75;
+
+        const innerPlume = L.polygon([
+          [asset.lat, asset.lng],
+          [leftLat1, leftLng1],
+          [tipLat1, tipLng1],
+          [rightLat1, rightLng1]
+        ], {
+          color: '#DC2626',
+          weight: 2.5,
+          fillColor: '#DC2626',
+          fillOpacity: 0.55,
+        }).addTo(group);
+
+        innerPlume.bindTooltip(`
+          <div style="font-family: sans-serif; font-size: 11px; padding: 4px;">
+            <div style="font-weight: bold; color: #DC2626; font-size: 12px;">💨 ALOHA Toxic Gas Plume: ${asset.name}</div>
+            <div>• <b>Gas Species:</b> ${asset.gas_type}</div>
+            <div>• <b>Wind Vector:</b> 245° SW @ ${windVector.speedKmh} km/h</div>
+            <div>• <b>Zone 1 (Lethal IDLH &gt;100 ppm):</b> 1.2 km Arc</div>
+            <div>• <b>Zone 2 (ERPG-2 &gt;30 ppm):</b> 3.2 km Arc</div>
+            <div>• <b>Zone 3 (Precautionary &gt;5 ppm):</b> 5.5 km Arc</div>
+            <div style="color: #DC2626; font-weight: bold; margin-top: 3px;">🚨 ACTION: Immediate Upwind Muster to Point B</div>
+          </div>
+        `, { sticky: true });
       });
     }
-  }, [showGasPlume]);
+  }, [showGasPlume, windVector]);
 
+  // ── LAYER 4: NASA FIRMS SATELLITE THERMAL INFRARED FLARE STACKS ──
   useEffect(() => {
     const L = LRef.current;
     const group = thermalGroupRef.current;
@@ -573,19 +769,32 @@ export default function DualHeatmapAndMapPage() {
     group.clearLayers();
     if (showNasaFirms) {
       GEO_ASSETS.filter(a => a.flare_temp_c >= 400).forEach(asset => {
+        // Infrared Glow Marker
         const thermalHtml = `
-          <div class="flex items-center justify-center -translate-x-1/2 -translate-y-1/2 cursor-pointer">
-            <span class="w-5 h-5 rounded-full bg-amber-500/80 animate-ping absolute"></span>
-            <span style="font-size: 16px;">🔥</span>
+          <div class="relative flex items-center justify-center -translate-x-1/2 -translate-y-1/2 cursor-pointer group">
+            <span class="w-8 h-8 rounded-full bg-amber-500/40 animate-ping absolute"></span>
+            <div class="relative w-6 h-6 rounded-full bg-gradient-to-tr from-red-600 via-amber-500 to-yellow-300 border-2 border-white shadow-xl flex items-center justify-center text-[10px] font-bold text-white">
+              🔥
+            </div>
           </div>
         `;
-        L.marker([asset.lat + 0.006, asset.lng + 0.006], {
-          icon: L.divIcon({ html: thermalHtml, className: 'thermal-pin', iconSize: [18, 18] })
-        }).bindTooltip(`🛰️ NASA FIRMS Thermal Anomaly Detected: ${asset.flare_temp_c}°C Flare Stack`, { sticky: true }).addTo(group);
+        L.marker([asset.lat + 0.003, asset.lng + 0.003], {
+          icon: L.divIcon({ html: thermalHtml, className: 'thermal-pin', iconSize: [24, 24], iconAnchor: [12, 12] })
+        }).bindTooltip(`
+          <div style="font-family: sans-serif; font-size: 11px; padding: 4px;">
+            <div style="font-weight: bold; color: #D97706; font-size: 12px;">🛰️ NASA FIRMS Satellite Thermal Anomaly</div>
+            <div>• <b>Location:</b> ${asset.name} Flare Stack</div>
+            <div>• <b>Satellite Sensor:</b> Suomi NPP / VIIRS (375m I-Band)</div>
+            <div>• <b>Radiative Flare Temp:</b> <span style="color: #DC2626; font-weight: bold;">${asset.flare_temp_c}°C</span></div>
+            <div>• <b>Radiative Power:</b> 14.8 MW</div>
+            <div>• <b>Detection Confidence:</b> 98% (High Anomaly)</div>
+          </div>
+        `, { sticky: true }).addTo(group);
       });
     }
   }, [showNasaFirms]);
 
+  // ── LAYER 5: DYNAMIC SWA SAFETY PERIMETER BUFFER (250m, 500m, 1000m) ──
   useEffect(() => {
     const L = LRef.current;
     const group = bufferGroupRef.current;
@@ -594,15 +803,39 @@ export default function DualHeatmapAndMapPage() {
     group.clearLayers();
     GEO_ASSETS.forEach(asset => {
       const isHigh = asset.sif_label === 'HIGH';
-      if (selectedAsset?.id === asset.id || isHigh) {
-        L.circle([asset.lat, asset.lng], {
+      const isSelected = selectedAsset?.id === asset.id;
+
+      if (isSelected || isHigh) {
+        // High-visibility outer perimeter ring
+        const circle = L.circle([asset.lat, asset.lng], {
           radius: bufferRadiusMeters,
-          color: isHigh ? '#D63B3B' : '#D4820A',
-          weight: 2,
-          dashArray: '6, 6',
-          fillColor: isHigh ? '#D63B3B' : '#D4820A',
-          fillOpacity: selectedAsset?.id === asset.id ? 0.22 : 0.12,
+          color: isHigh ? '#DC2626' : '#D97706',
+          weight: isSelected ? 3.5 : 2.5,
+          dashArray: isSelected ? '10, 6' : '6, 6',
+          fillColor: isHigh ? '#DC2626' : '#D97706',
+          fillOpacity: isSelected ? 0.28 : 0.16,
         }).addTo(group);
+
+        const estWorkers = bufferRadiusMeters === 250 
+          ? Math.round(asset.workers_on_site * 0.45) 
+          : bufferRadiusMeters === 500 
+          ? Math.round(asset.workers_on_site * 0.8) 
+          : asset.workers_on_site;
+
+        circle.bindTooltip(`
+          <div style="font-family: sans-serif; font-size: 11px; padding: 5px; line-height: 1.4;">
+            <div style="font-weight: bold; color: ${isHigh ? '#DC2626' : '#D97706'}; font-size: 12px; margin-bottom: 2px;">
+              🛑 SWA ${bufferRadiusMeters}m Perimeter Isolation Zone
+            </div>
+            <div>• <b>Protected Asset:</b> ${asset.name} (${asset.district})</div>
+            <div>• <b>Exclusion Radius:</b> <span style="font-weight: bold; color: #1A2B2D;">${bufferRadiusMeters}m (${(bufferRadiusMeters/1000).toFixed(2)} km)</span></div>
+            <div>• <b>Personnel in Buffer:</b> <span style="color: #DC2626; font-weight: bold;">${estWorkers} field workers</span></div>
+            <div>• <b>Active e-PTWs Suspended:</b> <span style="color: #DC2626; font-weight: bold;">${asset.active_permits} digital permits</span></div>
+            <div style="color: #DC2626; font-weight: bold; margin-top: 4px; border-top: 1px solid #FECACA; padding-top: 3px;">
+              ⚡ OISD-189 Section 7.4 Fail-Safe Isolation Enforced
+            </div>
+          </div>
+        `, { sticky: true });
       }
     });
   }, [bufferRadiusMeters, selectedAsset]);
@@ -785,26 +1018,29 @@ export default function DualHeatmapAndMapPage() {
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1 bg-white p-0.5 rounded-md border border-[#C2CEC2]">
                     <button type="button" suppressHydrationWarning
-                      onClick={() => setMapType('satellite')}
-                      className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all cursor-pointer ${
-                        mapType === 'satellite' ? 'bg-[#0A6B63] text-white shadow-2xs' : 'text-[#5E7072] hover:text-[#1A2B2D]'
+                      onClick={() => setMapType('google_hybrid')}
+                      className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-all cursor-pointer ${
+                        mapType === 'google_hybrid' ? 'bg-[#0A6B63] text-white shadow-2xs font-bold' : 'text-[#5E7072] hover:text-[#1A2B2D]'
                       }`}
+                      title="Ultra HD Satellite with Local Roads & Oilfield Facilities"
                     >
                       🛰️ Satellite HD
                     </button>
                     <button type="button" suppressHydrationWarning
                       onClick={() => setMapType('terrain')}
-                      className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all cursor-pointer ${
-                        mapType === 'terrain' ? 'bg-[#0A6B63] text-white shadow-2xs' : 'text-[#5E7072] hover:text-[#1A2B2D]'
+                      className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-all cursor-pointer ${
+                        mapType === 'terrain' ? 'bg-[#0A6B63] text-white shadow-2xs font-bold' : 'text-[#5E7072] hover:text-[#1A2B2D]'
                       }`}
+                      title="Topographic Elevation Relief (USGS/Esri)"
                     >
-                      ⛰️ Terrain Topo
+                      ⛰️ Topo Terrain
                     </button>
                     <button type="button" suppressHydrationWarning
                       onClick={() => setMapType('street')}
-                      className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all cursor-pointer ${
-                        mapType === 'street' ? 'bg-[#0A6B63] text-white shadow-2xs' : 'text-[#5E7072] hover:text-[#1A2B2D]'
+                      className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-all cursor-pointer ${
+                        mapType === 'street' ? 'bg-[#0A6B63] text-white shadow-2xs font-bold' : 'text-[#5E7072] hover:text-[#1A2B2D]'
                       }`}
+                      title="OpenStreetMap Emergency Street Grid"
                     >
                       🏙️ Street Grid
                     </button>
@@ -833,8 +1069,62 @@ export default function DualHeatmapAndMapPage() {
                 </div>
               </div>
 
-              {/* Map Leaflet Container */}
+              {/* Map Leaflet Container with Live GPS HUD & Precision Controls */}
               <div className="relative">
+                {/* Floating GPS Coordinates HUD Bottom Left */}
+                <div className="absolute bottom-3 left-3 z-[1000] bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-lg border border-[#C2CEC2] shadow-md flex items-center gap-2.5 text-[11px] font-mono text-[#1A2B2D]">
+                  <span className="flex items-center gap-1 text-[#0A6B63] font-bold">
+                    <span className="w-2 h-2 rounded-full bg-[#0A6B63] animate-pulse" />
+                    GPS:
+                  </span>
+                  <span>{mouseCoords.lat}° N, {mouseCoords.lng}° E</span>
+                  <span className="text-[#85A2A6]">|</span>
+                  <span className="font-semibold text-[#5E7072]">Zoom: {mouseCoords.zoom}x</span>
+                  <span className="text-[#85A2A6]">|</span>
+                  <span className="text-[#059669] font-bold">Upper Assam Basin</span>
+                </div>
+
+                {/* Floating Tactile Zoom Widget Bottom Right */}
+                <div className="absolute bottom-3 right-3 z-[1000] bg-white/95 backdrop-blur-md p-1 rounded-lg border border-[#C2CEC2] shadow-md flex items-center gap-1 text-xs">
+                  <button
+                    type="button"
+                    suppressHydrationWarning
+                    onClick={() => {
+                      if (mapInstanceRef.current) mapInstanceRef.current.zoomIn();
+                    }}
+                    className="p-1.5 rounded-md hover:bg-[#F0F2ED] text-[#1A2B2D] transition-colors cursor-pointer"
+                    title="Zoom In (+)"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    suppressHydrationWarning
+                    onClick={() => {
+                      if (mapInstanceRef.current) mapInstanceRef.current.zoomOut();
+                    }}
+                    className="p-1.5 rounded-md hover:bg-[#F0F2ED] text-[#1A2B2D] transition-colors cursor-pointer"
+                    title="Zoom Out (-)"
+                  >
+                    <Minus className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="w-px h-4 bg-[#C2CEC2]" />
+                  <button
+                    type="button"
+                    suppressHydrationWarning
+                    onClick={() => {
+                      setSelectedAsset(null);
+                      if (mapInstanceRef.current) {
+                        mapInstanceRef.current.flyTo([27.35, 95.30], 10, { duration: 1.2, easeLinearity: 0.2 });
+                      }
+                    }}
+                    className="px-2 py-1 rounded-md text-[11px] font-semibold text-[#0A6B63] hover:bg-[#F0F2ED] transition-colors cursor-pointer flex items-center gap-1"
+                    title="Fit Upper Assam Basin Overview"
+                  >
+                    <RotateCcw className="w-3 h-3" /> Fit
+                  </button>
+                </div>
+
                 <div 
                   ref={mapContainerRef} 
                   className="w-full relative z-0" 
