@@ -346,8 +346,16 @@ sequenceDiagram
 * **Judge Pitch**: *"This is SANKET AI's core brain. It doesn't treat incidents as isolated rows in a table; it traces the invisible causal web connecting pump vibrations, valve weeps, and human bypasses."*
 
 ### Screen 6: SIF Geo-Spatial Heatmap (`/dashboard/heatmap`)
-* **Target User**: Regional HSE General Managers & Fleet Directors.
-* **Key Features**: Leaflet GIS satellite map of Upper Assam, high-pressure pipeline corridors (Naharkatia-Duliajan 24", Duliajan-Baghjan 12"), Gaussian gas plume overlays, NASA FIRMS thermal anomalies, flood risk zones, SIF density matrix.
+* **Target User**: Regional HSE General Managers, Fleet Directors & GIS Analysts.
+* **Key Features**: 
+  * **3-Way Multi-Tile Engine**: Switch seamlessly between **🛰️ Satellite HD** (Esri World Imagery with high-contrast town & road boundaries), **⛰️ Terrain Topo** (USGS topographical relief showing elevation contours & riverbeds), and **🏙️ Street Grid** (CartoDB Voyager for high-visibility industrial routing).
+  * **10 High-Precision Geocoded Assets**: Every asset (Baghjan Well #5 at `27.5842°N, 95.4015°E`, Well Pad 7 at `27.3250°N, 95.2860°E`, Moran OCS-3, Duliajan HQ, Digboi, Naharkatia, Tengakhat, Lakwa, Geleki, Rudrasagar) is mapped to exact physical coordinates on solid ground with zero riverbed offset.
+  * **Industrial Intelligence Overlays**:
+    * **High-Pressure Pipeline Corridors**: Naharkatia-Duliajan 24" (82 Bar), Duliajan-Baghjan 12" (110 Bar), Moran-Naharkatia 16" (68 Bar).
+    * **Gaussian Gas Plume Vector**: Real-time ALOHA toxic gas dispersion model factoring in live wind vectors (245° SW at 18 km/h) with a 5.2 km downwind hazard arc.
+    * **NASA FIRMS Thermal Flare Anomalies**: Real-time flare stack satellite thermal telemetry ($580^\circ\text{C}$ at Baghjan, $440^\circ\text{C}$ at Moran).
+    * **Brahmaputra Flood Risk Inundation Polygon**: NASA hydrological flood vulnerability zone.
+    * **Interactive SWA Spatial Radius**: Dynamic 250m, 500m, and 1000m perimeter freeze buffer circles.
 * **Judge Pitch**: *"The SIF Heatmap overlays real process safety data on top of geospatial reality, factoring in pipeline pressure corridors, wind dispersion vectors, and monsoon flood vulnerabilities."*
 
 ### Screen 7: Baghjan Disaster Digital Twin Replay (`/dashboard/replay`)

@@ -56,9 +56,9 @@ const GEO_ASSETS: GeoAsset[] = [
   {
     id: 'ASSET-BJ5',
     name: 'Baghjan Well #5',
-    district: 'Tinsukia (Dibru-Saikhowa Border)',
-    lat: 27.6041,
-    lng: 95.3812,
+    district: 'Tinsukia (Baghjan Gaon / Dighaltarrang)',
+    lat: 27.5842,
+    lng: 95.4015,
     sif_score: 0.96,
     sif_label: 'HIGH',
     sif_density: 42.5,
@@ -76,9 +76,9 @@ const GEO_ASSETS: GeoAsset[] = [
   {
     id: 'ASSET-WP7',
     name: 'Well Pad 7',
-    district: 'Upper Assam Basin (Dibrugarh)',
-    lat: 27.2831,
-    lng: 95.2546,
+    district: 'Upper Assam Exploration (Dibrugarh)',
+    lat: 27.3250,
+    lng: 95.2860,
     sif_score: 0.92,
     sif_label: 'HIGH',
     sif_density: 38.0,
@@ -97,8 +97,8 @@ const GEO_ASSETS: GeoAsset[] = [
     id: 'ASSET-MOCS3',
     name: 'Moran OCS-3',
     district: 'Charaideo / Moran Gathering',
-    lat: 27.1824,
-    lng: 94.9218,
+    lat: 27.1860,
+    lng: 94.9320,
     sif_score: 0.88,
     sif_label: 'HIGH',
     sif_density: 35.2,
@@ -117,8 +117,8 @@ const GEO_ASSETS: GeoAsset[] = [
     id: 'ASSET-DG14',
     name: 'Digboi Pad 14',
     district: 'Tinsukia (Asia Oldest Oil Field)',
-    lat: 27.3892,
-    lng: 95.6214,
+    lat: 27.3950,
+    lng: 95.6310,
     sif_score: 0.65,
     sif_label: 'MEDIUM',
     sif_density: 22.0,
@@ -136,9 +136,9 @@ const GEO_ASSETS: GeoAsset[] = [
   {
     id: 'ASSET-DLHQ',
     name: 'Duliajan Plant (Central HQ)',
-    district: 'Dibrugarh (Main Refinery & Township)',
-    lat: 27.3582,
-    lng: 95.3197,
+    district: 'Dibrugarh (Main Refinery & OIL Township)',
+    lat: 27.3560,
+    lng: 95.3180,
     sif_score: 0.15,
     sif_label: 'LOW',
     sif_density: 8.5,
@@ -156,9 +156,9 @@ const GEO_ASSETS: GeoAsset[] = [
   {
     id: 'ASSET-NHK',
     name: 'Naharkatia Field',
-    district: 'Dibrugarh / Burhi Dihing',
-    lat: 27.2831,
-    lng: 95.2546,
+    district: 'Dibrugarh / Burhi Dihing Basin',
+    lat: 27.2820,
+    lng: 95.2580,
     sif_score: 0.58,
     sif_label: 'MEDIUM',
     sif_density: 18.4,
@@ -176,9 +176,9 @@ const GEO_ASSETS: GeoAsset[] = [
   {
     id: 'ASSET-TGK',
     name: 'Tengakhat Station',
-    district: 'Dibrugarh Substation',
-    lat: 27.3821,
-    lng: 95.1842,
+    district: 'Dibrugarh Compressor Substation',
+    lat: 27.3830,
+    lng: 95.1850,
     sif_score: 0.22,
     sif_label: 'LOW',
     sif_density: 10.2,
@@ -196,9 +196,9 @@ const GEO_ASSETS: GeoAsset[] = [
   {
     id: 'ASSET-LKW',
     name: 'Lakwa Gathering',
-    district: 'Sivasagar Basin',
-    lat: 26.9812,
-    lng: 94.8521,
+    district: 'Sivasagar Basin (North Nazira)',
+    lat: 26.9850,
+    lng: 94.8620,
     sif_score: 0.25,
     sif_label: 'LOW',
     sif_density: 12.0,
@@ -216,9 +216,9 @@ const GEO_ASSETS: GeoAsset[] = [
   {
     id: 'ASSET-GLK',
     name: 'Geleki Processing',
-    district: 'Sivasagar South',
-    lat: 26.8521,
-    lng: 94.7512,
+    district: 'Sivasagar South (Dehydration Plant)',
+    lat: 26.8530,
+    lng: 94.8150,
     sif_score: 0.85,
     sif_label: 'HIGH',
     sif_density: 32.0,
@@ -236,9 +236,9 @@ const GEO_ASSETS: GeoAsset[] = [
   {
     id: 'ASSET-RDS',
     name: 'Rudrasagar Pad 2',
-    district: 'Sivasagar West',
-    lat: 26.9512,
-    lng: 94.6214,
+    district: 'Sivasagar West (Exploration Block)',
+    lat: 26.9550,
+    lng: 94.6230,
     sif_score: 0.18,
     sif_label: 'LOW',
     sif_density: 9.1,
@@ -256,11 +256,11 @@ const GEO_ASSETS: GeoAsset[] = [
 ];
 
 const TRUNK_PIPELINES = [
-  { name: 'Moran-Naharkatia 16" Gas Trunk', points: [[27.1824, 94.9218], [27.2831, 95.2546]], pressure: '68 Bar' },
-  { name: 'Naharkatia-Duliajan 24" Crude Main', points: [[27.2831, 95.2546], [27.3582, 95.3197]], pressure: '82 Bar' },
-  { name: 'Duliajan-Baghjan 12" High-Pressure Gas', points: [[27.3582, 95.3197], [27.6041, 95.3812]], pressure: '110 Bar' },
-  { name: 'Duliajan-Digboi Historic Pipeline', points: [[27.3582, 95.3197], [27.3892, 95.6214]], pressure: '45 Bar' },
-  { name: 'Lakwa-Moran 14" Feeder Line', points: [[26.9812, 94.8521], [27.1824, 94.9218]], pressure: '55 Bar' },
+  { name: 'Moran-Naharkatia 16" Gas Trunk', points: [[27.1860, 94.9320], [27.2820, 95.2580]], pressure: '68 Bar' },
+  { name: 'Naharkatia-Duliajan 24" Crude Main', points: [[27.2820, 95.2580], [27.3560, 95.3180]], pressure: '82 Bar' },
+  { name: 'Duliajan-Baghjan 12" High-Pressure Gas', points: [[27.3560, 95.3180], [27.5842, 95.4015]], pressure: '110 Bar' },
+  { name: 'Duliajan-Digboi Historic Pipeline', points: [[27.3560, 95.3180], [27.3950, 95.6310]], pressure: '45 Bar' },
+  { name: 'Lakwa-Moran 14" Feeder Line', points: [[26.9850, 94.8620], [27.1860, 94.9320]], pressure: '55 Bar' },
 ];
 
 function DensityCell({ 
@@ -297,7 +297,7 @@ function DensityCell({
 
 export default function DualHeatmapAndMapPage() {
   const [activeTab, setActiveTab] = useState<'matrix' | 'gis_map'>('gis_map');
-  const [mapType, setMapType] = useState<'satellite' | 'street'>('satellite');
+  const [mapType, setMapType] = useState<'satellite' | 'street' | 'terrain'>('satellite');
   const [isExpanded, setIsExpanded] = useState(false);
   
   const [bufferRadiusMeters, setBufferRadiusMeters] = useState<number>(500);
@@ -469,17 +469,22 @@ export default function DualHeatmapAndMapPage() {
     if (mapType === 'satellite') {
       baseTileLayerRef.current = L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        { attribution: 'Tiles &copy; Esri &mdash; NASA, USGS, Maxar', maxZoom: 18 }
+        { attribution: 'Tiles &copy; Esri &mdash; High-Res Satellite', maxZoom: 19 }
       ).addTo(map);
 
       labelsTileLayerRef.current = L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-        { maxZoom: 18, opacity: 0.85 }
+        { maxZoom: 19, opacity: 0.95 }
+      ).addTo(map);
+    } else if (mapType === 'terrain') {
+      baseTileLayerRef.current = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+        { attribution: 'Tiles &copy; Esri &mdash; Topographic Relief', maxZoom: 18 }
       ).addTo(map);
     } else {
       baseTileLayerRef.current = L.tileLayer(
-        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        { attribution: '&copy; OpenStreetMap contributors', maxZoom: 19 }
+        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+        { attribution: '&copy; OpenStreetMap contributors &copy; CARTO', maxZoom: 19 }
       ).addTo(map);
     }
   }, [mapType]);
@@ -780,19 +785,27 @@ export default function DualHeatmapAndMapPage() {
                   <div className="flex items-center gap-1 bg-white p-0.5 rounded-md border border-[#C2CEC2]">
                     <button type="button" suppressHydrationWarning
                       onClick={() => setMapType('satellite')}
-                      className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all ${
-                        mapType === 'satellite' ? 'bg-[#0A6B63] text-white font-semibold' : 'text-[#5E7072]'
+                      className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all cursor-pointer ${
+                        mapType === 'satellite' ? 'bg-[#0A6B63] text-white shadow-2xs' : 'text-[#5E7072] hover:text-[#1A2B2D]'
                       }`}
                     >
-                      Satellite
+                      🛰️ Satellite HD
+                    </button>
+                    <button type="button" suppressHydrationWarning
+                      onClick={() => setMapType('terrain')}
+                      className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all cursor-pointer ${
+                        mapType === 'terrain' ? 'bg-[#0A6B63] text-white shadow-2xs' : 'text-[#5E7072] hover:text-[#1A2B2D]'
+                      }`}
+                    >
+                      ⛰️ Terrain Topo
                     </button>
                     <button type="button" suppressHydrationWarning
                       onClick={() => setMapType('street')}
-                      className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all ${
-                        mapType === 'street' ? 'bg-[#0A6B63] text-white font-semibold' : 'text-[#5E7072]'
+                      className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all cursor-pointer ${
+                        mapType === 'street' ? 'bg-[#0A6B63] text-white shadow-2xs' : 'text-[#5E7072] hover:text-[#1A2B2D]'
                       }`}
                     >
-                      Street
+                      🏙️ Street Grid
                     </button>
                   </div>
 
