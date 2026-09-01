@@ -57,8 +57,8 @@ const GEO_ASSETS: GeoAsset[] = [
     id: 'ASSET-BJ5',
     name: 'Baghjan Well #5',
     district: 'Tinsukia (Baghjan Gaon / Dighaltarrang)',
-    lat: 27.5842,
-    lng: 95.4015,
+    lat: 27.5380,
+    lng: 95.4450,
     sif_score: 0.96,
     sif_label: 'HIGH',
     sif_density: 42.5,
@@ -258,7 +258,7 @@ const GEO_ASSETS: GeoAsset[] = [
 const TRUNK_PIPELINES = [
   { name: 'Moran-Naharkatia 16" Gas Trunk', points: [[27.1860, 94.9320], [27.2820, 95.2580]], pressure: '68 Bar' },
   { name: 'Naharkatia-Duliajan 24" Crude Main', points: [[27.2820, 95.2580], [27.3560, 95.3180]], pressure: '82 Bar' },
-  { name: 'Duliajan-Baghjan 12" High-Pressure Gas', points: [[27.3560, 95.3180], [27.5842, 95.4015]], pressure: '110 Bar' },
+  { name: 'Duliajan-Baghjan 12" High-Pressure Gas', points: [[27.3560, 95.3180], [27.5380, 95.4450]], pressure: '110 Bar' },
   { name: 'Duliajan-Digboi Historic Pipeline', points: [[27.3560, 95.3180], [27.3950, 95.6310]], pressure: '45 Bar' },
   { name: 'Lakwa-Moran 14" Feeder Line', points: [[26.9850, 94.8620], [27.1860, 94.9320]], pressure: '55 Bar' },
 ];
@@ -392,13 +392,13 @@ export default function DualHeatmapAndMapPage() {
 
       const satTile = L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        { attribution: 'Tiles &copy; Esri &mdash; NASA, USGS, Maxar', maxZoom: 18 }
+        { attribution: 'Tiles &copy; Esri &mdash; Maxar, Earthstar', maxZoom: 19, maxNativeZoom: 18 }
       ).addTo(map);
       baseTileLayerRef.current = satTile;
 
       const labelTile = L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-        { maxZoom: 18, opacity: 0.85 }
+        { maxZoom: 19, maxNativeZoom: 18, opacity: 0.95 }
       ).addTo(map);
       labelsTileLayerRef.current = labelTile;
 
@@ -414,15 +414,16 @@ export default function DualHeatmapAndMapPage() {
         const isMed = asset.sif_label === 'MEDIUM';
 
         const iconHtml = `
-          <div class="relative flex items-center justify-center -translate-x-1/2 -translate-y-1/2 cursor-pointer group">
-            ${isHigh ? '<div class="absolute w-10 h-10 rounded-full bg-red-500/40 animate-ping"></div>' : ''}
-            <div class="relative w-8 h-8 rounded-xl flex items-center justify-center shadow-2xl border-2 border-white ${
-              isHigh ? 'bg-red-600 text-white' : isMed ? 'bg-amber-500 text-white' : 'bg-emerald-500 text-white'
+          <div class="relative flex flex-col items-center justify-center -translate-x-1/2 -translate-y-full cursor-pointer group" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));">
+            ${isHigh ? '<div class="absolute -top-1 w-12 h-12 rounded-full bg-red-500/35 animate-ping pointer-events-none"></div>' : ''}
+            <div class="relative w-9 h-9 rounded-2xl flex items-center justify-center shadow-lg border-2 border-white transition-transform group-hover:scale-110 ${
+              isHigh ? 'bg-[#DC2626] text-white' : isMed ? 'bg-[#D97706] text-white' : 'bg-[#059669] text-white'
             }">
-              <span style="font-size: 14px;">${isHigh ? '🔥' : isMed ? '⚠️' : '✅'}</span>
+              <span style="font-size: 16px;">${isHigh ? '🔥' : isMed ? '⚠️' : '✅'}</span>
             </div>
-            <div class="absolute top-full mt-1 px-2 py-0.5 rounded font-mono text-[9px] font-bold whitespace-nowrap shadow-md ${
-              isHigh ? 'bg-red-950 text-white border border-red-600' : 'bg-slate-900 text-white border border-slate-700'
+            <div class="w-2 h-2 bg-white rotate-45 -mt-1 shadow-xs ${isHigh ? 'bg-[#DC2626]' : isMed ? 'bg-[#D97706]' : 'bg-[#059669]'}"></div>
+            <div class="mt-1 px-2 py-0.5 rounded-md font-mono text-[10px] font-bold whitespace-nowrap shadow-md border ${
+              isHigh ? 'bg-[#450A0A] text-[#FEE2E2] border-[#DC2626]' : isMed ? 'bg-[#451A03] text-[#FEF3C7] border-[#D97706]' : 'bg-[#064E3B] text-[#D1FAE5] border-[#059669]'
             }">
               ${asset.name}
             </div>
@@ -432,14 +433,14 @@ export default function DualHeatmapAndMapPage() {
         const customIcon = L.divIcon({
           html: iconHtml,
           className: 'custom-leaflet-pin',
-          iconSize: [32, 32],
-          iconAnchor: [16, 16],
+          iconSize: [36, 36],
+          iconAnchor: [18, 36],
         });
 
         const marker = L.marker([asset.lat, asset.lng], { icon: customIcon }).addTo(markersGroupRef.current);
         marker.on('click', () => {
           setSelectedAsset(asset);
-          map.flyTo([asset.lat, asset.lng], 12, { duration: 1.2 });
+          map.flyTo([asset.lat, asset.lng], 14, { duration: 1.2 });
         });
       });
 
@@ -483,7 +484,7 @@ export default function DualHeatmapAndMapPage() {
       ).addTo(map);
     } else {
       baseTileLayerRef.current = L.tileLayer(
-        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
         { attribution: '&copy; OpenStreetMap contributors &copy; CARTO', maxZoom: 19 }
       ).addTo(map);
     }
@@ -810,8 +811,21 @@ export default function DualHeatmapAndMapPage() {
                   </div>
 
                   <button type="button" suppressHydrationWarning
+                    onClick={() => {
+                      setSelectedAsset(null);
+                      if (mapInstanceRef.current) {
+                        mapInstanceRef.current.flyTo([27.28, 95.18], 10, { duration: 1.2 });
+                      }
+                    }}
+                    className="px-2 py-1 rounded-md bg-white border border-[#C2CEC2] text-[#1A2B2D] text-[11px] font-semibold hover:bg-[#F0F2ED] transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                    title="Reset Overview Zoom (Assam Basin)"
+                  >
+                    🌍 Overview
+                  </button>
+
+                  <button type="button" suppressHydrationWarning
                     onClick={() => setIsExpanded(!isExpanded)}
-                    className="p-1 rounded-md bg-white border border-[#C2CEC2] text-[#5E7072] hover:text-[#1A2B2D]"
+                    className="p-1 rounded-md bg-white border border-[#C2CEC2] text-[#5E7072] hover:text-[#1A2B2D] cursor-pointer"
                     title={isExpanded ? "Collapse Map" : "Expand Fullscreen"}
                   >
                     {isExpanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}

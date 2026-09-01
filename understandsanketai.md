@@ -348,8 +348,8 @@ sequenceDiagram
 ### Screen 6: SIF Geo-Spatial Heatmap (`/dashboard/heatmap`)
 * **Target User**: Regional HSE General Managers, Fleet Directors & GIS Analysts.
 * **Key Features**: 
-  * **3-Way Multi-Tile Engine**: Switch seamlessly between **🛰️ Satellite HD** (Esri World Imagery with high-contrast town & road boundaries), **⛰️ Terrain Topo** (USGS topographical relief showing elevation contours & riverbeds), and **🏙️ Street Grid** (CartoDB Voyager for high-visibility industrial routing).
-  * **10 High-Precision Geocoded Assets**: Every asset (Baghjan Well #5 at `27.5842°N, 95.4015°E`, Well Pad 7 at `27.3250°N, 95.2860°E`, Moran OCS-3, Duliajan HQ, Digboi, Naharkatia, Tengakhat, Lakwa, Geleki, Rudrasagar) is mapped to exact physical coordinates on solid ground with zero riverbed offset.
+  * **3-Way Multi-Tile Engine**: Switch seamlessly between **🛰️ Satellite HD** (Esri World Imagery with high-contrast town & road boundaries), **⛰️ Terrain Topo** (USGS topographical relief showing elevation contours & riverbeds), and **🏙️ Street Grid** (OpenStreetMap for high-visibility, watermark-free industrial routing).
+  * **10 High-Precision Geocoded Assets**: Every asset (Baghjan Well #5 at `27.5380°N, 95.4450°E`, Well Pad 7 at `27.3250°N, 95.2860°E`, Moran OCS-3, Duliajan HQ, Digboi, Naharkatia, Tengakhat, Lakwa, Geleki, Rudrasagar) is mapped to exact physical coordinates on solid ground with zero riverbed offset.
   * **Industrial Intelligence Overlays**:
     * **High-Pressure Pipeline Corridors**: Naharkatia-Duliajan 24" (82 Bar), Duliajan-Baghjan 12" (110 Bar), Moran-Naharkatia 16" (68 Bar).
     * **Gaussian Gas Plume Vector**: Real-time ALOHA toxic gas dispersion model factoring in live wind vectors (245° SW at 18 km/h) with a 5.2 km downwind hazard arc.
