@@ -140,6 +140,7 @@ export default function SignalGraphPage() {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [mousePos, setMousePos] = useState<{ x: number; y: number; inside: boolean }>({ x: 0, y: 0, inside: false });
   const [evidence, setEvidence] = useState<NodeEvidence | null>(null);
   const [swaToast, setSwaToast] = useState<{ node: string; type: string; time: string } | null>(null);
 
@@ -377,7 +378,41 @@ export default function SignalGraphPage() {
         
         {/* SVG Canvas Column */}
         <div className={`transition-all duration-300 ${isExpanded ? "lg:col-span-12" : "lg:col-span-8"}`}>
-          <div className="bg-white rounded-xl border-2 border-[#C2CEC2] shadow-xs relative overflow-hidden select-none">
+          <div 
+            className="bg-white rounded-xl border-2 border-[#C2CEC2] shadow-xs relative overflow-hidden select-none cursor-crosshair group"
+            onMouseEnter={() => setMousePos(prev => ({ ...prev, inside: true }))}
+            onMouseLeave={() => {
+              setMousePos(prev => ({ ...prev, inside: false }));
+              handleMouseUp();
+            }}
+            onMouseMove={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              setMousePos({
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top,
+                inside: true
+              });
+            }}
+            style={{
+              cursor: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 18 18'><circle cx='9' cy='9' r='3.5' stroke='%230A6B63' stroke-width='1.5' fill='rgba(10,107,99,0.15)'/><circle cx='9' cy='9' r='1.2' fill='%230A6B63'/><line x1='9' y1='1' x2='9' y2='4.5' stroke='%230A6B63' stroke-width='1.5' stroke-linecap='round'/><line x1='9' y1='13.5' x2='9' y2='17' stroke='%230A6B63' stroke-width='1.5' stroke-linecap='round'/><line x1='1' y1='9' x2='4.5' y2='9' stroke='%230A6B63' stroke-width='1.5' stroke-linecap='round'/><line x1='13.5' y1='9' x2='17' y2='9' stroke='%230A6B63' stroke-width='1.5' stroke-linecap='round'/></svg>") 9 9, crosshair`
+            }}
+          >
+            {/* Colored Interactive Glowing Aura Follower (Compact & Sleek) */}
+            {mousePos.inside && (
+              <div 
+                className={`pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full transition-all duration-75 ease-out z-20 ${
+                  hoveredNode 
+                    ? "w-8 h-8 bg-[#D97706]/20 border border-[#D97706]/60 shadow-[0_0_10px_rgba(217,119,6,0.4)]" 
+                    : isDragging 
+                    ? "w-7 h-7 bg-[#DC2626]/20 border border-[#DC2626]/60 shadow-[0_0_10px_rgba(220,38,38,0.4)]"
+                    : "w-5 h-5 bg-[#0A6B63]/15 border border-[#0A6B63]/35 shadow-[0_0_6px_rgba(10,107,99,0.25)]"
+                }`}
+                style={{
+                  left: `${mousePos.x}px`,
+                  top: `${mousePos.y}px`,
+                }}
+              />
+            )}
             
             {/* Legend Overlay Top Left */}
             <div className="absolute top-3 left-3 z-10 bg-white/95 backdrop-blur-sm p-2 rounded-lg border border-[#C2CEC2] shadow-sm flex items-center flex-wrap gap-2 text-[11px] font-semibold text-[#1A2B2D] pointer-events-none">
@@ -459,7 +494,7 @@ export default function SignalGraphPage() {
               <rect id="graph-canvas-grid" width="900" height="560" fill="url(#dot-grid)" pointerEvents="none" />
 
               {/* Transform Container (Pan & Zoom) */}
-              <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`} transform-origin="450 280">
+              <g transform={`translate(${pan.x}, ${pan.y}) translate(450, 280) scale(${zoom}) translate(-450, -280)`} style={{ transformOrigin: "450px 280px" }}>
                 
                 {/* ── 1. Curved Bézier Edges ── */}
                 {activeEdges.map((e, idx) => {
