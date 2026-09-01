@@ -107,7 +107,8 @@ graph TD
 ### ⚖️ Layer 3: Adversarial Verifier Agent (`ai/agents/swarm.py` & `ai/sif/guardrails.py`)
 * Acts as an independent adversarial auditor reconciling Layer 1 and Layer 2.
 * Calculates a **Consensus Confidence Index (0.0 to 1.0)**:
-  * **Dual Agreement**: 99% Confidence $ightarrow$ Instant Triage & Alarm.
+  * **Dual Agreement**: 99% Confidence $
+ightarrow$ Instant Triage & Alarm.
   * **Divergence**: Applies the conservative physical safety principle per DGMS standards and logs an explicit audit trail.
 
 ### 🛡️ Layer 4: Human-in-the-Loop (HITL) Supervisory Review
@@ -197,9 +198,13 @@ graph TD
 ### 🛠️ Step-by-Step Execution:
 1. **Laptop Setup**: Laptop has **NO ethernet cable** and **NO Wi-Fi internet**. Laptop turns on **Windows Mobile Hotspot** (or connects to the Rig Doghouse local Wi-Fi router).
 2. **Phone Setup**: Phone turns **OFF Mobile Data (4G/5G)** and connects to the Laptop's Wi-Fi network (IP: `10.92.126.169` or `192.168.137.1`).
-3. **Observation Logging**: Worker opens `http://10.92.126.169:3000/worker` $ightarrow$ taps **TAP TO RECORD** $ightarrow$ speaks Hindi: *"Well Pad 7 mein gas pipe se leakage ho raha hai"*.
+3. **Observation Logging**: Worker opens `http://10.92.126.169:3000/worker` $
+ightarrow$ taps **TAP TO RECORD** $
+ightarrow$ speaks Hindi: *"Well Pad 7 mein gas pipe se leakage ho raha hai"*.
 4. **Local Subnet Upload**: Phone uploads the raw audio file over private Wi-Fi to the laptop's backend: `http://10.92.126.169:8000/api/voice/transcribe`.
-5. **Local Processing**: Local Whisper transcribes in RAM $ightarrow$ `multilingual-e5-small` scores SIF (78% HIGH) in **35ms** $ightarrow$ local Ollama (`llama3.2:3b` / `qwen2.5:7b`) drafts the DGMS narrative.
+5. **Local Processing**: Local Whisper transcribes in RAM $
+ightarrow$ `multilingual-e5-small` scores SIF (78% HIGH) in **35ms** $
+ightarrow$ local Ollama (`llama3.2:3b` / `qwen2.5:7b`) drafts the DGMS narrative.
 6. **Result Returned**: SIF score and SWA alert return to the phone in **under 1.5 seconds** with **0.000 Bytes of public internet**.
 
 ---
@@ -325,10 +330,15 @@ sequenceDiagram
 * **Key Features**: Executive metrics (Total, High SIF, Medium, Pending), filter tabs, search bar, batch CSV ingestion modal, status indicators.
 * **Judge Pitch**: *"The Triage Queue acts as the central sorting hub where safety officers can review, validate, and track the lifecycle of every hazard from initial signal to final physical resolution."*
 
-### Screen 4: Emergency Response Playbook & SWA Lockdown (`/dashboard/emergency`)
-* **Target User**: Emergency Response Commanders & Disaster Officers.
-* **Key Features**: Dynamic location synchronization (`?location=Well Pad 7`), OISD-189 interactive isolation checklist, priority-ordered emergency contacts with 1-tap dialer, RoIP channel simulator.
-* **Judge Pitch**: *"When disaster looms, hesitation is fatal. The Emergency Playbook gives the commander an instant, interactive checklist, pre-mapped emergency phone numbers, and a 1-click SWA lockdown protocol."*
+### Screen 4: Emergency Response Playbook & Autonomous Fail-Safe Engine (`/dashboard/emergency`)
+* **Target User**: Emergency Response Commanders, Disaster Officers & Unattended Desks.
+* **Key Features**: 
+  * **Autonomous Dead-Man Escalation Engine (OISD-189 Section 7.4 Fail-Safe)**: 60-second buffer countdown (with 15s interactive live simulation mode). If the on-duty manager is away or unresponsive, the system **autonomously executes SWA 500m digital lockdown, triggers automated SIP phone auto-dialing, and broadcasts Text-to-Speech radio evacuation on VHF Channel 9**.
+  * **Dynamic Location Sync**: Synchronizes with live worker reports (`?location=Well Pad 7`).
+  * **OISD-189 Standard 5-Step Isolation Checklist**: Step-by-step verified physical actions with live progress percentage.
+  * **Emergency Call Roster & Auto-Dialer**: Priority-ordered emergency contacts (P1 Rig Manager, P2 HSE Lead, P3 Central Control Desk) with simulated live VoIP telephony connection states.
+  * **Motorola ATEX RoIP Safety Radio Stream**: Radio-over-IP bridge capturing real-time VHF Channel 9 rig floor communications with 16kHz PCM decoder.
+* **Judge Pitch**: *"What if an emergency strikes while the safety manager is away from the desk? Our Autonomous Dead-Man Engine eliminates the human single point of failure by executing an automated 500-meter SWA lockdown, voice radio evacuation, and emergency auto-dialing after a 60-second unacknowledged buffer."*
 
 ### Screen 5: Safety Signal Knowledge Graph (`/dashboard/graph`)
 * **Target User**: Process Safety Investigators & Reliability Engineers.
