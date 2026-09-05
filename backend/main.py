@@ -10,7 +10,13 @@ from fastapi.staticfiles import StaticFiles
 import os
 
 from backend.config.settings import settings
-from backend.db.engine import init_db, close_db
+from backend.db.engine import (
+    init_db,
+    close_db,
+    get_active_db_type,
+    switch_to_sqlite,
+    switch_to_supabase,
+)
 
 
 import asyncio
@@ -164,6 +170,8 @@ async def airgap_status():
     return {
         "is_airgapped": is_airgapped,
         "mode": "airgapped" if is_airgapped else "online",
+        "active_database": get_active_db_type(),
+        "database_badge": "LOCAL SQLITE (sanket.db)" if get_active_db_type() == "sqlite" else "CLOUD SUPABASE (PostgreSQL)",
         "outbound_connections": outbound_count,
         "outbound_kbps": outbound_kbps,
         "models_loaded": {
@@ -174,3 +182,50 @@ async def airgap_status():
         "zero_egress": is_airgapped,
         "status_badge": "0 KB/s OUT · AIR-GAPPED" if is_airgapped else f"{outbound_kbps} KB/s · SANITIZED EGRESS",
     }
+
+
+@app.get("/api/system/db-status", tags=["System"])
+async def db_status():
+    """Get the current active database (Supabase vs SQLite) and connectivity."""
+    active = get_active_db_type()
+    return {
+        "active_database": active,
+        "is_offline": active == "sqlite",
+        "configured_mode": settings.DB_MODE,
+        "description": "Local SQLite on-disk database (sanket.db)" if active == "sqlite" else "Cloud Supabase PostgreSQL",
+    }
+
+
+@app.post("/api/system/db-switch", tags=["System"])
+async def db_switch(mode: str):
+    """
+    Manually switch between 'sqlite' (100% offline air-gap) and 'supabase' (cloud).
+    """
+    if mode.lower() in ("sqlite", "local", "offline"):
+        await switch_to_sqlite()
+        return {
+            "status": "switched",
+            "active_database": "sqlite",
+            "message": "Switched to local SQLite (sanket.db). 100% offline air-gap active."
+        }
+    elif mode.lower() in ("supabase", "cloud", "postgres"):
+        try:
+            await switch_to_supabase()
+            return {
+                "status": "switched",
+                "active_database": "supabase",
+                "message": "Switched to Cloud Supabase PostgreSQL."
+            }
+        except Exception as e:
+            await switch_to_sqlite()
+            return {
+                "status": "fallback_sqlite",
+                "active_database": "sqlite",
+                "message": f"Could not connect to Supabase ({e}). Maintained local SQLite fallback."
+            }
+    else:
+        return {
+            "status": "error",
+            "message": "Invalid mode. Use 'sqlite' or 'supabase'."
+        }
+
