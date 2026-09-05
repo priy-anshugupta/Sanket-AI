@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { 
   ShieldAlert, 
@@ -197,7 +197,7 @@ const INGESTION_CHANNELS = [
   },
 ];
 
-export default function EmergencyCommandPage() {
+function EmergencyCommandContent() {
   const searchParams = useSearchParams();
   const queryLocation = searchParams?.get("location") || searchParams?.get("site");
 
@@ -1069,5 +1069,13 @@ export default function EmergencyCommandPage() {
       )}
 
     </div>
+  );
+}
+
+export default function EmergencyCommandPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-xs text-[#5E7072]">Loading Emergency Command Console...</div>}>
+      <EmergencyCommandContent />
+    </Suspense>
   );
 }

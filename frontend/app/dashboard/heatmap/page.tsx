@@ -358,7 +358,7 @@ function DensityCell({
 
 export default function DualHeatmapAndMapPage() {
   const [activeTab, setActiveTab] = useState<'matrix' | 'gis_map'>('gis_map');
-  const [mapType, setMapType] = useState<'satellite' | 'street' | 'terrain'>('satellite');
+  const [mapType, setMapType] = useState<'google_hybrid' | 'satellite' | 'street' | 'terrain'>('google_hybrid');
   const [isExpanded, setIsExpanded] = useState(false);
   const [mouseCoords, setMouseCoords] = useState<{ lat: string; lng: string; zoom: number }>({ lat: '27.5380', lng: '95.4450', zoom: 10 });
   

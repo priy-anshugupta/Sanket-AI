@@ -26,7 +26,8 @@ import {
   Clock,
   ExternalLink,
   Shield,
-  HardHat
+  HardHat,
+  FileText
 } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 
@@ -590,6 +591,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Right Executive Actions & Notification Tray */}
           <div className="flex items-center gap-2.5">
             
+            {/* 1-Click Statutory Shift Handover PDF Export Button */}
+            <button type="button" suppressHydrationWarning
+              onClick={() => {
+                const api = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000';
+                window.open(`${api}/api/pdf/shift-handover`, '_blank');
+              }}
+              title="1-Click Official Oil India Statutory Shift Handover Briefing (Form OISD-189/DGMS)"
+              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#0A6B63] bg-[#E8F4F0] hover:bg-[#D4ECE5] text-[#0A6B63] text-xs font-bold shadow-xs transition-all cursor-pointer group active:scale-95"
+            >
+              <FileText className="w-3.5 h-3.5 text-[#0A6B63] group-hover:scale-110 transition-transform" />
+              <span>Shift Handover PDF</span>
+            </button>
+
             {/* Sound Switch Button */}
             <button type="button" suppressHydrationWarning
               onClick={toggleSound}

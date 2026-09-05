@@ -370,7 +370,7 @@ export default function FieldWorkerTerminal() {
         ref={fileInputRef}
         type="file"
         accept="audio/*"
-        capture="microphone"
+        capture={true as any}
         onChange={handleNativeAudioUpload}
         className="hidden"
       />
