@@ -24,7 +24,7 @@ import asyncio
 async def async_background_startup():
     """Run DB initialization and AI model weights loading in background without blocking port binding."""
     try:
-        await asyncio.wait_for(init_db(), timeout=10.0)
+        await asyncio.wait_for(init_db(), timeout=20.0)
         print("[Startup] [OK] Supabase PostgreSQL Database connected & verified", flush=True)
         await seed_default_users()
     except Exception as e:
@@ -228,4 +228,34 @@ async def db_switch(mode: str):
             "status": "error",
             "message": "Invalid mode. Use 'sqlite' or 'supabase'."
         }
+
+
+@app.post("/api/system/ai-switch", tags=["System"])
+async def ai_switch(mode: str):
+    """
+    Switch AI inference mode between 'airgapped' (Local Ollama llama3.2:3b) and 'online' (OpenAI / Groq).
+    """
+    if mode.lower() in ("airgapped", "offline", "local", "ollama"):
+        settings.AI_MODE = "airgapped"
+        return {
+            "status": "switched",
+            "ai_mode": "airgapped",
+            "active_model": f"Local Ollama ({settings.OLLAMA_MODEL})",
+            "message": f"Switched to 100% air-gapped local inference using Ollama ({settings.OLLAMA_MODEL}). Zero external egress."
+        }
+    elif mode.lower() in ("online", "cloud", "openai", "groq"):
+        settings.AI_MODE = "online"
+        online_model = f"OpenAI {settings.OPENAI_MODEL}" if settings.OPENAI_API_KEY else f"Groq {settings.GROQ_MODEL}"
+        return {
+            "status": "switched",
+            "ai_mode": "online",
+            "active_model": online_model,
+            "message": f"Switched to online cloud inference ({online_model})."
+        }
+    else:
+        return {
+            "status": "error",
+            "message": "Invalid mode. Use 'airgapped' or 'online'."
+        }
+
 
