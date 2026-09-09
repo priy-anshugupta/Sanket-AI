@@ -68,11 +68,15 @@ You examine incoming field reports word-by-word, analyze root-cause barrier fail
 
         if settings.AI_MODE == "online":
             if settings.OPENAI_API_KEY:
-                return await self._explain_openai(prompt)
-            if settings.GROQ_API_KEY:
-                return await self._explain_groq(prompt)
-            print("[Explainer] No online API key (OpenAI or Groq) configured; explanation skipped")
-            return None
+                res = await self._explain_openai(prompt)
+                if res:
+                    return res
+                print("[Explainer] OpenAI failed or timed out; falling back to local Ollama...")
+            elif settings.GROQ_API_KEY:
+                res = await self._explain_groq(prompt)
+                if res:
+                    return res
+                print("[Explainer] Groq failed or timed out; falling back to local Ollama...")
 
         return await self._explain_ollama(prompt)
 
