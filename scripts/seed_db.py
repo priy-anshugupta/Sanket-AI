@@ -54,6 +54,14 @@ async def seed_reports(db, data_path: str = None):
         print("  Run: python scripts/generate_synthetic_data.py first")
         return 0
 
+    from sqlalchemy import select, func
+    from backend.models.report import Report
+    existing = await db.execute(select(func.count(Report.id)))
+    existing_count = existing.scalar() or 0
+    if existing_count > 0:
+        print(f"  Reports already seeded ({existing_count} present), skipping duplicate seed.")
+        return existing_count
+
     with open(data_path, "r", encoding="utf-8") as f:
         reports_data = json.load(f)
 
