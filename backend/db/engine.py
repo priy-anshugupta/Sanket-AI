@@ -187,7 +187,7 @@ async def init_db():
     # Auto or Supabase mode — test connection
     try:
         print(f"[Database] Testing connection to Supabase...", flush=True)
-        async with asyncio.timeout(3.5):
+        async with asyncio.timeout(15.0):
             async with _current_engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
         active_db_type = "supabase"
