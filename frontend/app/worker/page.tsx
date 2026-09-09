@@ -328,6 +328,7 @@ export default function FieldWorkerTerminal() {
               status: isHigh ? 'SWA ESCALATED' : 'LOGGED SAFE',
             };
             setSubmittedReports(prev => [newReport, ...prev.slice(0, 9)]);
+            window.dispatchEvent(new CustomEvent('sanket:new_report', { detail: rep }));
             setTouchFeedback('🎉 Report Saved Successfully!');
             setTimeout(() => setTouchFeedback(null), 3000);
           } catch {

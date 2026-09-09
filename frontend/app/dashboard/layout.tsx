@@ -32,6 +32,7 @@ import {
 import { useEffect, useState, useRef } from 'react';
 
 const API_BASE = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000';
+const WS_BASE = typeof window !== 'undefined' ? `ws://${window.location.hostname}:8000/ws/alerts` : 'ws://localhost:8000/ws/alerts';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Triage Queue', icon: ClipboardList, shortcut: 'F9' },
@@ -210,9 +211,64 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   };
 
-  // Live polling listener for instant cross-terminal sync
+  // Live WebSocket + Polling listener for instant cross-terminal sync (<200ms)
   useEffect(() => {
     let timer: NodeJS.Timeout;
+    let ws: WebSocket | null = null;
+    let reconnectTimeout: any = null;
+
+    const handleIncomingReport = (report: any) => {
+      if (!report || !report.id) return;
+      if (report.id === lastSeenIdRef.current) return;
+      lastSeenIdRef.current = report.id;
+
+      const isHighSif = report.sif_label === 'HIGH' || (report.sif_score && report.sif_score >= 0.70);
+
+      const newAlert: LiveAlert = {
+        id: report.id,
+        raw_text: report.raw_text,
+        sif_score: report.sif_score || 0.88,
+        sif_label: report.sif_label || (isHighSif ? 'HIGH' : 'MEDIUM'),
+        location: report.location || 'Well Pad 7 (Upper Assam)',
+        iogp_rule: report.iogp_rule || 'Energy Isolation & Barrier Integrity',
+        reporter: 'Bikash Das (OIL-OP-4491 · Rig Floor)',
+        created_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+
+      // Always add to notification bell dropdown & increment unread counter
+      setNotifications(prev => [newAlert, ...prev.filter(n => n.id !== newAlert.id).slice(0, 29)]);
+      setUnreadCount(c => c + 1);
+
+      // Pop up floating alert banner
+      setActiveAlert(newAlert);
+      if (alertSoundEnabled) {
+        playChime(880, 1174, 0.35);
+      }
+
+      window.dispatchEvent(new CustomEvent('sanket:new_report', { detail: report }));
+    };
+
+    const connectWs = () => {
+      try {
+        ws = new WebSocket(WS_BASE);
+        ws.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            if (msg.type === 'SIF_ALERT' || msg.type === 'NEW_REPORT') {
+              handleIncomingReport(msg.data);
+            }
+          } catch {}
+        };
+        ws.onerror = () => {
+          ws?.close();
+        };
+        ws.onclose = () => {
+          reconnectTimeout = setTimeout(connectWs, 4000);
+        };
+      } catch {}
+    };
+
+    connectWs();
 
     const checkLatestReports = async () => {
       try {
@@ -230,32 +286,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }
 
         if (latest.id !== lastSeenIdRef.current) {
-          lastSeenIdRef.current = latest.id;
-          
-          const isHighSif = latest.sif_label === 'HIGH' || (latest.sif_score && latest.sif_score >= 0.70);
-
-          const newAlert: LiveAlert = {
-            id: latest.id,
-            raw_text: latest.raw_text,
-            sif_score: latest.sif_score || 0.88,
-            sif_label: latest.sif_label || (isHighSif ? 'HIGH' : 'MEDIUM'),
-            location: latest.location || 'Well Pad 7 (Upper Assam)',
-            iogp_rule: latest.iogp_rule || 'Energy Isolation & Barrier Integrity',
-            reporter: 'Bikash Das (OIL-OP-4491 · Rig Floor)',
-            created_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          };
-
-          // Always add to notification bell dropdown & increment unread counter
-          setNotifications(prev => [newAlert, ...prev.filter(n => n.id !== newAlert.id).slice(0, 29)]);
-          setUnreadCount(c => c + 1);
-
-          // Pop up floating alert banner
-          setActiveAlert(newAlert);
-          if (alertSoundEnabled) {
-            playChime(880, 1174, 0.35);
-          }
-
-          window.dispatchEvent(new CustomEvent('sanket:new_report', { detail: latest }));
+          handleIncomingReport(latest);
         }
       } catch {
         // Silent catch
@@ -265,7 +296,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     checkLatestReports();
     timer = setInterval(checkLatestReports, 3000);
 
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      if (ws) {
+        ws.onclose = null;
+        ws.close();
+      }
+    };
   }, [alertSoundEnabled]);
 
   const handleLogout = () => {

@@ -97,10 +97,10 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="min-h-screen w-full bg-[#0F1B1D] text-[#F7F8F5] flex flex-col selection:bg-[#0A6B63] selection:text-white font-sans overflow-x-hidden scroll-smooth">
+    <div className="min-h-screen w-full bg-[#0F1B1D] text-[#F7F8F5] flex flex-col selection:bg-[#0A6B63] selection:text-white font-sans scroll-smooth">
       
       {/* ── Top Fixed Navigation Bar ── */}
-      <header className="sticky top-0 z-50 w-full px-6 lg:px-14 py-3.5 flex items-center justify-between border-b border-white/[0.08] backdrop-blur-xl bg-[#0F1B1D]/85">
+      <header className="sticky top-0 z-50 w-full px-6 lg:px-14 py-3.5 flex items-center justify-between border-b border-white/[0.08] backdrop-blur-xl bg-[#0F1B1D]/90">
         <Link href="#" className="flex items-center gap-3 group">
           <div className="relative w-8 h-8 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
             <Image
@@ -221,7 +221,7 @@ export default function HomePage() {
               </div>
               <div className="min-w-0">
                 <h4 className="text-xs font-semibold text-white truncate">Multilingual Neural NLP</h4>
-                <p className="text-[10px] text-slate-400 truncate">Processes free-text in 5 Indian languages</p>
+                <p className="text-[10px] text-slate-400 truncate">Assamese, Hindi &amp; English field reports</p>
               </div>
             </div>
 
