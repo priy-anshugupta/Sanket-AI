@@ -138,7 +138,7 @@ async def ingest_csv(
 @router.get("", response_model=ReportListResponse)
 async def list_reports(
     page: int = Query(1, ge=1),
-    limit: int = Query(50, ge=1, le=200),
+    limit: int = Query(50, ge=1, le=1000),
     sif_label: Optional[str] = Query(None, pattern="^(HIGH|MEDIUM|LOW)$"),
     status: Optional[str] = Query(None),
     location: Optional[str] = None,

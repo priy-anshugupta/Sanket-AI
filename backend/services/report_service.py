@@ -263,26 +263,30 @@ class ReportService:
 
     async def get_analytics_summary(self, db: AsyncSession) -> dict:
         """Get analytics summary for dashboard."""
-        total = await db.execute(select(func.count(Report.id)))
-        high = await db.execute(
+        high = (await db.execute(
             select(func.count(Report.id)).where(Report.sif_label == "HIGH")
-        )
-        medium = await db.execute(
+        )).scalar() or 0
+        medium = (await db.execute(
             select(func.count(Report.id)).where(Report.sif_label == "MEDIUM")
-        )
-        low = await db.execute(
+        )).scalar() or 0
+        low = (await db.execute(
             select(func.count(Report.id)).where(Report.sif_label == "LOW")
-        )
-        pending = await db.execute(
+        )).scalar() or 0
+        total = (await db.execute(select(func.count(Report.id)))).scalar() or 0
+        pending = (await db.execute(
             select(func.count(Report.id)).where(Report.status == "PENDING")
-        )
+        )).scalar() or 0
+
+        # Guarantee mathematical integrity across KPI cards
+        category_sum = high + medium + low
+        effective_total = max(total, category_sum)
 
         return {
-            "total_reports": total.scalar() or 0,
-            "high_count": high.scalar() or 0,
-            "medium_count": medium.scalar() or 0,
-            "low_count": low.scalar() or 0,
-            "pending_count": pending.scalar() or 0,
+            "total_reports": effective_total,
+            "high_count": high,
+            "medium_count": medium,
+            "low_count": low,
+            "pending_count": pending,
         }
 
     async def get_heatmap_data(self, db: AsyncSession) -> dict:
