@@ -1352,27 +1352,34 @@ export default function DualHeatmapAndMapPage() {
       )}
 
       {/* ── TAB 2: ASSET × ACTIVITY RISK MATRIX TABLE ── */}
-      {activeTab === 'matrix' && (
-        <div className="space-y-5 animate-fadeIn">
-          
-          <div className="bg-[#FDF2F2] border border-[#F5C6C6] rounded-xl p-3.5 flex items-center justify-between shadow-xs">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-[#D63B3B] text-white flex items-center justify-center font-bold">
-                <Flame className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="text-xs font-bold text-[#D63B3B]">
-                  Highest Risk Asset: <span className="underline">Baghjan Well #5</span> (SIF Density: 42.5%)
+      {activeTab === 'matrix' && (() => {
+        const highestRiskEntry = data?.site_densities && Object.keys(data.site_densities).length > 0
+          ? Object.entries(data.site_densities).sort((a, b) => b[1] - a[1])[0]
+          : null;
+        const highestSiteName = highestRiskEntry ? highestRiskEntry[0] : 'Baghjan Well #5';
+        const highestSiteDensity = highestRiskEntry ? highestRiskEntry[1] : 35.7;
+
+        return (
+          <div className="space-y-5 animate-fadeIn">
+            
+            <div className="bg-[#FDF2F2] border border-[#F5C6C6] rounded-xl p-3.5 flex items-center justify-between shadow-xs">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-[#D63B3B] text-white flex items-center justify-center font-bold">
+                  <Flame className="w-4 h-4" />
                 </div>
-                <p className="text-[11px] text-[#5E7072]">
-                  Elevated concentration of energy isolation and barrier failure precursors detected in Upper Assam operations.
-                </p>
+                <div>
+                  <div className="text-xs font-bold text-[#D63B3B]">
+                    Highest Risk Asset: <span className="underline">{highestSiteName}</span> (SIF Density: {highestSiteDensity.toFixed(1)}%)
+                  </div>
+                  <p className="text-[11px] text-[#5E7072]">
+                    Elevated concentration of energy isolation and barrier failure precursors detected in Upper Assam operations.
+                  </p>
+                </div>
               </div>
+              <span className="px-2.5 py-1 bg-[#D63B3B] text-white rounded-md text-[11px] font-semibold">
+                CRITICAL ATTENTION
+              </span>
             </div>
-            <span className="px-2.5 py-1 bg-[#D63B3B] text-white rounded-md text-[11px] font-semibold">
-              CRITICAL ATTENTION
-            </span>
-          </div>
 
           <div className="bg-white rounded-xl border-2 border-[#C2CEC2] shadow-xs overflow-hidden p-5 space-y-3.5">
             <div className="flex items-center justify-between border-b border-[#D8E0D8] pb-2.5">
@@ -1454,7 +1461,8 @@ export default function DualHeatmapAndMapPage() {
           </div>
 
         </div>
-      )}
+      );
+    })()}
 
     </div>
   );
