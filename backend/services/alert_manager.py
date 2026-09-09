@@ -91,6 +91,26 @@ class AlertManager:
                     dead_connections.add(ws)
             self._connections -= dead_connections
 
+    async def broadcast_new_report(self, report_data: dict):
+        """Push a newly ingested and classified report to all dashboards for instant live sync."""
+        if not self._connections:
+            return
+
+        message = json.dumps({
+            "type": "NEW_REPORT",
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "data": report_data,
+        })
+
+        dead_connections = set()
+        async with self._lock:
+            for ws in self._connections:
+                try:
+                    await ws.send_text(message)
+                except Exception:
+                    dead_connections.add(ws)
+            self._connections -= dead_connections
+
     @property
     def active_connections(self) -> int:
         return len(self._connections)

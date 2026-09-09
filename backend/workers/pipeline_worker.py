@@ -176,6 +176,30 @@ async def process_report(report_id: str):
             await db.commit()
             print(f"[Pipeline] [OK] Report {report_id[:8]}... completed -> {classification['sif_label']} ({classification['sif_score']})")
 
+            # ── Stage 8: Real-Time WebSocket Push (<0.2s live sync) ──
+            try:
+                from backend.services.alert_manager import alert_manager
+                from datetime import datetime
+                broadcast_payload = {
+                    "id": report_id,
+                    "report_id": report_id,
+                    "raw_text": report.raw_text,
+                    "sif_score": classification["sif_score"],
+                    "sif_label": classification["sif_label"],
+                    "is_sif_precursor": classification["is_sif_precursor"],
+                    "location": report.location or "Well Pad 7 (Upper Assam)",
+                    "activity_type": report.activity_type or "Drilling",
+                    "iogp_rule": iogp_rule or "General Safety & Maintenance",
+                    "status": "COMPLETED",
+                    "created_at": (report.created_at or datetime.utcnow()).isoformat(),
+                }
+                await alert_manager.broadcast_new_report(broadcast_payload)
+
+                if classification["sif_label"] == "HIGH" or classification["sif_score"] >= 0.75:
+                    await alert_manager.broadcast_sif_alert(broadcast_payload)
+            except Exception as bcast_err:
+                print(f"[Pipeline] WebSocket broadcast warning: {bcast_err}")
+
         except Exception as e:
             await db.rollback()
             print(f"[Pipeline] [ERROR] Report {report_id[:8]}... failed: {e}")
