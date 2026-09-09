@@ -11,6 +11,9 @@ import {
   Plus, 
   RefreshCw, 
   ChevronRight, 
+  ChevronLeft,
+  ChevronsRight,
+  ChevronsLeft,
   FileText,
   Zap,
   Flame
@@ -46,6 +49,7 @@ export default function TriageDashboard() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [pageSize, setPageSize] = useState<number>(20);
 
   // Ingest Modal state
   const [showIngest, setShowIngest] = useState(false);
@@ -75,7 +79,7 @@ export default function TriageDashboard() {
     try {
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: '20',
+        limit: pageSize.toString(),
       });
       if (filter) params.append('sif_label', filter);
       if (search) params.append('search', search);
@@ -112,7 +116,7 @@ export default function TriageDashboard() {
       window.removeEventListener('sanket:new_report', handleLiveReport);
       clearInterval(interval);
     };
-  }, [page, filter, search]);
+  }, [page, pageSize, filter, search]);
 
   // Handle single manual ingestion
   const handleSingleIngest = async (e: React.FormEvent) => {
@@ -132,10 +136,12 @@ export default function TriageDashboard() {
         }),
       });
       if (res.ok) {
+        const data = await res.json();
         setIngestText('');
         setShowIngest(false);
         fetchSummary();
         fetchReports();
+        window.dispatchEvent(new CustomEvent('sanket:new_report', { detail: data }));
       }
     } catch {
       alert('Error ingesting report');
@@ -168,6 +174,7 @@ export default function TriageDashboard() {
           setBatchSuccessMsg('');
           fetchSummary();
           fetchReports();
+          window.dispatchEvent(new CustomEvent('sanket:new_report', { detail: data }));
         }, 1200);
       } else {
         alert('Batch ingestion failed on server.');
@@ -354,7 +361,7 @@ export default function TriageDashboard() {
                 reports.map((report, idx) => (
                   <tr key={report.id} className="group hover:bg-[#F4F6F2] transition-colors">
                     <td className="text-center font-mono text-xs text-[#94A3A5]">
-                      {(page - 1) * 20 + idx + 1}
+                      {(page - 1) * pageSize + idx + 1}
                     </td>
 
                     {/* Narrative */}
@@ -450,6 +457,111 @@ export default function TriageDashboard() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* ── Table Footer & Interactive Pagination Bar ── */}
+        <div className="px-4 py-3.5 bg-[#FAFAF8] border-t border-[#D8E0D8] flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
+          {/* Left: Observations Counter & Page Size Selector */}
+          <div className="flex flex-wrap items-center gap-3 text-[#5E7072]">
+            <span>
+              Showing <strong className="text-[#1A2B2D] font-semibold">{total === 0 ? 0 : (page - 1) * pageSize + 1}</strong>–<strong className="text-[#1A2B2D] font-semibold">{Math.min(page * pageSize, total)}</strong> of{' '}
+              <strong className="text-[#1A2B2D] font-semibold">{total}</strong> observations
+            </span>
+
+            {/* Rows Per Page Toggle */}
+            <div className="flex items-center gap-1.5 pl-3 border-l border-[#D8E0D8]">
+              <span className="text-[#94A3A5] font-medium">Rows per page:</span>
+              {[20, 50, 100, 500].map((size) => (
+                <button
+                  type="button"
+                  key={size}
+                  onClick={() => {
+                    setPageSize(size);
+                    setPage(1);
+                  }}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                    pageSize === size
+                      ? 'bg-[#0A6B63] text-white shadow-xs'
+                      : 'bg-[#EAECE6] text-[#3E5052] hover:bg-[#DCE0D6] hover:text-[#1A2B2D]'
+                  }`}
+                >
+                  {size === 500 ? 'All (500+)' : size}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: Page Navigation Controls */}
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setPage(1)}
+              disabled={page === 1 || loading}
+              title="First Page"
+              className="p-1.5 rounded-lg border border-[#C2CEC2] bg-white text-[#3E5052] hover:bg-[#F0F2ED] disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+            >
+              <ChevronsLeft className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1 || loading}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[#C2CEC2] bg-white text-[#3E5052] hover:bg-[#F0F2ED] disabled:opacity-30 disabled:pointer-events-none font-medium transition-colors cursor-pointer"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span>Previous</span>
+            </button>
+
+            {/* Smart page numbers */}
+            <div className="flex items-center gap-1 px-1">
+              {Array.from({ length: Math.min(5, Math.ceil(total / pageSize) || 1) }, (_, i) => {
+                const totalPages = Math.ceil(total / pageSize) || 1;
+                let pageNum = page;
+                if (page <= 3) {
+                  pageNum = i + 1;
+                } else if (page >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = page - 2 + i;
+                }
+                if (pageNum < 1 || pageNum > totalPages) return null;
+
+                return (
+                  <button
+                    type="button"
+                    key={pageNum}
+                    onClick={() => setPage(pageNum)}
+                    className={`min-w-[30px] h-7 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                      page === pageNum
+                        ? 'bg-[#0A6B63] text-white shadow-xs'
+                        : 'border border-[#C2CEC2] bg-white text-[#3E5052] hover:bg-[#F0F2ED]'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(Math.ceil(total / pageSize) || 1, p + 1))}
+              disabled={page >= (Math.ceil(total / pageSize) || 1) || loading}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[#C2CEC2] bg-white text-[#3E5052] hover:bg-[#F0F2ED] disabled:opacity-30 disabled:pointer-events-none font-medium transition-colors cursor-pointer"
+            >
+              <span>Next</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setPage(Math.ceil(total / pageSize) || 1)}
+              disabled={page >= (Math.ceil(total / pageSize) || 1) || loading}
+              title="Last Page"
+              className="p-1.5 rounded-lg border border-[#C2CEC2] bg-white text-[#3E5052] hover:bg-[#F0F2ED] disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+            >
+              <ChevronsRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 
