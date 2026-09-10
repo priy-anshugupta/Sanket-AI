@@ -21,15 +21,8 @@ from backend.db.engine import (
 
 import asyncio
 
-async def async_background_startup():
-    """Run DB initialization and AI model weights loading in background without blocking port binding."""
-    try:
-        await asyncio.wait_for(init_db(), timeout=20.0)
-        print("[Startup] [OK] Supabase PostgreSQL Database connected & verified", flush=True)
-        await seed_default_users()
-    except Exception as e:
-        print(f"[Startup] [WARN] DB init deferred/fallback: {e}", flush=True)
-
+async def async_ai_model_startup():
+    """Load AI model weights in background so port 8000 opens promptly while models warm up."""
     try:
         from ai.sif.classifier import sif_classifier
         sif_classifier.initialize()
@@ -40,15 +33,23 @@ async def async_background_startup():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Instant Non-Blocking Startup Lifecycle."""
+    """Guaranteed DB Ready Startup Lifecycle."""
     print("=" * 60, flush=True)
-    print("  SANKET · AI — Starting Up (Fast Instant Port Bind)", flush=True)
+    print("  SANKET · AI — Starting Up", flush=True)
     print(f"  Mode: {settings.AI_MODE.upper()}", flush=True)
     print(f"  Database: {settings.DATABASE_URL}", flush=True)
     print("=" * 60, flush=True)
 
-    # Launch DB & AI loading asynchronously so port 8000 opens in < 0.2s!
-    asyncio.create_task(async_background_startup())
+    # 1. Synchronously initialize DB & seed users before port accepts traffic
+    try:
+        await asyncio.wait_for(init_db(), timeout=15.0)
+        print("[Startup] [OK] Database connected & initialized", flush=True)
+        await seed_default_users()
+    except Exception as e:
+        print(f"[Startup] [WARN] DB init error during startup: {e}", flush=True)
+
+    # 2. Warm up AI neural models in background task
+    asyncio.create_task(async_ai_model_startup())
 
     yield
 
@@ -94,10 +95,16 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — allow frontend dev server
+# CORS — allow frontend dev server and local clients without invalid wildcard
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "*"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ],
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+)(:\d+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

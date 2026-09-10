@@ -243,42 +243,51 @@ async def ingest_demo_500(db: AsyncSession = Depends(get_db)):
     with open(data_path, "r", encoding="utf-8") as f:
         items = json.load(f)
 
-    # Initialize local AI models
-    sif_classifier = SIFClassifier()
-    sif_classifier.initialize()
-    lsr_mapper = LSRMapper()
-    lsr_mapper.initialize(model=sif_classifier.model)
+    # Reuse singleton local AI models
+    from ai.sif.classifier import sif_classifier
+    from ai.lsr.mapper import lsr_mapper
+    if not sif_classifier._initialized:
+        sif_classifier.initialize()
+    if not lsr_mapper._initialized:
+        lsr_mapper.initialize(model=sif_classifier.model)
 
-    # Clear existing and batch insert
+    # Offload CPU-bound PyTorch neural classification loop to worker thread
+    def _classify_all_sync():
+        processed = []
+        h_cnt = 0
+        m_cnt = 0
+        l_cnt = 0
+        for item in items:
+            text_content = item.get("text", "")
+            loc = item.get("location", "Well Pad 7")
+            act = item.get("activity_type", "Drilling")
+            shift = item.get("shift", "DAY")
+
+            # Classify SIF
+            res = sif_classifier.classify(text_content)
+            sif_score = res["sif_score"]
+            sif_label = res["sif_label"]
+            is_precursor = sif_score >= 0.75
+
+            if sif_label == "HIGH":
+                h_cnt += 1
+            elif sif_label == "MEDIUM":
+                m_cnt += 1
+            else:
+                l_cnt += 1
+
+            # Match LSR
+            lsr_res = lsr_mapper.map_rules(text_content)
+            top_rule = lsr_res[0]["rule_name"] if lsr_res else None
+
+            rep_id = f"REP-{str(uuid.uuid4())[:8].upper()}"
+            processed.append((rep_id, text_content, sif_score, sif_label, is_precursor, top_rule, loc, act, shift))
+        return processed, h_cnt, m_cnt, l_cnt
+
+    classified_items, high_count, med_count, low_count = await asyncio.to_thread(_classify_all_sync)
+
     reports_to_add = []
-    high_count = 0
-    med_count = 0
-    low_count = 0
-
-    for item in items:
-        text_content = item.get("text", "")
-        loc = item.get("location", "Well Pad 7")
-        act = item.get("activity_type", "Drilling")
-        shift = item.get("shift", "DAY")
-
-        # Classify SIF
-        res = sif_classifier.classify(text_content)
-        sif_score = res["sif_score"]
-        sif_label = res["sif_label"]
-        is_precursor = sif_score >= 0.75
-
-        if sif_label == "HIGH":
-            high_count += 1
-        elif sif_label == "MEDIUM":
-            med_count += 1
-        else:
-            low_count += 1
-
-        # Match LSR
-        lsr_res = lsr_mapper.map_rules(text_content)
-        top_rule = lsr_res[0]["rule_name"] if lsr_res else None
-
-        rep_id = f"REP-{str(uuid.uuid4())[:8].upper()}"
+    for rep_id, text_content, sif_score, sif_label, is_precursor, top_rule, loc, act, shift in classified_items:
         report = Report(
             id=rep_id,
             raw_text=text_content,

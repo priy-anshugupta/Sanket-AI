@@ -116,6 +116,9 @@ async def process_report(report_id: str):
             except Exception as e:
                 print(f"[Pipeline] LSR mapping warning: {e}")
 
+            # Commit classification, entities, and tags immediately to free SQLite write lock!
+            await db.commit()
+
             # ── Stage 5: LLM Explanation (conditional: score >= 0.50) ──
             explanation = None
             if classification["sif_score"] >= 0.50:
@@ -210,6 +213,12 @@ async def process_report(report_id: str):
 
 
 async def process_batch(report_ids: list[str]):
-    """Process a batch of reports concurrently."""
-    tasks = [process_report(rid) for rid in report_ids]
+    """Process a batch of reports concurrently with bounded concurrency to protect DB locks."""
+    sem = asyncio.Semaphore(3)
+
+    async def _throttled_process(rid: str):
+        async with sem:
+            return await process_report(rid)
+
+    tasks = [_throttled_process(rid) for rid in report_ids]
     await asyncio.gather(*tasks, return_exceptions=True)
