@@ -631,7 +631,7 @@ export default function HomePage() {
       <section id="compliance" className="w-full py-12 px-6 lg:px-14 border-b border-white/[0.08] bg-[#0A1416]">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div>
-            <h3 className="font-heading font-bold text-sm uppercase tracking-wider text-white">
+            <h3 className="font-heading font-bold text-base tracking-normal text-white">
               Statutory Compliance & Standards Alignment
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
@@ -662,21 +662,21 @@ export default function HomePage() {
           <h2 className="font-heading font-extrabold text-2xl sm:text-4xl text-white">
             Experience the SANKET AI Safety Platform
           </h2>
-          <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto">
+          <p className="text-xs sm:text-sm text-slate-300 max-w-2xl mx-auto leading-relaxed">
             Explore live incident triage, geospatial GIS hazard layers, knowledge graphs, and field voice telemetry.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
             <Link
               href={currentUser ? '/dashboard' : '/login'}
-              className="px-6 py-3 bg-[#0A6B63] hover:bg-[#085B54] text-white font-bold text-xs uppercase tracking-wider rounded-lg shadow-lg shadow-teal-950/60 transition-all flex items-center gap-2"
+              className="px-6 py-3 bg-[#0A6B63] hover:bg-[#085B54] text-white font-semibold text-sm rounded-lg shadow-lg shadow-teal-950/60 transition-all flex items-center gap-2"
             >
               Open Safety Manager HQ
               <ArrowRight className="w-4 h-4" />
             </Link>
             <Link
               href={currentUser?.role === 'field_worker' ? '/worker' : '/login?role=worker'}
-              className="px-6 py-3 bg-[#162829] hover:bg-[#1D3335] border border-[#264245] text-white font-bold text-xs uppercase tracking-wider rounded-lg transition-all flex items-center gap-2"
+              className="px-6 py-3 bg-[#162829] hover:bg-[#1D3335] border border-[#264245] text-white font-semibold text-sm rounded-lg transition-all flex items-center gap-2"
             >
               <Mic className="w-4 h-4 text-amber-400" />
               Launch Field Worker PTT Terminal
