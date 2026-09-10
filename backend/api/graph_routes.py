@@ -251,7 +251,32 @@ async def get_node_evidence(
     high_count = sum(1 for r in supporting_reports if r.sif_label == "HIGH")
     med_count = sum(1 for r in supporting_reports if r.sif_label == "MEDIUM")
 
-    if ent_type == "EQUIPMENT" or "pump" in ent_value.lower() or "bop" in ent_value.lower() or "valve" in ent_value.lower():
+    NODE_CAPA_MAP = {
+        "Baghjan Well #5": "Dispatch Senior HSE Area Superintendent to Baghjan Well #5. Conduct area-wide barrier audit on all active digital work permits (e-PTWs).",
+        "Well Pad 7": "Suspend elevated work permits on Well Pad 7. Conduct structural re-inspection of scaffolding and certify all safety harnesses with third-party tag.",
+        "Moran OCS-3": "Deploy dedicated Banksman / Rigging Supervisor at Moran OCS-3. Enforce mandatory 10-meter physical boundary clearance from energized utility lines.",
+        "Geleki Processing": "Install heavy steel crash bollards around gas manifolds. Enforce 10 km/h speed limiters and strictly segregate pedestrian and vehicular zones.",
+        "Blowout Preventer (BOP)": "Schedule immediate Lock-Out / Tag-Out (LOTO) mechanical integrity inspection on Blowout Preventer (BOP). Perform hydrostatic barrier pressure test before next shift.",
+        "12m Scaffold Tower": "Re-tag scaffold tower with red lockout tag. Replace missing cross-bracing and require 100% green tag re-certification by certified scaffold inspector.",
+        "Crawler Crane (5-Ton)": "Calibrate crane limit switches and boom angle indicators. Verify crane load chart certifications and de-energize proximate overhead transmission lines.",
+        "Heavy Industrial Forklift": "Perform immediate preventive brake overhaul. Equip vehicle with 360-degree ultrasonic proximity sensors and blue spotlight safety warning beams.",
+        "Primary Well Containment": "Establish secondary mechanical barrier isolation per OISD-189 Section 7.4. Re-calculate drilling mud hydrostatic weight and test casing pressure rating.",
+        "100% Fall Arrest Harness": "Withdraw all uninspected full-body harnesses from the tool crib. Enforce mandatory twin-lanyard 100% tie-off compliance with shock absorbers.",
+        "Overhead Line Clearance": "Coordinate with Assam State Electricity Board (ASEB) to de-energize line or install high-visibility insulated line markers and physical goalposts.",
+        "Physical Crash Barrier": "Erect reinforced ASTM-rated steel guard rails around flammable gas piping. Restrict heavy forklift access to dedicated concrete transport lanes.",
+        "Bypassing Safety Controls": "Mandate Toolpusher and HSE Manager dual sign-off for any interlock override. Audit management of change (MOC) logs across all active crews.",
+        "Working at Height": "Conduct mandatory stand-down Toolbox Talk on IOGP Rule #3 (Working at Height). Verify lifeline tension and anchor point load ratings.",
+        "Safe Mechanical Lifting": "Enforce mandatory Lift Plan sign-off for loads exceeding 1 ton. Clear all personnel from lifting drop radius prior to crane hoist activation.",
+        "Line of Fire": "Reposition perimeter warning barricades and repaint safety exclusion zones. Enforce mandatory 'Eyes on Path / Line of Fire' field audits.",
+        "1800 PSI Gas Surge": "Bleed off excess casing pressure through choke manifold to flare pit. Verify pressure relief valve (PRV) set points and gas kick detection alarms.",
+        "12m Fall Drop Energy": "Install perimeter debris netting and self-retracting lifelines (SRL). Verify structural tie-off anchor points rated for minimum 22.2 kN (5,000 lbs).",
+        "33,000V Power Grid": "Obtain electrical permit-to-work isolation certificate. Maintain absolute minimum 4.0m exclusion envelope and deploy grounding mats.",
+        "Pressurized Flammable Gas": "Deploy continuous Lower Explosive Limit (LEL) combustible gas detectors. Enforce ATEX Zone-1 cold work restrictions and eliminate all ignition sources.",
+    }
+
+    if ent_value in NODE_CAPA_MAP:
+        capa = NODE_CAPA_MAP[ent_value]
+    elif ent_type == "EQUIPMENT" or "pump" in ent_value.lower() or "bop" in ent_value.lower() or "valve" in ent_value.lower():
         capa = f"Schedule immediate Lock-Out / Tag-Out (LOTO) mechanical integrity inspection on {ent_value}. Perform hydrostatic pressure barrier verification before next active shift."
     elif ent_type == "LOCATION":
         capa = f"Dispatch Senior HSE Area Superintendent to {ent_value}. Conduct area-wide barrier audit on all active digital work permits (e-PTWs)."
