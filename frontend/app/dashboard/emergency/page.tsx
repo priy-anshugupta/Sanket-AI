@@ -62,16 +62,16 @@ const LOCATION_THREATS: Record<string, LocationThreat> = {
     location: "Baghjan Well #5",
     sifPercent: 96,
     lsrRule: "LSR #1: BYPASSING CONTROLS",
-    hazard: "Annular BOP valve seal weeping hydraulic fluid under 1800 PSI gas surge.",
-    rootCause: "Kill-line isolation bypass fitted without authorized change approval.",
-    failedBarrier: "BOP Primary Containment",
+    hazard: "Blowout Preventer (BOP) leaking hydraulic fluid under 1800 PSI gas pressure.",
+    rootCause: "Emergency bypass line installed without authorized safety approval.",
+    failedBarrier: "Blowout Preventer (BOP) Primary Seal",
     energy: "1800 PSI Gas Surge",
     checklist: [
-      { step: 1, text: "Broadcast SWA shutdown to Rig Floor Toolpusher", checked: true },
-      { step: 2, text: "Isolate BOP hydraulic valve (Lock-Out / Tag-Out)", checked: true },
-      { step: 3, text: "Evacuate crew to Upwind Muster Point B (500m)", checked: false },
-      { step: 4, text: "Pump heavy mud to kill well and stabilize pressure", checked: false },
-      { step: 5, text: "Notify Duliajan HQ and complete HSE verification", checked: false },
+      { step: 1, text: "Broadcast Stop Work shutdown to Rig Supervisor", checked: true },
+      { step: 2, text: "Lock and isolate BOP hydraulic valves (LOTO)", checked: true },
+      { step: 3, text: "Evacuate all crew to safe emergency assembly point (500m)", checked: false },
+      { step: 4, text: "Pump heavy drilling mud to stabilize well pressure", checked: false },
+      { step: 5, text: "Notify Central Safety HQ and complete verification", checked: false },
     ],
     contacts: [
       { role: "Rig Manager (OIM)", name: "Pranjal Saikia", phone: "+91 94350-11201", priority: 1 },
@@ -85,19 +85,19 @@ const LOCATION_THREATS: Record<string, LocationThreat> = {
     location: "Well Pad 7",
     sifPercent: 92,
     lsrRule: "LSR #3: WORKING AT HEIGHT",
-    hazard: "Worker standing on 12-meter scaffold without safety harness over active manifold.",
-    rootCause: "Scaffold guardrail missing and 100% harness tie-off anchor bypassed.",
-    failedBarrier: "Fall Arrest & Scaffold Barrier",
-    energy: "12m Gravity Drop & Live Piping",
+    hazard: "Worker standing on 12-meter scaffold without safety harness over high-pressure pipes.",
+    rootCause: "Scaffold guardrail missing and safety harness was not hooked to the lifeline.",
+    failedBarrier: "Scaffold Guardrail & Safety Harness",
+    energy: "12-Meter Fall onto Steel Pipes",
     checklist: [
       { step: 1, text: "Order immediate work stoppage on 12m scaffold tower", checked: true },
-      { step: 2, text: "Ground all workers until 100% harness anchors are inspected", checked: true },
-      { step: 3, text: "Cordon off 10m drop-zone underneath high-pressure manifold", checked: false },
-      { step: 4, text: "Inspect scaffold green-tag certificate with Rig Safety Lead", checked: false },
-      { step: 5, text: "Re-issue Working at Height permit before resumption", checked: false },
+      { step: 2, text: "Halt elevated work until all harnesses and lifelines are inspected", checked: true },
+      { step: 3, text: "Block off 10m danger drop-zone underneath the scaffold", checked: false },
+      { step: 4, text: "Verify scaffold safety inspection green-tag with Safety Officer", checked: false },
+      { step: 5, text: "Re-verify Working at Height permit before restarting work", checked: false },
     ],
     contacts: [
-      { role: "Toolpusher Lead", name: "Horen Gogoi", phone: "+91 94350-11204", priority: 1 },
+      { role: "Rig Supervisor (Toolpusher)", name: "Horen Gogoi", phone: "+91 94350-11204", priority: 1 },
       { role: "Rig HSE Inspector", name: "Deben Dutta", phone: "+91 94350-66778", priority: 2 },
       { role: "Area Superintendent", name: "Rajesh Kumar (GM)", phone: "+91 374-2800555", priority: 3 },
       { role: "Pad 7 First Aid Bay", name: "Emergency Medical Post", phone: "+91 94350-99881", priority: 4 },
@@ -108,16 +108,16 @@ const LOCATION_THREATS: Record<string, LocationThreat> = {
     location: "Moran OCS-3",
     sifPercent: 88,
     lsrRule: "LSR #5: MECHANICAL LIFTING",
-    hazard: "Crawler crane swinging 5-ton drill pipe dangerously close to 33kV overhead power lines.",
-    rootCause: "Crane lift started without a certified ground spotter or blind-spot guide.",
-    failedBarrier: "Overhead Electrical Clearance & Spotter",
-    energy: "33,000V Power Grid & 5-Ton Suspended Load",
+    hazard: "Heavy crane swinging 5-ton steel pipe dangerously close to 33,000V live power lines.",
+    rootCause: "Crane lift started without a certified ground safety guide.",
+    failedBarrier: "Power Line Safety Clearance & Ground Guide",
+    energy: "33,000V Live Power Grid & 5-Ton Suspended Load",
     checklist: [
-      { step: 1, text: "Signal crane operator for emergency horn & freeze boom position", checked: true },
-      { step: 2, text: "Request substation 33kV line isolation if clearance < 5 meters", checked: false },
-      { step: 3, text: "Clear all rigger crew from 15m radius load swing zone", checked: false },
-      { step: 4, text: "Assign certified ground spotter with dedicated radio channel", checked: false },
-      { step: 5, text: "Re-verify crane load chart and lift plan before resuming", checked: false },
+      { step: 1, text: "Sound emergency alarm and freeze crane boom position immediately", checked: true },
+      { step: 2, text: "Request power grid substation to turn off electricity if within 5 meters", checked: false },
+      { step: 3, text: "Evacuate all crew from 15m radius crane swing area", checked: false },
+      { step: 4, text: "Assign dedicated ground safety guide with two-way radio", checked: false },
+      { step: 5, text: "Re-check crane lifting plan before restarting work", checked: false },
     ],
     contacts: [
       { role: "Station In-Charge", name: "Pranjal Saikia", phone: "+91 94351-44552", priority: 1 },
@@ -131,16 +131,16 @@ const LOCATION_THREATS: Record<string, LocationThreat> = {
     location: "Geleki Processing",
     sifPercent: 85,
     lsrRule: "LSR #8: CONFINED SPACE & GAS",
-    hazard: "High-speed heavy forklift maneuvering near pressurized flammable gas cylinder storage.",
-    rootCause: "Vehicle speed governor disabled and safety crash barrier knocked over.",
-    failedBarrier: "Physical Crash Barrier & Speed Governor",
+    hazard: "Speeding forklift driving near pressurized flammable gas cylinder storage.",
+    rootCause: "Vehicle speed limiter was turned off and safety crash barrier was broken.",
+    failedBarrier: "Safety Crash Barrier & Speed Limiter",
     energy: "Pressurized Flammable Gas Cylinders",
     checklist: [
       { step: 1, text: "Halt all forklift traffic inside Gas Processing Zone B", checked: true },
-      { step: 2, text: "Inspect manifold valves on cylinder bank for impact damage", checked: false },
-      { step: 3, text: "Re-erect physical crash barriers and pedestrian exclusion zone", checked: false },
-      { step: 4, text: "Enforce 10 km/h vehicle speed limit with security lead", checked: false },
-      { step: 5, text: "Log near-miss precursor in OIL SIF audit register", checked: false },
+      { step: 2, text: "Inspect gas cylinder valves for collision impact damage", checked: false },
+      { step: 3, text: "Re-install steel crash barriers and pedestrian walkway zone", checked: false },
+      { step: 4, text: "Enforce strict 10 km/h plant speed limit with security", checked: false },
+      { step: 5, text: "Log precursor near-miss into the central safety audit system", checked: false },
     ],
     contacts: [
       { role: "Plant Safety Manager", name: "Nayan Chutia", phone: "+91 94354-11223", priority: 1 },
@@ -468,14 +468,14 @@ function EmergencyCommandContent() {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="font-heading font-bold text-xl text-[#1A2B2D] tracking-tight">
-              Emergency Command Center & SWA Playbook
+              Emergency Command Center & Stop Work (SWA) Playbook
             </h1>
             <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#FDF2F2] text-[#D63B3B] border border-[#F5C6C6]">
-              OISD-189 SWA PROTOCOL
+              GOVT SAFETY STANDARD (OISD-189)
             </span>
           </div>
           <p className="text-[13px] text-[#5E7072] mt-0.5 font-normal">
-            Autonomous Dead-Man Escalation Engine, Stop Work Authority lockout, and multi-channel fail-safe dispatch
+            Automated Emergency Auto-Escalation, Stop Work Authority (SWA), and instant crew alert system
           </p>
         </div>
 
@@ -525,7 +525,7 @@ function EmergencyCommandContent() {
         </div>
       )}
 
-      {/* ── 🌟 AUTONOMOUS DEAD-MAN ESCALATION ENGINE (OISD-189 BUFFER DEMO) ── */}
+      {/* ── 🌟 AUTOMATED EMERGENCY AUTO-ESCALATION (OISD-189 BUFFER DEMO) ── */}
       <div className={`rounded-xl border-2 transition-all p-5 shadow-xs ${
         escalationStatus === "COUNTDOWN" 
           ? "bg-[#FFF9F2] border-[#F08C00] ring-2 ring-[#F08C00]/20" 
@@ -546,7 +546,7 @@ function EmergencyCommandContent() {
                   : "text-[#0A6B63]"
               }`} />
               <h2 className="font-heading font-bold text-base text-[#1A2B2D]">
-                Autonomous Dead-Man Escalation Engine (OISD-189 Fail-Safe)
+                Automated Emergency Auto-Escalation (Fail-Safe Shutdown)
               </h2>
               <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                 escalationStatus === "COUNTDOWN"
@@ -557,14 +557,14 @@ function EmergencyCommandContent() {
                   ? "bg-[#D1FAE5] text-[#059669] border border-[#6EE7B7]"
                   : "bg-[#F3F4F6] text-[#4B5563] border border-[#E5E7EB]"
               }`}>
-                {escalationStatus === "COUNTDOWN" && "⏱️ BUFFER RUNNING (OFFICER AWAY)"}
+                {escalationStatus === "COUNTDOWN" && "⏱️ TIMER RUNNING (OFFICER AWAY)"}
                 {escalationStatus === "AUTO_EXECUTED" && "🚨 AUTONOMOUS FAIL-SAFE TRIGGERED"}
                 {escalationStatus === "MANUAL_ACKNOWLEDGED" && "✓ MANUAL COMMAND ACTIVE"}
-                {escalationStatus === "IDLE" && "STANDBY ARMED"}
+                {escalationStatus === "IDLE" && "READY & ACTIVE"}
               </span>
             </div>
             <p className="text-xs text-[#5E7072]">
-              Simulates what happens if a critical emergency occurs when the Safety Manager is away from the desk (in the washroom or occupied).
+              Simulates what happens if a critical emergency occurs when the Safety Manager is away from the desk or temporarily unresponsive.
             </p>
           </div>
 
@@ -577,14 +577,14 @@ function EmergencyCommandContent() {
                   onClick={() => startDeadManSimulation(15)}
                   className="px-3.5 py-2 rounded-lg bg-[#D63B3B] hover:bg-[#B92525] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
                 >
-                  <Play className="w-3.5 h-3.5" /> Simulate Unresponsive Manager (15s Buffer)
+                  <Play className="w-3.5 h-3.5" /> Simulate Away from Desk (15s Timer)
                 </button>
                 <button
                   type="button"
                   onClick={() => startDeadManSimulation(60)}
                   className="px-3 py-2 rounded-lg bg-[#F0F2ED] hover:bg-[#E2E6DC] text-[#1A2B2D] text-xs font-semibold transition-all border border-[#C2CEC2] cursor-pointer"
                 >
-                  60s Standard OISD Buffer
+                  60s Official Safety Timer
                 </button>
               </>
             )}
@@ -792,11 +792,11 @@ function EmergencyCommandContent() {
 
                 <div className="grid grid-cols-2 gap-2 pt-1 border-t border-[#E2E8E2] text-xs">
                   <div>
-                    <span className="text-[11px] text-[#5E7072] block font-semibold">Degraded Barrier:</span>
+                    <span className="text-[11px] text-[#5E7072] block font-semibold">Broken Safety Barrier:</span>
                     <span className="font-bold text-[#D63B3B]">{activeThreat.failedBarrier}</span>
                   </div>
                   <div>
-                    <span className="text-[11px] text-[#5E7072] block font-semibold">High-Energy Magnitude:</span>
+                    <span className="text-[11px] text-[#5E7072] block font-semibold">Lethal Danger Force:</span>
                     <span className="font-bold text-[#1A2B2D]">{activeThreat.energy}</span>
                   </div>
                 </div>
@@ -816,8 +816,8 @@ function EmergencyCommandContent() {
                 >
                   <AlertOctagon className={`h-4 w-4 ${swaExecuted ? "text-[#D63B3B]" : "text-white"}`} />
                   {swaExecuted 
-                    ? `SWA LOCKOUT ACTIVE (${selectedLocation.toUpperCase()}) — ALL RIG WORK FROZEN` 
-                    : "EXECUTE MANUAL STOP WORK AUTHORITY (SWA) LOCKOUT"}
+                    ? `STOP WORK ACTIVE (${selectedLocation.toUpperCase()}) — ALL RIG OPERATIONS HALTED` 
+                    : "TRIGGER EMERGENCY STOP WORK ORDER (SWA)"}
                 </button>
               </div>
             </div>
@@ -827,10 +827,10 @@ function EmergencyCommandContent() {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-heading font-bold text-sm text-[#1A2B2D]">
-                    OISD-189 Standard Isolation Protocol
+                    Standard Emergency Safety Checklist (OISD-189)
                   </h3>
                   <p className="text-xs text-[#5E7072] mt-0.5">
-                    Regulatory response steps for {selectedLocation}
+                    Required safety action steps for {selectedLocation}
                   </p>
                 </div>
                 <div className="text-right">
