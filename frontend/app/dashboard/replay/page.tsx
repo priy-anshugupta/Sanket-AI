@@ -50,67 +50,67 @@ const HISTORIC_BAGHJAN_TIMELINE: BaghjanEvent[] = [
   {
     day: -14,
     date: '2020-05-13',
-    report: 'Slight drilling mud fluid loss (15 bbls) observed during pipe tripping. Mud weight maintained at 1.18 SG.',
+    report: 'Minor drilling mud fluid leak detected during drill pipe extraction.',
     sif_score: 0.22,
     sif_label: 'LOW',
-    energy_type: 'Hydrostatic Pressure',
+    energy_type: 'Underground Well Pressure',
     barrier: 'Drilling Mud Column',
     status: 'NORMAL',
     multiplier_event: false,
-    legacy_action: 'Logged as minor fluid top-up in paper shift register. Operations continued normally without testing return flow.',
-    sanket_action: 'Baselined baseline hydrostatic loss. Initiated low-priority automated mud weight monitoring tracking.',
-    counterfactual: 'Initial precursor identified. No shutdown needed yet, but flagged as Stage-1 watch condition.',
+    legacy_action: 'Logged as minor fluid top-up in paper shift register. Drilling continued normally without return flow testing.',
+    sanket_action: 'Flagged initial fluid loss as Stage-1 precursor. Initiated automated barrier tracking (Low Risk: 0.22 SIF).',
+    counterfactual: 'Early precursor detected. No shutdown needed yet, but flagged on the dashboard watch-list.',
     lives_at_stake: 0,
   },
   {
     day: -10,
     date: '2020-05-17',
-    report: 'Annular pressure fluctuation of 80 PSI logged on BOP manifold. Secondary pressure gauge needle vibrating violently.',
+    report: 'Pressure surged by 80 PSI on BOP manifold. Safety gauge needle shaking violently.',
     sif_score: 0.58,
     sif_label: 'MEDIUM',
-    energy_type: 'Pneumatic / Reservoir Gas',
-    barrier: 'BOP Pressure Monitoring & Transducers',
+    energy_type: 'Pressurized Reservoir Gas',
+    barrier: 'BOP Pressure Monitoring',
     status: 'WARNING',
     multiplier_event: false,
-    legacy_action: 'Gauge glass wiped clean. Supervisor assumed vibration was caused by mud pump harmonics and deferred calibration.',
-    sanket_action: 'Correlated pressure fluctuation with Day -14 mud loss. Elevated SIF risk from 0.22 → 0.58 and flagged secondary barrier degradation.',
-    counterfactual: 'Early warning dispatched to Toolpusher requiring manifold pressure recalibration before next tripping sequence.',
+    legacy_action: 'Gauge glass wiped clean. Supervisor assumed vibration was pump vibration and deferred sensor calibration.',
+    sanket_action: 'Correlated pressure surge with Day -14 mud loss. Elevated SIF danger score to 0.58 (Medium Risk) and flagged barrier degradation.',
+    counterfactual: 'Early warning sent to Toolpusher requiring pressure test and sensor calibration before further drilling.',
     lives_at_stake: 0,
   },
   {
     day: -6,
     date: '2020-05-21',
-    report: 'Gas bubble surging observed in cellar pit during kill-line valve test. Strong methane vapor odor detected by floor hands.',
+    report: 'Methane gas bubbles and strong odor detected directly beneath the rig floor in cellar pit.',
     sif_score: 0.68,
     sif_label: 'MEDIUM',
     energy_type: 'Flammable Gas Reservoir',
-    barrier: 'Kill Line Isolation Valve',
+    barrier: 'Kill-Line Isolation Valve',
     status: 'ELEVATED RISK',
     multiplier_event: true,
-    legacy_action: 'Cellar pit flushed with fresh water. No SWA called; workover crew instructed to speed up tubing removal to finish shift.',
-    sanket_action: 'Detected active gas migration into cellar pit. Multiplier activated (3 correlated precursors in 7 days). Flagged critical LSR Rule #1 Violation.',
-    counterfactual: 'Triggered Yellow Alert. System generated automated work permit freeze warning for non-essential personnel.',
+    legacy_action: 'Cellar pit flushed with water. No Stop Work called; crew instructed to rush pipe removal to finish shift.',
+    sanket_action: 'Detected active gas migration beneath rig floor. Multiplier activated (3 precursors in 7 days). Flagged IOGP Rule #1 violation.',
+    counterfactual: 'Issued Yellow Alert. Triggered automated permit freeze warning for all non-essential personnel.',
     lives_at_stake: 6,
   },
   {
     day: -3,
     date: '2020-05-24',
-    report: 'CRITICAL PRECURSOR: BOP annular blind ram hydraulic actuator leaking fluid. Temporary mechanical valve bypass fitted without MOC approval.',
+    report: 'CRITICAL PRECURSOR: Blowout Preventer leaking hydraulic oil. Unapproved makeshift bypass fitted to keep working.',
     sif_score: 0.96,
     sif_label: 'HIGH',
-    energy_type: 'High Pressure Gas Kick (1800 PSI)',
-    barrier: 'Blowout Preventer (BOP) Actuator & Barrier Management',
+    energy_type: 'High-Pressure Gas Surge (1800 PSI)',
+    barrier: 'Blowout Preventer (BOP) Barrier',
     status: 'SIF PRECURSOR TRIGGER',
     multiplier_event: true,
-    legacy_action: 'Workover continued using uncertified mechanical bypass while waiting for replacement hydraulic seals from Duliajan store.',
-    sanket_action: '🚨 AUTONOMOUS STOP WORK AUTHORITY (SWA) EXECUTED: Multi-barrier cascade confirmed (0.96 SIF). Locked all active work permits, triggered acoustic siren, and ordered immediate heavy brine well-kill circulation!',
-    counterfactual: '🛑 BLOWOUT FULLY AVERTED 5 DAYS EARLY! Heavy mud pumped, well stabilized, and all 24 personnel safely secured.',
+    legacy_action: 'Work continued with uncertified bypass while waiting days for replacement seals from warehouse.',
+    sanket_action: '🚨 AUTONOMOUS STOP WORK AUTHORITY (SWA) EXECUTED: Multi-barrier cascade confirmed (0.96 SIF). Locked all digital work permits, triggered acoustic siren, and ordered immediate heavy brine well-kill circulation!',
+    counterfactual: '🛑 BLOWOUT FULLY AVERTED 5 DAYS EARLY! Well killed and stabilized, and all 24 rig crew members safely evacuated.',
     lives_at_stake: 24,
   },
   {
     day: 0,
     date: '2020-05-27',
-    report: 'HISTORIC BLOWOUT DISASTER: Uncontrolled gas and condensate geyser erupted from wellhead at 1800 PSI during tubing pulling. Full blowout occurred.',
+    report: 'HISTORIC BLOWOUT DISASTER: Uncontrolled 1800 PSI gas eruption from wellhead. Massive blowout occurred without AI.',
     sif_score: 1.00,
     sif_label: 'CATASTROPHIC',
     energy_type: 'Uncontrolled Explosive Blowout',
@@ -118,8 +118,8 @@ const HISTORIC_BAGHJAN_TIMELINE: BaghjanEvent[] = [
     status: 'DISASTER OCCURRED',
     multiplier_event: true,
     legacy_action: 'Rig abandoned in panic. Gas erupted 40 meters into the sky for 14 days before catching fire on June 9.',
-    sanket_action: 'Prevented in SANKET AI simulation by Day -3 intervention.',
-    counterfactual: 'In 2020 without SANKET: 3 Firefighters killed, 9,000 residents displaced, ₹580 Crores economic & environmental loss.',
+    sanket_action: 'Disaster completely averted on Day -3 by SANKET AI early intervention.',
+    counterfactual: 'In 2020 without SANKET AI: 3 Firefighters died, 9,000 residents displaced, ₹580 Crores economic & ecological loss.',
     lives_at_stake: 27,
   },
 ];
@@ -153,10 +153,10 @@ export default function BaghjanReplayPage() {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="font-heading font-bold text-xl text-[#1A2B2D] tracking-tight">
-              Baghjan 2020 Disaster Replay & Counterfactual AI
+              Baghjan 2020 Disaster Replay: Reality vs SANKET AI
             </h1>
             <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#FDF2F2] text-[#D63B3B] border border-[#F5C6C6]">
-              Real Incident Simulation
+              Historical Disaster Simulation
             </span>
           </div>
           <p className="text-[13px] text-[#5E7072] mt-0.5 font-normal">
@@ -335,7 +335,7 @@ export default function BaghjanReplayPage() {
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-white" />
                 <h3 className="font-heading font-bold text-xs uppercase tracking-wider text-white">
-                  Counterfactual Reality: With SANKET AI
+                  Predictive Defense: With SANKET AI
                 </h3>
               </div>
               <span className="text-[10px] font-mono font-semibold bg-white/20 text-white px-2 py-0.5 rounded">
@@ -348,7 +348,7 @@ export default function BaghjanReplayPage() {
               {/* AI SIF Score */}
               <div className="flex items-center justify-between p-3 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2]">
                 <div>
-                  <div className="text-[10px] font-semibold uppercase text-[#5E7072]">Neural SIF Precursor Score</div>
+                  <div className="text-[10px] font-semibold uppercase text-[#5E7072]">Neural SIF Risk Score</div>
                   <div className="font-heading text-xl font-bold mt-0.5 text-[#0A6B63]">
                     {activeEvent.sif_score.toFixed(2)} / 1.00 ({activeEvent.sif_label})
                   </div>
@@ -380,7 +380,7 @@ export default function BaghjanReplayPage() {
               {/* Counterfactual Impact Note */}
               <div className="p-3 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2] text-xs space-y-0.5">
                 <div className="text-[10px] font-semibold uppercase text-[#5E7072] flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5 text-[#0A6B63]" /> Counterfactual Outcome:
+                  <Sparkles className="w-3.5 h-3.5 text-[#0A6B63]" /> Predicted Safety Outcome:
                 </div>
                 <p className="text-[#1A2B2D] leading-relaxed">
                   {activeEvent.counterfactual}
