@@ -464,14 +464,14 @@ function EmergencyCommandContent() {
     <div className="dashboard-page space-y-5 p-6 bg-[#FAFAF9] min-h-screen text-[#1A2B2D]">
       
       {/* ── Top Header Bar ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center flex-wrap gap-2.5">
             <h1 className="font-heading font-bold text-xl text-[#1A2B2D] tracking-tight">
-              Emergency Command Center & Stop Work (SWA) Playbook
+              Emergency Command Center & SWA Playbook
             </h1>
-            <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#FDF2F2] text-[#D63B3B] border border-[#F5C6C6]">
-              GOVT SAFETY STANDARD (OISD-189)
+            <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#FDF2F2] text-[#D63B3B] border border-[#F5C6C6] whitespace-nowrap shrink-0">
+              OISD-189 SAFETY STANDARD
             </span>
           </div>
           <p className="text-[13px] text-[#5E7072] mt-0.5 font-normal">
@@ -480,10 +480,10 @@ function EmergencyCommandContent() {
         </div>
 
         {/* Tab Controls */}
-        <div className="flex items-center gap-1.5 bg-[#F0F2ED] p-1 rounded-lg">
+        <div className="flex items-center gap-1.5 bg-[#F0F2ED] p-1 rounded-lg shrink-0">
           <button type="button" suppressHydrationWarning
             onClick={() => setActiveTab("playbook")}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
               activeTab === "playbook"
                 ? "bg-white text-[#1A2B2D] shadow-xs"
                 : "text-[#5E7072] hover:text-[#1A2B2D]"
@@ -493,7 +493,7 @@ function EmergencyCommandContent() {
           </button>
           <button type="button" suppressHydrationWarning
             onClick={() => setActiveTab("roip")}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
               activeTab === "roip"
                 ? "bg-white text-[#1A2B2D] shadow-xs"
                 : "text-[#5E7072] hover:text-[#1A2B2D]"
@@ -503,7 +503,7 @@ function EmergencyCommandContent() {
           </button>
           <button type="button" suppressHydrationWarning
             onClick={() => setActiveTab("channels")}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
               activeTab === "channels"
                 ? "bg-white text-[#1A2B2D] shadow-xs"
                 : "text-[#5E7072] hover:text-[#1A2B2D]"
