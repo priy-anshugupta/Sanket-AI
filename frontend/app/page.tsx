@@ -701,10 +701,12 @@ export default function HomePage() {
             <span className="font-sans text-xs text-slate-400">SIH 2026 Problem Statement SIH26165</span>
           </div>
 
-          <div className="flex items-center gap-6 font-sans text-xs text-slate-400">
-            <span className="text-emerald-400 font-semibold">● 100% AIR-GAPPED</span>
-            <span>OIL INDIA LIMITED</span>
-            <span>MINISTRY OF PETROLEUM & NATURAL GAS</span>
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6 font-sans text-xs text-slate-400">
+            <span className="text-emerald-400 font-semibold">● 100% Air-Gapped</span>
+            <span className="hidden sm:inline text-slate-700">·</span>
+            <span>Oil India Limited</span>
+            <span className="hidden sm:inline text-slate-700">·</span>
+            <span>Ministry of Petroleum & Natural Gas</span>
           </div>
         </div>
       </footer>
