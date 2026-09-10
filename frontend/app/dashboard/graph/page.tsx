@@ -98,9 +98,15 @@ const BASELINE_NODES: GNode[] = [
 ];
 
 const BASELINE_EDGES: GEdge[] = [
-  // 1. Baghjan Well Causal Pathway
+  // 0. Upper Assam Regional Field Trunklines (Center Asset Hub)
+  { source: "LOCATION:Baghjan Well #5", target: "LOCATION:Well Pad 7", weight: 2, edge_type: "gathering_corridor" },
+  { source: "LOCATION:Baghjan Well #5", target: "LOCATION:Moran OCS-3", weight: 2, edge_type: "pipeline_trunkline" },
+  { source: "LOCATION:Baghjan Well #5", target: "LOCATION:Geleki Processing", weight: 2, edge_type: "crude_dispatch" },
+
+  // 1. Baghjan Well Causal Pathway (Blowout Risk)
   { source: "LOCATION:Baghjan Well #5", target: "EQUIPMENT:Blowout Preventer (BOP)", weight: 3, edge_type: "deployed_at" },
   { source: "EQUIPMENT:Blowout Preventer (BOP)", target: "BARRIER_FAILURE:Primary Well Containment", weight: 3, edge_type: "barrier_degradation" },
+  { source: "EQUIPMENT:Blowout Preventer (BOP)", target: "LSR:Bypassing Safety Controls", weight: 3, edge_type: "rule_violation" },
   { source: "BARRIER_FAILURE:Primary Well Containment", target: "LSR:Bypassing Safety Controls", weight: 3, edge_type: "violates_rule" },
   { source: "BARRIER_FAILURE:Primary Well Containment", target: "ENERGY_SOURCE:1800 PSI Gas Surge", weight: 3, edge_type: "failed_energy_barrier" },
   { source: "EQUIPMENT:Blowout Preventer (BOP)", target: "ENERGY_SOURCE:1800 PSI Gas Surge", weight: 3, edge_type: "energy_threat" },
@@ -108,21 +114,127 @@ const BASELINE_EDGES: GEdge[] = [
   // 2. Well Pad 7 Fall Hazard Pathway
   { source: "LOCATION:Well Pad 7", target: "EQUIPMENT:12m Scaffold Tower", weight: 3, edge_type: "deployed_at" },
   { source: "EQUIPMENT:12m Scaffold Tower", target: "BARRIER_FAILURE:100% Fall Arrest Harness", weight: 3, edge_type: "barrier_degradation" },
+  { source: "EQUIPMENT:12m Scaffold Tower", target: "LSR:Working at Height", weight: 3, edge_type: "rule_violation" },
   { source: "BARRIER_FAILURE:100% Fall Arrest Harness", target: "LSR:Working at Height", weight: 3, edge_type: "violates_rule" },
   { source: "BARRIER_FAILURE:100% Fall Arrest Harness", target: "ENERGY_SOURCE:12m Fall Drop Energy", weight: 3, edge_type: "failed_energy_barrier" },
+  { source: "EQUIPMENT:12m Scaffold Tower", target: "ENERGY_SOURCE:12m Fall Drop Energy", weight: 3, edge_type: "energy_threat" },
 
   // 3. Moran Crane Electrocution Pathway
   { source: "LOCATION:Moran OCS-3", target: "EQUIPMENT:Crawler Crane (5-Ton)", weight: 3, edge_type: "deployed_at" },
   { source: "EQUIPMENT:Crawler Crane (5-Ton)", target: "BARRIER_FAILURE:Overhead Line Clearance", weight: 3, edge_type: "barrier_degradation" },
+  { source: "EQUIPMENT:Crawler Crane (5-Ton)", target: "LSR:Safe Mechanical Lifting", weight: 3, edge_type: "rule_violation" },
   { source: "BARRIER_FAILURE:Overhead Line Clearance", target: "LSR:Safe Mechanical Lifting", weight: 3, edge_type: "violates_rule" },
   { source: "BARRIER_FAILURE:Overhead Line Clearance", target: "ENERGY_SOURCE:33,000V Power Grid", weight: 3, edge_type: "failed_energy_barrier" },
+  { source: "EQUIPMENT:Crawler Crane (5-Ton)", target: "ENERGY_SOURCE:33,000V Power Grid", weight: 3, edge_type: "energy_threat" },
 
   // 4. Geleki Forklift Gas Ignition Pathway
   { source: "LOCATION:Geleki Processing", target: "EQUIPMENT:Heavy Industrial Forklift", weight: 3, edge_type: "deployed_at" },
   { source: "EQUIPMENT:Heavy Industrial Forklift", target: "BARRIER_FAILURE:Physical Crash Barrier", weight: 3, edge_type: "barrier_degradation" },
+  { source: "EQUIPMENT:Heavy Industrial Forklift", target: "LSR:Line of Fire", weight: 3, edge_type: "rule_violation" },
   { source: "BARRIER_FAILURE:Physical Crash Barrier", target: "LSR:Line of Fire", weight: 3, edge_type: "violates_rule" },
   { source: "BARRIER_FAILURE:Physical Crash Barrier", target: "ENERGY_SOURCE:Pressurized Flammable Gas", weight: 3, edge_type: "failed_energy_barrier" },
+  { source: "EQUIPMENT:Heavy Industrial Forklift", target: "ENERGY_SOURCE:Pressurized Flammable Gas", weight: 3, edge_type: "energy_threat" },
 ];
+
+const NODE_INTELLIGENCE: Record<string, { propagation: string; capa: string }> = {
+  // 🏭 Assets
+  "Baghjan Well #5": {
+    propagation: "Precursor cluster at Baghjan Well #5 indicates multi-shift barrier degradation across active drilling operations, escalating the probability of catastrophic blowout.",
+    capa: "Dispatch Senior HSE Area Superintendent to Baghjan Well #5. Conduct area-wide barrier audit on all active digital work permits (e-PTWs)."
+  },
+  "Well Pad 7": {
+    propagation: "Recurring high-potential near-misses at Well Pad 7 reveal systemic scaffolding and working-at-height non-compliance during well workover operations.",
+    capa: "Suspend elevated work permits on Well Pad 7. Conduct structural re-inspection of scaffolding and certify all safety harnesses with third-party tag."
+  },
+  "Moran OCS-3": {
+    propagation: "Mechanical lifting operations at Moran OCS-3 repeatedly encroach on high-voltage overhead corridors, creating imminent electrocution hazards.",
+    capa: "Deploy dedicated Banksman / Rigging Supervisor at Moran OCS-3. Enforce mandatory 10-meter physical boundary clearance from energized utility lines."
+  },
+  "Geleki Processing": {
+    propagation: "Heavy mobile equipment traffic patterns at Geleki Processing intersect active hydrocarbon transfer lines, posing high risk of mechanical impact and gas ignition.",
+    capa: "Install heavy steel crash bollards around gas manifolds. Enforce 10 km/h speed limiters and strictly segregate pedestrian and vehicular zones."
+  },
+
+  // ⚙️ Equipment
+  "Blowout Preventer (BOP)": {
+    propagation: "Hydraulic weeping anomalies and bypassed pressure interlocks on the Blowout Preventer (BOP) compromise primary wellhead pressure isolation.",
+    capa: "Schedule immediate Lock-Out / Tag-Out (LOTO) mechanical integrity inspection on Blowout Preventer (BOP). Perform hydrostatic barrier pressure test before next shift."
+  },
+  "12m Scaffold Tower": {
+    propagation: "Structural vibrations and missing toe-boards on the 12m Scaffold Tower degrade work platform stability under high wind loads.",
+    capa: "Re-tag scaffold tower with red lockout tag. Replace missing cross-bracing and require 100% green tag re-certification by certified scaffold inspector."
+  },
+  "Crawler Crane (5-Ton)": {
+    propagation: "Boom swing radius of the 5-Ton Crawler Crane repeatedly breaches minimum approach distance to live electrical conductors during pipe transfers.",
+    capa: "Calibrate crane limit switches and boom angle indicators. Verify crane load chart certifications and de-energize proximate overhead transmission lines."
+  },
+  "Heavy Industrial Forklift": {
+    propagation: "Brake wear and obstructed operator sightlines on the heavy forklift create collision hazards near pressurized flange manifolds.",
+    capa: "Perform immediate preventive brake overhaul. Equip vehicle with 360-degree ultrasonic proximity sensors and blue spotlight safety warning beams."
+  },
+
+  // 🛑 Barrier Failures
+  "Primary Well Containment": {
+    propagation: "Degradation of casing annular seals and drilling fluid hydrostatic head removes the primary barrier holding back high-pressure reservoir gas.",
+    capa: "Establish secondary mechanical barrier isolation per OISD-189 Section 7.4. Re-calculate drilling mud hydrostatic weight and test casing pressure rating."
+  },
+  "100% Fall Arrest Harness": {
+    propagation: "Unanchored or uninspected safety harnesses eliminate secondary fall arrest protection for crew working 12 meters above ground level.",
+    capa: "Withdraw all uninspected full-body harnesses from the tool crib. Enforce mandatory twin-lanyard 100% tie-off compliance with shock absorbers."
+  },
+  "Overhead Line Clearance": {
+    propagation: "Breach of standard clearance envelopes between crane booms and overhead 33kV lines risks catastrophic arc-flash and equipment electrocution.",
+    capa: "Coordinate with Assam State Electricity Board (ASEB) to de-energize line or install high-visibility insulated line markers and physical goalposts."
+  },
+  "Physical Crash Barrier": {
+    propagation: "Deformed or missing crash barriers expose high-pressure gas headers to direct vehicular impact from heavy supply trucks.",
+    capa: "Erect reinforced ASTM-rated steel guard rails around flammable gas piping. Restrict heavy forklift access to dedicated concrete transport lanes."
+  },
+
+  // 📜 IOGP Life-Saving Rules
+  "Bypassing Safety Controls": {
+    propagation: "Unauthorized bypass of hydraulic safety interlocks under schedule pressure disables emergency automated shutoff systems on the wellhead.",
+    capa: "Mandate Toolpusher and HSE Manager dual sign-off for any interlock override. Audit management of change (MOC) logs across all active crews."
+  },
+  "Working at Height": {
+    propagation: "Failure to maintain continuous positive fall restraint on elevated platforms directly escalates probability of fatal fall trauma.",
+    capa: "Conduct mandatory stand-down Toolbox Talk on IOGP Rule #3 (Working at Height). Verify lifeline tension and anchor point load ratings."
+  },
+  "Safe Mechanical Lifting": {
+    propagation: "Lifting uncertified loads in poor visibility without an approved lift plan exposes rig floor personnel to dropped object and line-of-fire hazards.",
+    capa: "Enforce mandatory Lift Plan sign-off for loads exceeding 1 ton. Clear all personnel from lifting drop radius prior to crane hoist activation."
+  },
+  "Line of Fire": {
+    propagation: "Personnel positioning themselves within the recoil zone of pressurized lines or turning radiuses of mobile equipment creates acute crush hazards.",
+    capa: "Reposition perimeter warning barricades and repaint safety exclusion zones. Enforce mandatory 'Eyes on Path / Line of Fire' field audits."
+  },
+
+  // ⚡ Energy Sources
+  "1800 PSI Gas Surge": {
+    propagation: "Uncontrolled containment of 1800 PSI gas surge represents high-potential explosive energy capable of structural casing failure and catastrophic blowout.",
+    capa: "Bleed off excess casing pressure through choke manifold to flare pit. Verify pressure relief valve (PRV) set points and gas kick detection alarms."
+  },
+  "12m Fall Drop Energy": {
+    propagation: "Potential gravitational energy of an uncontrolled 12m fall generates fatal impact force exceeding human survivability thresholds.",
+    capa: "Install perimeter debris netting and self-retracting lifelines (SRL). Verify structural tie-off anchor points rated for minimum 22.2 kN (5,000 lbs)."
+  },
+  "33,000V Power Grid": {
+    propagation: "Proximity to 33kV three-phase power grid creates severe phase-to-ground flashover risk capable of instantly destroying equipment and causing fatal shock.",
+    capa: "Obtain electrical permit-to-work isolation certificate. Maintain absolute minimum 4.0m exclusion envelope and deploy grounding mats."
+  },
+  "Pressurized Flammable Gas": {
+    propagation: "Stored flammable hydrocarbon vapors under pressure create immediate explosion and BLEVE threats upon contact with mechanical impact sparks.",
+    capa: "Deploy continuous Lower Explosive Limit (LEL) combustible gas detectors. Enforce ATEX Zone-1 cold work restrictions and eliminate all ignition sources."
+  }
+};
+
+function getNodePropagation(node: GNode): string {
+  return NODE_INTELLIGENCE[node.label]?.propagation || `Anomalous precursor cluster on ${node.label} directly escalates operational risk across active shifts.`;
+}
+
+function getNodeCapa(node: GNode): string {
+  return NODE_INTELLIGENCE[node.label]?.capa || `Enforce positive barrier double-isolation on ${node.label} per OISD standard procedures.`;
+}
 
 export default function SignalGraphPage() {
   const [mounted, setMounted] = useState(false);
@@ -143,6 +255,48 @@ export default function SignalGraphPage() {
   const [mousePos, setMousePos] = useState<{ x: number; y: number; inside: boolean }>({ x: 0, y: 0, inside: false });
   const [evidence, setEvidence] = useState<NodeEvidence | null>(null);
   const [swaToast, setSwaToast] = useState<{ node: string; type: string; time: string } | null>(null);
+  const [pulseNodeId, setPulseNodeId] = useState<string | null>(null);
+
+  /* ── Real-Time Incident Sync (WebSocket & Ingestion) ── */
+  useEffect(() => {
+    const onNewReport = (e: any) => {
+      const rep = e.detail;
+      if (!rep) return;
+
+      let matchedId: string | null = null;
+
+      setNodes(prev => prev.map(n => {
+        const locMatch = rep.location && (n.label.toLowerCase().includes(rep.location.toLowerCase()) || rep.location.toLowerCase().includes(n.label.toLowerCase()));
+        const textMatch = rep.raw_text && rep.raw_text.toLowerCase().includes(n.label.toLowerCase());
+        const ruleMatch = rep.iogp_rule && rep.iogp_rule.toLowerCase().includes(n.label.toLowerCase());
+
+        if (locMatch || textMatch || ruleMatch) {
+          if (!matchedId) matchedId = n.id;
+          return { ...n, report_count: n.report_count + 1 };
+        }
+        return n;
+      }));
+
+      if (matchedId) {
+        setPulseNodeId(matchedId);
+        setTimeout(() => setPulseNodeId(null), 3500);
+      }
+
+      setSelectedNode(current => {
+        if (!current) return null;
+        const isSel = (rep.location && (current.label.toLowerCase().includes(rep.location.toLowerCase()) || rep.location.toLowerCase().includes(current.label.toLowerCase()))) ||
+                      (rep.raw_text && rep.raw_text.toLowerCase().includes(current.label.toLowerCase())) ||
+                      (rep.iogp_rule && rep.iogp_rule.toLowerCase().includes(current.label.toLowerCase()));
+        if (isSel) {
+          return { ...current, report_count: current.report_count + 1 };
+        }
+        return current;
+      });
+    };
+
+    window.addEventListener("sanket:new_report", onNewReport);
+    return () => window.removeEventListener("sanket:new_report", onNewReport);
+  }, []);
 
   /* ── Filter Predicate ── */
   const isNodeVisible = useCallback((n: GNode, filter: string) => {
@@ -163,29 +317,26 @@ export default function SignalGraphPage() {
     setNodes(BASELINE_NODES);
   }, []);
 
-  /* ── Fetch Node Evidence on selection ── */
+  /* ── Fetch Node Evidence on selection (with race-condition guard) ── */
   useEffect(() => {
     if (!selectedNode) { setEvidence(null); return; }
+    let isCurrent = true;
+    setEvidence(null);
+
     fetch(`${API}/api/graph/evidence/${encodeURIComponent(selectedNode.id)}`)
       .then(r => r.json())
       .then(data => {
-        if (data && data.node_label) { setEvidence(data); }
+        if (isCurrent && data && data.node_id === selectedNode.id) {
+          setEvidence(data);
+        }
       })
       .catch(() => {
-        setEvidence({
-          node_id: selectedNode.id, node_label: selectedNode.label, node_type: selectedNode.type,
-          total_incidents: selectedNode.report_count,
-          high_sif_count: Math.round(selectedNode.report_count * 0.7),
-          medium_sif_count: Math.round(selectedNode.report_count * 0.3),
-          has_active_cluster: selectedNode.severity === "HIGH",
-          cluster_details: selectedNode.severity === "HIGH" ? { alert_id: "CLUST-OIL-2026", event_count: selectedNode.report_count, detected_at: "2h ago" } : undefined,
-          recommended_capa: `Enforce mandatory positive barrier double-isolation on ${selectedNode.label} per OISD-189 Section 7.4.`,
-          supporting_reports: [
-            { id: "REP-0491", raw_text: `Anomalous pressure surge recorded on ${selectedNode.label} during high-rate circulation.`, sif_score: 0.94, sif_label: "HIGH", location: "Baghjan Well #5", created_at: "Today 08:30" },
-            { id: "REP-0488", raw_text: `Interlock bypassed during shift handover on ${selectedNode.label}.`, sif_score: 0.82, sif_label: "HIGH", location: "Well Pad 7", created_at: "Yesterday 16:45" },
-          ]
-        });
+        // Silently handled - fallback functions will provide crisp data
       });
+
+    return () => {
+      isCurrent = false;
+    };
   }, [selectedNode]);
 
   /* ── Connected Causal Path Neighbors (Multi-degree) ── */
@@ -279,6 +430,9 @@ export default function SignalGraphPage() {
             </h1>
             <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#E8F4F0] text-[#0A6B63] border border-[#A3D9C9]">
               BOW-TIE CAUSAL AI
+            </span>
+            <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#EBF5FF] text-[#2563EB] border border-[#BFDBFE] flex items-center gap-1.5 shadow-2xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB] animate-pulse"></span> REAL-TIME SYNC
             </span>
           </div>
           <p className="text-[13px] text-[#5E7072] mt-0.5 font-normal">
@@ -461,7 +615,7 @@ export default function SignalGraphPage() {
             <div className="absolute bottom-3 right-3 z-10 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-[#C2CEC2] shadow-sm flex items-center gap-2 text-xs text-[#5E7072] pointer-events-none">
               <span className="font-semibold text-[#0A6B63]">20 Curated Bow-Tie Safety Nodes</span>
               <span>•</span>
-              <span>16 Causal Links</span>
+              <span>{activeEdges.length} Causal Links</span>
             </div>
 
             {/* 🌟 ULTRA-SHARP BULLETPROOF SVG GRAPH CANVAS 🌟 */}
@@ -562,6 +716,18 @@ export default function SignalGraphPage() {
                         setSelectedNode(n);
                       }}
                     >
+                      {/* Live Ingestion Pulse Ring */}
+                      {pulseNodeId === n.id && (
+                        <circle
+                          r={n.radius + 16}
+                          fill="none"
+                          stroke="#DC2626"
+                          strokeWidth="2.5"
+                          className="animate-ping"
+                          opacity="0.8"
+                        />
+                      )}
+
                       {/* Halo on Selected/Hovered */}
                       {(isSelected || isHovered) && (
                         <circle
@@ -653,7 +819,9 @@ export default function SignalGraphPage() {
                   </div>
                   <div className="p-2.5 bg-[#F7F8F5] rounded-lg border border-[#C2CEC2]">
                     <span className="text-[10px] text-[#5E7072] block font-semibold">Causal Degree</span>
-                    <span className="font-heading font-bold text-base text-[#0A6B63]">{selectedNode.degree} Connections</span>
+                    <span className="font-heading font-bold text-base text-[#0A6B63]">
+                      {activeEdges.filter(e => e.source === selectedNode.id || e.target === selectedNode.id).length} Connections
+                    </span>
                   </div>
                 </div>
 
@@ -664,7 +832,7 @@ export default function SignalGraphPage() {
                     <span>CAUSAL PROPAGATION ANALYSIS</span>
                   </div>
                   <p className="text-xs text-[#1A2B2D] leading-relaxed">
-                    Barrier failure on <b>{selectedNode.label}</b> directly escalates the probability of catastrophic energy containment loss across active shifts.
+                    {getNodePropagation(selectedNode)}
                   </p>
                 </div>
 
@@ -675,7 +843,7 @@ export default function SignalGraphPage() {
                     <span>RECOMMENDED CAPA PROTOCOL</span>
                   </div>
                   <p className="text-xs text-[#1A2B2D] leading-relaxed">
-                    {evidence?.recommended_capa || `Enforce mandatory positive barrier double-isolation on ${selectedNode.label} per OISD-189 Section 7.4.`}
+                    {(evidence && evidence.node_id === selectedNode.id ? evidence.recommended_capa : null) || getNodeCapa(selectedNode)}
                   </p>
                 </div>
 
