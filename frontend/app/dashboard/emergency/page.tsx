@@ -268,7 +268,15 @@ function EmergencyCommandContent() {
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch Latest Live Report
+  // Clean up interval on unmount to prevent phantom voice alarms on other pages
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, []);
   useEffect(() => {
     const fetchLatest = async () => {
       try {

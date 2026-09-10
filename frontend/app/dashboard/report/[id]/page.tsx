@@ -102,6 +102,7 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
   const [actionAssignee, setActionAssignee] = useState('Field Safety Lead');
   const [actionNotes, setActionNotes] = useState('');
   const [feedbackReason, setFeedbackReason] = useState('');
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const fetchReport = async () => {
     try {
@@ -125,6 +126,7 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
     try {
       setIsSubmittingFeedback(true);
       setFeedbackSuccess(null);
+      setActionError(null);
       const res = await fetch(`${API}/api/reports/${reportId}/resolve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -136,9 +138,14 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
         }
         window.dispatchEvent(new CustomEvent('sanket:new_report', { detail: { id: reportId, status: 'RESOLVED' } }));
         await fetchReport();
+      } else {
+        setActionError('Failed to resolve incident. Server returned an error.');
+        setTimeout(() => setActionError(null), 5000);
       }
     } catch (err) {
       console.error('Resolve error:', err);
+      setActionError('Failed to resolve incident. Please verify server connectivity.');
+      setTimeout(() => setActionError(null), 5000);
     } finally {
       setIsSubmittingFeedback(false);
     }
@@ -148,6 +155,7 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
     try {
       setIsSubmittingFeedback(true);
       setFeedbackSuccess(null);
+      setActionError(null);
       const res = await fetch(`${API}/api/reports/${reportId}/feedback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -165,9 +173,14 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
         }
         window.dispatchEvent(new CustomEvent('sanket:new_report', { detail: { id: reportId, status: 'RESOLVED' } }));
         await fetchReport();
+      } else {
+        setActionError('Failed to submit decision override. Server returned an error.');
+        setTimeout(() => setActionError(null), 5000);
       }
     } catch (err) {
       console.error('Feedback error:', err);
+      setActionError('Failed to submit decision override. Please verify server connectivity.');
+      setTimeout(() => setActionError(null), 5000);
     } finally {
       setIsSubmittingFeedback(false);
     }
@@ -178,6 +191,7 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
     try {
       setIsCreatingAction(true);
       setActionSuccess(null);
+      setActionError(null);
       const res = await fetch(`${API}/api/actions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -197,9 +211,14 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
         }
         window.dispatchEvent(new CustomEvent('sanket:new_report', { detail: { id: reportId, status: 'RESOLVED' } }));
         await fetchReport();
+      } else {
+        setActionError('Failed to dispatch CAPA work order. Server returned an error.');
+        setTimeout(() => setActionError(null), 5000);
       }
     } catch (err) {
       console.error('Action creation error:', err);
+      setActionError('Failed to dispatch CAPA work order. Please verify server connectivity.');
+      setTimeout(() => setActionError(null), 5000);
     } finally {
       setIsCreatingAction(false);
     }
@@ -543,6 +562,13 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
             {feedbackSuccess && (
               <div className="p-2.5 bg-[#EDFAF4] border border-[#BFEADB] rounded-lg text-xs text-[#1B8A6C] font-semibold">
                 {feedbackSuccess}
+              </div>
+            )}
+
+            {actionError && (
+              <div className="p-2.5 bg-[#FDF2F2] border border-[#F5C6C6] rounded-lg text-xs text-[#D63B3B] font-semibold flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                <span>{actionError}</span>
               </div>
             )}
           </div>

@@ -22,6 +22,7 @@ import {
   Minus,
   RotateCcw
 } from 'lucide-react';
+import 'leaflet/dist/leaflet.css';
 
 const API = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000';
 
@@ -435,14 +436,6 @@ export default function DualHeatmapAndMapPage() {
     const initBaseMap = async () => {
       const L = (await import('leaflet')).default;
       LRef.current = L;
-
-      if (!document.getElementById('leaflet-css')) {
-        const link = document.createElement('link');
-        link.id = 'leaflet-css';
-        link.rel = 'stylesheet';
-        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-        document.head.appendChild(link);
-      }
 
       if (!isMounted || !mapContainerRef.current) return;
 

@@ -19,7 +19,7 @@ export default function LoginPage() {
   // Mobile Device Detection (Locks Manager Login on Phone)
   useEffect(() => {
     const checkMobile = () => {
-      const isMobile = window.innerWidth < 768 || /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isMobile = window.innerWidth < 480 || /iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       setIsMobileDevice(isMobile);
       if (isMobile) {
         setActiveTab('worker');
