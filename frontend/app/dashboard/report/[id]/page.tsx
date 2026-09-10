@@ -473,7 +473,7 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#D63B3B] animate-pulse" />
               <h2 className="font-heading font-bold text-xs uppercase tracking-wider text-[#1A2B2D]">
-                Grounded AI Precursor Explanation
+                AI Safety Analysis & Rationale
               </h2>
             </div>
             <div className="p-3.5 rounded-lg bg-[#0F1B1D] text-[#F7F8F5] text-xs leading-relaxed font-sans">
@@ -482,8 +482,8 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
               ) : (
                 <p className="text-[#8BA4A7] italic">
                   {sifScore >= 0.50
-                    ? 'AI Explanation is being generated in sovereign background queue...'
-                    : 'Report SIF score is below 0.50 threshold; automatic executive explanation omitted to preserve local compute.'}
+                    ? 'Analyzing incident against DGMS and IOGP safety protocols...'
+                    : 'SIF risk score is within standard baseline; automated executive explanation omitted.'}
                 </p>
               )}
             </div>
@@ -492,10 +492,10 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
           {/* Human-in-the-Loop Feedback Widget */}
           <div className="bg-white p-5 rounded-xl border-2 border-[#C2CEC2] shadow-xs space-y-3">
             <h2 className="font-heading font-bold text-xs uppercase tracking-wider text-[#1A2B2D] flex items-center gap-1.5">
-              <Scale className="w-4 h-4 text-[#0A6B63]" /> Officer Review (Human-in-the-Loop)
+              <Scale className="w-4 h-4 text-[#0A6B63]" /> Safety Officer Verification & Override
             </h2>
             <p className="text-xs text-[#5E7072]">
-              Validate or override AI classification. Decisions are logged with officer timestamp for continuous audit.
+              Validate or adjust the AI assessment. All decisions are logged with officer timestamp for statutory compliance audit.
             </p>
 
             <div className="space-y-2">
@@ -533,21 +533,11 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
                 </button>
               </div>
 
-              <div className="pt-2 border-t border-[#E0E6E0]">
-                <button suppressHydrationWarning
-                  type="button"
-                  disabled={isSubmittingFeedback || report.status === 'RESOLVED'}
-                  onClick={handleResolve}
-                  className={`w-full py-2 px-3 rounded-lg text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer ${
-                    report.status === 'RESOLVED'
-                      ? 'bg-[#EDFAF4] text-[#1B8A6C] border border-[#BFEADB]'
-                      : 'bg-[#0A6B63] hover:bg-[#085B54] text-white'
-                  }`}
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  {report.status === 'RESOLVED' ? 'Incident Marked as Resolved ✓' : 'Mark as Resolved & Close'}
-                </button>
-              </div>
+              {report.status === 'RESOLVED' && (
+                <div className="pt-2 text-center text-xs font-semibold text-[#1B8A6C] flex items-center justify-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Incident Marked as Resolved
+                </div>
+              )}
             </div>
 
             {feedbackSuccess && (
