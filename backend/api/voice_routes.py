@@ -24,6 +24,8 @@ async def transcribe_audio_only(
     for worker review / editing before final ingestion.
     """
     content = await audio.read()
+    if not content or len(content) < 100:
+        return {"text": "", "status": "NO_AUDIO", "message": "Audio file too short or empty"}
     transcription = voice_transcriber.transcribe_audio_file(content, audio.filename or "recording.m4a")
     text = transcription.get("text", "")
 
@@ -51,6 +53,8 @@ async def transcribe_and_ingest_audio(
     create PENDING safety report, and launch background AI pipeline.
     """
     content = await audio.read()
+    if not content or len(content) < 100:
+        return {"text": "", "status": "NO_AUDIO", "message": "Audio file too short or empty"}
     transcription = voice_transcriber.transcribe_audio_file(content, audio.filename or "audio.wav")
     text = transcription.get("text", "")
 

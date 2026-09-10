@@ -39,7 +39,7 @@ class VoiceTranscriber:
         from backend.config.settings import settings
         
         # 1. Try OpenAI Whisper API using official SDK if key is available
-        if settings.OPENAI_API_KEY:
+        if settings.OPENAI_API_KEY and settings.AI_MODE == "online":
             try:
                 import openai
                 import io
@@ -94,6 +94,12 @@ class VoiceTranscriber:
                 "language": result.get("language", "en"),
                 "segments": result.get("segments", []),
                 "mocked": False,
+            }
+        except Exception as e:
+            print(f"[VoiceTranscriber] Local Whisper error: {e}")
+            return {
+                "text": "",
+                "error": str(e)
             }
         finally:
             if os.path.exists(tmp_path):

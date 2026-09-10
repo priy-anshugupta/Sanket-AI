@@ -137,7 +137,7 @@ class EntityExtractor:
 
         # Barrier failures
         for keyword in self.barrier_keywords["BARRIER_FAILURE"]:
-            if keyword.lower() in text_lower:
+            if re.search(r'\b' + re.escape(keyword.lower()) + r'\b', text_lower):
                 entities.append({
                     "type": "BARRIER_FAILURE",
                     "value": keyword.title(),
@@ -146,7 +146,7 @@ class EntityExtractor:
 
         # Energy sources
         for keyword in self.energy_keywords["ENERGY_SOURCE"]:
-            if keyword.lower() in text_lower:
+            if re.search(r'\b' + re.escape(keyword.lower()) + r'\b', text_lower):
                 entities.append({
                     "type": "ENERGY_SOURCE",
                     "value": keyword.title(),
@@ -164,7 +164,7 @@ class EntityExtractor:
 
         # Weather
         for keyword in self.weather_keywords:
-            if keyword.lower() in text_lower:
+            if re.search(r'\b' + re.escape(keyword.lower()) + r'\b', text_lower):
                 entities.append({
                     "type": "WEATHER_CONDITION",
                     "value": keyword.title(),
@@ -173,7 +173,7 @@ class EntityExtractor:
 
         # PPE
         for keyword in self.ppe_keywords:
-            if keyword.lower() in text_lower:
+            if re.search(r'\b' + re.escape(keyword.lower()) + r'\b', text_lower):
                 entities.append({
                     "type": "PPE_STATUS",
                     "value": keyword.title(),

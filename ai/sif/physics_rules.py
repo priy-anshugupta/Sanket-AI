@@ -65,12 +65,16 @@ class PhysicsRulesEngine:
         # First check: Is this explicitly a safety drill or verified zero-leak check?
         is_safe = any(p.search(text) for p in self.ROUTINE_SAFE_PATTERNS)
         
-        # Check active barrier failure (e.g. leaking under pressure)
+        # Check all active hazard categories
         is_barrier = any(p.search(text) for p in self.CRITICAL_BARRIER_PATTERNS)
         is_gas = any(p.search(text) for p in self.TOXIC_FLAMMABLE_PATTERNS)
+        is_mech = any(p.search(text) for p in self.HIGH_ENERGY_MECHANICAL_PATTERNS)
+        is_pressure = any(p.search(text) for p in self.HIGH_PRESSURE_PATTERNS)
         
-        # If explicitly a drill or safe check without an active barrier failure, cap at safe ceiling
-        if is_safe and not (is_barrier or (is_gas and not ("no leak" in text.lower() or "drill" in text.lower() or "নাই" in text))):
+        has_active_hazard = is_barrier or is_mech or is_pressure or (is_gas and not ("no leak" in text.lower() or "drill" in text.lower() or "নাই" in text))
+
+        # If explicitly a drill or safe check WITHOUT any active hazard, cap at safe ceiling
+        if is_safe and not has_active_hazard:
             return {
                 "has_physical_floor": False,
                 "forced_floor_score": 0.12,

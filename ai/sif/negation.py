@@ -14,10 +14,19 @@ class NegationParser:
     """
 
     def __init__(self, negation_terms: list[str] = None):
-        self.negation_terms = negation_terms or [
-            "no", "not", "without", "avoided", "zero",
-            "never", "prevented", "none", "absent",
-        ]
+        if negation_terms:
+            self.negation_terms = [t.lower() for t in negation_terms]
+        else:
+            try:
+                from backend.config.settings import settings
+                self.negation_terms = [t.lower() for t in settings.NEGATION_TERMS]
+            except Exception:
+                self.negation_terms = [
+                    "no", "not", "without", "avoided", "zero",
+                    "never", "prevented", "none", "absent",
+                    "nahi", "nhi", "nahin", "bina",
+                    "nai", "nohoy", "nahoi", "nohoi", "nehi",
+                ]
 
     def is_negated(self, text: str, keyword: str) -> bool:
         """
