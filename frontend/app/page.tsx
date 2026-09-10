@@ -117,7 +117,7 @@ export default function HomePage() {
               <span className="font-heading font-bold text-base tracking-tight text-white">SANKET</span>
               <span className="font-heading font-bold text-base text-[#1B8A6C]">· AI</span>
             </div>
-            <p className="text-[9px] uppercase font-mono tracking-[0.14em] text-[#8BA4A7] mt-0.5 font-medium">
+            <p className="text-[10px] font-sans tracking-wide text-[#8BA4A7] mt-0.5 font-medium uppercase">
               SIF Precursor Detection Engine
             </p>
           </div>
@@ -194,7 +194,7 @@ export default function HomePage() {
           {/* Eyebrow Pill */}
           <div className="inline-flex items-center gap-2 mb-3.5 px-3 py-1 rounded-md bg-[#0A6B63]/20 border border-[#0A6B63]/40">
             <Radio className="w-3 h-3 text-[#1B8A6C]" />
-            <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#BCE3DC]">
+            <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#BCE3DC]">
               OIL INDIA LIMITED · PROBLEM STATEMENT SIH26165
             </span>
           </div>
@@ -291,19 +291,19 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 text-center md:text-left">
           <div className="border-r border-white/[0.08] pr-4">
             <div className="font-heading font-black text-2xl text-white">502</div>
-            <div className="text-[11px] font-mono text-[#8BA4A7] uppercase">Safety Observations Ingested</div>
+            <div className="text-xs font-sans font-medium text-[#8BA4A7] mt-0.5">Safety observations ingested</div>
           </div>
           <div className="border-r border-white/[0.08] pr-4">
             <div className="font-heading font-black text-2xl text-[#1B8A6C]">10 Assets</div>
-            <div className="text-[11px] font-mono text-[#8BA4A7] uppercase">Upper Assam Telemetry Live</div>
+            <div className="text-xs font-sans font-medium text-[#8BA4A7] mt-0.5">Upper Assam telemetry live</div>
           </div>
           <div className="border-r border-white/[0.08] pr-4">
             <div className="font-heading font-black text-2xl text-[#D63B3B]">100% Zero-Cloud</div>
-            <div className="text-[11px] font-mono text-[#8BA4A7] uppercase">Air-Gapped On-Premise GPU</div>
+            <div className="text-xs font-sans font-medium text-[#8BA4A7] mt-0.5">Air-gapped on-premise GPU</div>
           </div>
           <div>
             <div className="font-heading font-black text-2xl text-amber-400">&lt; 4.2s</div>
-            <div className="text-[11px] font-mono text-[#8BA4A7] uppercase">End-to-End Pipeline Latency</div>
+            <div className="text-xs font-sans font-medium text-[#8BA4A7] mt-0.5">End-to-end pipeline latency</div>
           </div>
         </div>
       </section>
@@ -313,7 +313,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto space-y-10">
           
           <div className="text-center max-w-2xl mx-auto space-y-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#0A6B63]/20 border border-[#0A6B63]/40 text-[#1B8A6C] font-mono text-[10px] font-bold uppercase tracking-wider">
+            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#0A6B63]/20 border border-[#0A6B63]/40 text-[#1B8A6C] font-sans text-[10px] font-bold uppercase tracking-wider">
               Autonomous Safety Engine
             </div>
             <h2 className="font-heading font-extrabold text-2xl sm:text-3xl text-white">
@@ -339,7 +339,7 @@ export default function HomePage() {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <span className={`w-7 h-7 rounded-lg flex items-center justify-center font-mono text-xs font-bold ${
+                    <span className={`w-7 h-7 rounded-lg flex items-center justify-center font-heading text-xs font-bold ${
                       activePipelineStage === idx ? 'bg-[#0A6B63] text-white' : 'bg-white/[0.06] text-slate-400'
                     }`}>
                       {st.step}
@@ -348,7 +348,7 @@ export default function HomePage() {
                       <div className={`text-xs font-bold ${activePipelineStage === idx ? 'text-white' : 'text-slate-300'}`}>
                         {st.title}
                       </div>
-                      <div className="text-[10px] font-mono text-slate-500">
+                      <div className="text-[11px] font-sans text-slate-400 mt-0.5">
                         {st.subtitle}
                       </div>
                     </div>
@@ -362,26 +362,26 @@ export default function HomePage() {
             <div className="lg:col-span-7 bg-[#162829] rounded-2xl border border-[#264245] p-6 lg:p-8 shadow-xl space-y-6">
               <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
                 <div className="flex items-center gap-3">
-                  <span className="text-3xl font-mono font-black text-[#1B8A6C]">
+                  <span className="text-3xl font-heading font-black text-[#1B8A6C]">
                     STAGE {PIPELINE_STAGES[activePipelineStage].step}
                   </span>
                   <div>
                     <h3 className="font-heading font-bold text-lg text-white">
                       {PIPELINE_STAGES[activePipelineStage].title}
                     </h3>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs font-sans text-slate-400 mt-0.5">
                       {PIPELINE_STAGES[activePipelineStage].subtitle}
                     </p>
                   </div>
                 </div>
 
-                <span className="px-2.5 py-1 rounded-md bg-[#0A6B63]/20 border border-[#0A6B63]/40 text-[#BCE3DC] font-mono text-[10px] font-bold">
+                <span className="px-2.5 py-1 rounded-md bg-[#0A6B63]/20 border border-[#0A6B63]/40 text-[#BCE3DC] font-sans text-[11px] font-semibold">
                   {PIPELINE_STAGES[activePipelineStage].badge}
                 </span>
               </div>
 
-              <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono">
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 font-sans">
                   Operational Execution:
                 </h4>
                 <p className="text-sm leading-relaxed text-slate-200 font-normal">
@@ -391,13 +391,13 @@ export default function HomePage() {
 
               {/* Technical Blueprint Box */}
               <div className="p-4 rounded-xl bg-[#0A1416] border border-white/[0.06] space-y-2">
-                <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
+                <div className="flex items-center justify-between text-xs font-sans text-slate-400">
                   <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
                     <Activity className="w-3.5 h-3.5" /> Deterministic Pipeline Execution
                   </span>
                   <span>Zero Cloud Egress</span>
                 </div>
-                <div className="text-xs font-mono text-slate-300 bg-black/40 p-3 rounded-lg border border-white/[0.04]">
+                <div className="text-xs font-mono text-slate-300 bg-black/40 p-3 rounded-lg border border-white/[0.04] leading-relaxed">
                   {activePipelineStage === 0 && '>> ASR_STREAM: Whisper Base (Quantized INT8) -> Lang: "Assamese / Hindi / English" -> Normalizer: OilFieldLexicon_v2'}
                   {activePipelineStage === 1 && '>> VECTOR_SPACE: 384-Dim Dense Embeddings -> Cosine Sim vs 48 DEKRA SIF Anchors -> Threshold: > 0.72 Precursor Potential'}
                   {activePipelineStage === 2 && '>> NER_ENGINE: ZeroShotEntityClassifier -> Found: [Annular BOP, 1800 PSI, Well Pad 7, Hydraulic Weeping]'}
@@ -420,7 +420,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto space-y-10">
           
           <div className="text-center max-w-2xl mx-auto space-y-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#0A6B63]/20 border border-[#0A6B63]/40 text-[#1B8A6C] font-mono text-[10px] font-bold uppercase tracking-wider">
+            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#0A6B63]/20 border border-[#0A6B63]/40 text-[#1B8A6C] font-sans text-[10px] font-bold uppercase tracking-wider">
               Technical Excellence
             </div>
             <h2 className="font-heading font-extrabold text-2xl sm:text-3xl text-white">
@@ -522,7 +522,7 @@ export default function HomePage() {
           
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-red-500/20 border border-red-500/40 text-red-300 font-mono text-[10px] font-bold uppercase tracking-wider mb-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-red-500/20 border border-red-500/40 text-red-300 font-sans text-[10px] font-bold uppercase tracking-wider mb-2">
                 Real-World Operational Validation
               </div>
               <h2 className="font-heading font-extrabold text-2xl sm:text-3xl text-white">
@@ -548,7 +548,7 @@ export default function HomePage() {
                 <div className="text-xs font-bold uppercase tracking-wider text-red-400 flex items-center gap-2">
                   <AlertOctagon className="w-4 h-4" /> 2020 Historical Reality (Legacy Systems)
                 </div>
-                <span className="text-[10px] font-mono bg-red-950 text-red-300 px-2 py-0.5 rounded border border-red-500/30">
+                <span className="text-[10px] font-sans font-semibold bg-red-950 text-red-300 px-2 py-0.5 rounded border border-red-500/30">
                   BLOWOUT OCCURRED
                 </span>
               </div>
@@ -578,7 +578,7 @@ export default function HomePage() {
                 <div className="text-xs font-bold uppercase tracking-wider text-[#1B8A6C] flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4" /> SANKET AI Counterfactual Engine
                 </div>
-                <span className="text-[10px] font-mono bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">
+                <span className="text-[10px] font-sans font-semibold bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">
                   BLOWOUT PREVENTED
                 </span>
               </div>
@@ -608,19 +608,19 @@ export default function HomePage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#162829] p-4 rounded-xl border border-[#264245]">
             <div className="text-center">
               <div className="text-xl font-heading font-black text-emerald-400">3 Lives</div>
-              <div className="text-[10px] font-mono text-slate-400 uppercase">Personnel Saved</div>
+              <div className="text-xs font-sans font-medium text-slate-400 mt-0.5">Personnel Saved</div>
             </div>
             <div className="text-center border-l border-white/[0.08]">
               <div className="text-xl font-heading font-black text-emerald-400">₹580 Crores</div>
-              <div className="text-[10px] font-mono text-slate-400 uppercase">PSU Capital Preserved</div>
+              <div className="text-xs font-sans font-medium text-slate-400 mt-0.5">PSU Capital Preserved</div>
             </div>
             <div className="text-center border-l border-white/[0.08]">
               <div className="text-xl font-heading font-black text-emerald-400">10,000 Ha</div>
-              <div className="text-[10px] font-mono text-slate-400 uppercase">Dibru-Saikhowa Protected</div>
+              <div className="text-xs font-sans font-medium text-slate-400 mt-0.5">Dibru-Saikhowa Protected</div>
             </div>
             <div className="text-center border-l border-white/[0.08]">
               <div className="text-xl font-heading font-black text-emerald-400">5-Day Window</div>
-              <div className="text-[10px] font-mono text-slate-400 uppercase">Precursor Lead Time</div>
+              <div className="text-xs font-sans font-medium text-slate-400 mt-0.5">Precursor Lead Time</div>
             </div>
           </div>
 
@@ -640,16 +640,16 @@ export default function HomePage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <div className="px-3 py-1.5 rounded-lg bg-[#162829] border border-[#264245] text-xs font-mono text-slate-300">
+            <div className="px-3 py-1.5 rounded-lg bg-[#162829] border border-[#264245] text-xs font-sans font-medium text-slate-300">
               📜 DGMS Mines Safety Rules
             </div>
-            <div className="px-3 py-1.5 rounded-lg bg-[#162829] border border-[#264245] text-xs font-mono text-slate-300">
+            <div className="px-3 py-1.5 rounded-lg bg-[#162829] border border-[#264245] text-xs font-sans font-medium text-slate-300">
               🛡️ OISD-189 & GDN-206
             </div>
-            <div className="px-3 py-1.5 rounded-lg bg-[#162829] border border-[#264245] text-xs font-mono text-slate-300">
+            <div className="px-3 py-1.5 rounded-lg bg-[#162829] border border-[#264245] text-xs font-sans font-medium text-slate-300">
               🌐 IOGP 9 Life-Saving Rules
             </div>
-            <div className="px-3 py-1.5 rounded-lg bg-[#162829] border border-[#264245] text-xs font-mono text-slate-300">
+            <div className="px-3 py-1.5 rounded-lg bg-[#162829] border border-[#264245] text-xs font-sans font-medium text-slate-300">
               📊 DEKRA SIF Potential Model
             </div>
           </div>
@@ -698,10 +698,10 @@ export default function HomePage() {
             />
             <span className="font-heading font-bold text-white">SANKET AI</span>
             <span className="text-slate-600">·</span>
-            <span className="font-mono text-[11px] text-slate-400">SIH 2026 Problem Statement SIH26165</span>
+            <span className="font-sans text-xs text-slate-400">SIH 2026 Problem Statement SIH26165</span>
           </div>
 
-          <div className="flex items-center gap-6 font-mono text-[11px] text-slate-400">
+          <div className="flex items-center gap-6 font-sans text-xs text-slate-400">
             <span className="text-emerald-400 font-semibold">● 100% AIR-GAPPED</span>
             <span>OIL INDIA LIMITED</span>
             <span>MINISTRY OF PETROLEUM & NATURAL GAS</span>
