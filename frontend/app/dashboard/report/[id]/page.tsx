@@ -251,7 +251,9 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
             <ArrowLeft className="w-3.5 h-3.5" /> Triage Queue
           </Link>
           <span>/</span>
-          <span className="font-mono text-[#1A2B2D]">{report.id}</span>
+          <span className="font-mono font-medium text-[#1A2B2D] bg-[#E8EFEA] px-2 py-0.5 rounded text-[11px]" title={report.id}>
+            #{report.id.length > 12 ? report.id.slice(0, 8).toUpperCase() : report.id}
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -295,8 +297,8 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono font-bold tracking-wider uppercase px-2 py-0.5 rounded bg-white border border-[#C2CEC2] text-[#1A2B2D]">
-                  SIF Precursor Potential
+                <span className="text-[10px] font-sans font-semibold tracking-wider uppercase px-2 py-0.5 rounded bg-white border border-[#C2CEC2] text-[#1A2B2D]">
+                  Potential SIF Precursor
                 </span>
                 <span className="text-xs text-[#5E7072] font-mono">
                   {new Date(report.created_at).toLocaleString()}
@@ -354,8 +356,8 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
         {/* Score Meter */}
         <div className="mt-3.5 pt-3.5 border-t border-[#C2CEC2]/70">
           <div className="flex justify-between text-xs font-medium text-[#5E7072] mb-1">
-            <span>Deterministic Anchor Cosine Similarity + Negation-Aware Keyword Boost</span>
-            <span className="font-mono font-bold text-[#1A2B2D]">{sifScore.toFixed(4)} / 1.0000</span>
+            <span>Composite AI Risk Assessment & Precursor Confidence</span>
+            <span className="font-mono font-bold text-[#1A2B2D]">{(sifScore * 100).toFixed(1)}% Confidence</span>
           </div>
           <div className="h-2 bg-white/80 rounded-full overflow-hidden border border-[#C2CEC2]">
             <div
