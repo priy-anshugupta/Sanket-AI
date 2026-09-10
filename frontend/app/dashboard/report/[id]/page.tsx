@@ -382,10 +382,10 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
           <div className="bg-white p-5 rounded-xl border-2 border-[#C2CEC2] shadow-xs space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="font-heading font-bold text-xs uppercase tracking-wider text-[#1A2B2D] flex items-center gap-1.5">
-                <FileText className="w-4 h-4 text-[#0A6B63]" /> Unstructured Incident Narrative
+                <FileText className="w-4 h-4 text-[#0A6B63]" /> Field Incident Report
               </h2>
-              <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#F0F2ED] text-[#5E7072] border border-[#C2CEC2]">
-                Lang: {report.language?.toUpperCase() || 'EN'} · Preprocessed
+              <span className="text-[11px] font-sans font-medium px-2 py-0.5 rounded bg-[#F0F2ED] text-[#5E7072] border border-[#C2CEC2]">
+                {report.language?.toUpperCase() === 'AS' ? 'Assamese' : report.language?.toUpperCase() === 'HI' ? 'Hindi' : 'English'} (Auto-Detected)
               </span>
             </div>
             <div className="p-3.5 bg-[#F7F8F5] rounded-lg border border-[#C2CEC2] text-[#1A2B2D] text-sm leading-relaxed font-medium">
@@ -395,8 +395,8 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
             {/* Matched SIF Reference Anchor */}
             {report.matched_anchor_text && (
               <div className="p-3 rounded-lg bg-[#E8F4F0] border border-[#BCE3DC] space-y-1">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-[#0A6B63] uppercase">
-                  <span>🎯</span> Nearest SIF Precomputed Anchor ({report.matched_anchor_id})
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#0A6B63] uppercase tracking-wide">
+                  <span>🎯</span> Matching Historical Benchmark ({report.matched_anchor_id})
                 </div>
                 <p className="text-xs text-[#1A2B2D] font-normal leading-relaxed">
                   {report.matched_anchor_text}
@@ -409,9 +409,9 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
           <div className="bg-white p-5 rounded-xl border-2 border-[#C2CEC2] shadow-xs space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="font-heading font-bold text-xs uppercase tracking-wider text-[#1A2B2D] flex items-center gap-1.5">
-                <Tag className="w-4 h-4 text-[#0A6B63]" /> Extracted Industrial Entities ({report.entities?.length || 0})
+                <Tag className="w-4 h-4 text-[#0A6B63]" /> Identified Safety & Operational Factors ({report.entities?.length || 0})
               </h2>
-              <span className="text-[11px] text-[#5E7072]">Zero-Shot NER & Normalization</span>
+              <span className="text-[11px] text-[#5E7072]">Automated Factor Extraction</span>
             </div>
 
             {report.entities && report.entities.length > 0 ? (
@@ -423,7 +423,7 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
                       key={idx}
                       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border ${style.bg} ${style.text} ${style.border}`}
                     >
-                      <span className="text-[10px] uppercase opacity-75 font-mono">{ent.entity_type}:</span>
+                      <span className="text-[10px] capitalize opacity-80 font-medium">{ent.entity_type.replace(/_/g, ' ').toLowerCase()}:</span>
                       <span className="font-semibold">{ent.entity_value}</span>
                     </span>
                   );
@@ -440,7 +440,7 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
               <h2 className="font-heading font-bold text-xs uppercase tracking-wider text-[#1A2B2D] flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-[#0A6B63]" /> IOGP Life-Saving Rules Mapping
               </h2>
-              <span className="text-[11px] text-[#5E7072]">IOGP 9 Life-Saving Rules Framework</span>
+              <span className="text-[11px] text-[#5E7072]">Global E&P Safety Standard</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
