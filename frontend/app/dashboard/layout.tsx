@@ -27,7 +27,8 @@ import {
   ExternalLink,
   Shield,
   HardHat,
-  FileText
+  FileText,
+  RefreshCw
 } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 
@@ -104,8 +105,62 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState<number>(3);
   const [isMobileScreen, setIsMobileScreen] = useState(false);
-  const [isDemoOverridden, setIsDemoOverridden] = useState(false);
+  const [isDemoOverridden, setIsDemoOverridden] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem('sanket_demo_override') === 'true';
+      } catch {}
+    }
+    return false;
+  });
+
+  const handleToggleDemoOverride = (val: boolean) => {
+    setIsDemoOverridden(val);
+    try {
+      localStorage.setItem('sanket_demo_override', String(val));
+    } catch {}
+  };
+
   const [systemStatus, setSystemStatus] = useState<any>(null);
+  const [isSwitchingAirgap, setIsSwitchingAirgap] = useState(false);
+  const [airgapToast, setAirgapToast] = useState<string | null>(null);
+
+  const toggleAirGapMode = async () => {
+    if (isSwitchingAirgap) return;
+    try {
+      setIsSwitchingAirgap(true);
+      const isCurrentlyOnline = systemStatus && !systemStatus.is_airgapped;
+      const targetAi = isCurrentlyOnline ? 'airgapped' : 'online';
+      const targetDb = isCurrentlyOnline ? 'sqlite' : 'supabase';
+
+      const postSwitch = async (url: string) => {
+        try {
+          const r = await fetch(url, { method: 'POST' });
+          if (r.ok) return r;
+        } catch {}
+        return await fetch(`http://${window.location.hostname}:8000${url}`, { method: 'POST' });
+      };
+
+      await postSwitch(`/api/system/ai-switch?mode=${targetAi}`);
+      await postSwitch(`/api/system/db-switch?mode=${targetDb}`);
+
+      const res = await fetch(`${API_BASE}/api/system/airgap`).catch(() => fetch(`http://${window.location.hostname}:8000/api/system/airgap`));
+      if (res && res.ok) {
+        const d = await res.json();
+        setSystemStatus(d);
+      }
+
+      const msg = isCurrentlyOnline
+        ? '🔒 Switched to SOVEREIGN AIR-GAP (0 KB/s Out · Local Ollama/SQLite)'
+        : '🌐 Switched to HYBRID ONLINE AI (OpenAI GPT-4o Active)';
+      setAirgapToast(msg);
+      setTimeout(() => setAirgapToast(null), 3500);
+    } catch (err) {
+      console.error('Airgap toggle error:', err);
+    } finally {
+      setIsSwitchingAirgap(false);
+    }
+  };
 
   const lastSeenIdRef = useRef<string | null>(null);
   const isInitialFetchRef = useRef<boolean>(true);
@@ -402,7 +457,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           <button
             type="button"
-            onClick={() => setIsDemoOverridden(true)}
+            onClick={() => handleToggleDemoOverride(true)}
             className="w-full py-2.5 bg-white/5 hover:bg-white/10 text-[#0A6B63] hover:text-[#0D8A80] font-mono font-bold text-[11px] rounded-xl border border-[#0A6B63]/40 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
           >
             ⚡ Demo Override: Continue to HQ Dashboard
@@ -423,6 +478,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex h-screen w-full bg-[#F7F8F5] overflow-hidden text-[#1A2B2D]">
       
+      {/* ── REAL-TIME AIR-GAP TOGGLE CONFIRMATION TOAST ── */}
+      {airgapToast && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl bg-[#0F1B1D] text-white text-xs font-bold shadow-2xl border border-[#1B8A6C] flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+          <span className="w-2 h-2 rounded-full bg-[#1B8A6C] animate-pulse" />
+          <span>{airgapToast}</span>
+        </div>
+      )}
+
       {/* ── REAL-TIME HIGH SIF POP-UP NOTIFICATION TOAST ── */}
       {activeAlert && (
         <div className="fixed top-16 right-6 z-50 max-w-md w-full animate-in slide-in-from-top-3 fade-in duration-300">
@@ -614,27 +677,38 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <span className="text-[#5E7072]">3s POLL SYNC</span>
           </div>
 
-          {/* Dynamic System Mode Badge */}
-          <div className={`px-3 py-2 rounded-lg border flex items-center justify-between ${
-            systemStatus && !systemStatus.is_airgapped
-              ? 'bg-blue-50/70 border-blue-200 text-blue-800'
-              : 'bg-[#EDFAF4] border-[#BFEADB] text-[#1B8A6C]'
-          }`}>
-            <div className="flex items-center gap-2">
+          {/* Dynamic System Mode Badge — 1-Click Air-Gap Toggle */}
+          <button
+            type="button"
+            onClick={toggleAirGapMode}
+            disabled={isSwitchingAirgap}
+            title="Tap to toggle Sovereign Air-Gap vs Hybrid Online AI"
+            className={`w-full px-3 py-2 rounded-lg border flex items-center justify-between transition-all cursor-pointer hover:shadow-xs active:scale-98 ${
+              systemStatus && !systemStatus.is_airgapped
+                ? 'bg-blue-50/70 hover:bg-blue-100/70 border-blue-200 text-blue-800'
+                : 'bg-[#EDFAF4] hover:bg-[#DDF5EA] border-[#BFEADB] text-[#1B8A6C]'
+            }`}
+          >
+            <div className="flex items-center gap-2 text-left">
               <div className={`w-2 h-2 rounded-full ${
                 systemStatus && !systemStatus.is_airgapped ? 'bg-blue-600 animate-pulse' : 'bg-[#1B8A6C]'
               }`} />
               <div>
-                <div className="text-[11px] font-semibold">
-                  {systemStatus && !systemStatus.is_airgapped ? 'HYBRID ONLINE' : 'SOVEREIGN AIR-GAP'}
+                <div className="text-[11px] font-semibold flex items-center gap-1">
+                  <span>{systemStatus && !systemStatus.is_airgapped ? 'HYBRID ONLINE' : 'SOVEREIGN AIR-GAP'}</span>
+                  <span className="text-[8.5px] px-1 py-0.5 rounded bg-black/5 font-mono">TOGGLE ⇄</span>
                 </div>
                 <div className="text-[10px] font-mono opacity-80">
                   {systemStatus && !systemStatus.is_airgapped ? `${systemStatus.outbound_kbps || '1.6'} KB/s · GPT-4O` : '0 KB/s OUT · LOCAL'}
                 </div>
               </div>
             </div>
-            <Radio className="w-3.5 h-3.5" />
-          </div>
+            {isSwitchingAirgap ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Radio className="w-3.5 h-3.5" />
+            )}
+          </button>
 
           {/* User Profile Pill */}
           <div className="px-3 py-2 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2] flex items-center justify-between">
@@ -694,6 +768,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Right Executive Actions & Notification Tray */}
           <div className="flex items-center gap-2.5">
             
+            {/* Mobile Link to Field Worker Terminal */}
+            <Link
+              href="/worker"
+              className="flex md:hidden items-center gap-1 px-2.5 py-1 rounded-lg bg-[#E8F4F0] hover:bg-[#D4ECE5] border border-[#0A6B63]/30 text-[#0A6B63] text-[11px] font-bold shadow-xs transition-colors"
+              title="Open Field Worker Mobile Terminal"
+            >
+              <HardHat className="w-3.5 h-3.5" />
+              <span>Worker</span>
+            </Link>
+
             {/* 1-Click Statutory Shift Handover PDF Export Button */}
             <button type="button" suppressHydrationWarning
               onClick={() => {
@@ -826,17 +910,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               )}
             </div>
 
-            {/* Dynamic System Status Pill */}
-            <div className={`hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-mono font-semibold ${
-              systemStatus && !systemStatus.is_airgapped
-                ? 'bg-blue-50 border-blue-200 text-blue-700'
-                : 'bg-[#EDFAF4] border-[#BFEADB] text-[#1B8A6C]'
-            }`}>
-              <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${
-                systemStatus && !systemStatus.is_airgapped ? 'bg-blue-600' : 'bg-[#1B8A6C]'
-              }`} />
-              <span>{systemStatus && !systemStatus.is_airgapped ? 'HYBRID ONLINE · GPT-4O' : 'AIR-GAPPED'}</span>
-            </div>
+            {/* Dynamic System Status Pill — 1-Click Toggle */}
+            <button
+              type="button"
+              onClick={toggleAirGapMode}
+              disabled={isSwitchingAirgap}
+              title="Click to toggle between Sovereign Air-Gap and Hybrid Online AI"
+              className={`hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-mono font-semibold cursor-pointer transition-all hover:shadow-xs active:scale-95 ${
+                systemStatus && !systemStatus.is_airgapped
+                  ? 'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700'
+                  : 'bg-[#EDFAF4] hover:bg-[#DDF5EA] border-[#BFEADB] text-[#1B8A6C]'
+              }`}
+            >
+              {isSwitchingAirgap ? (
+                <RefreshCw className="w-2.5 h-2.5 animate-spin" />
+              ) : (
+                <span className={`w-1.5 h-1.5 rounded-full ${
+                  systemStatus && !systemStatus.is_airgapped ? 'bg-blue-600 animate-pulse' : 'bg-[#1B8A6C]'
+                }`} />
+              )}
+              <span>{systemStatus && !systemStatus.is_airgapped ? 'HYBRID ONLINE · GPT-4O' : 'SOVEREIGN AIR-GAP'}</span>
+            </button>
 
           </div>
 

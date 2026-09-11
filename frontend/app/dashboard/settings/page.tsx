@@ -47,16 +47,27 @@ export default function SettingsPage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [switchingMode, setSwitchingMode] = useState(false);
 
-  const fetchSystemStatus = () => {
-    fetch(`${API}/api/system/airgap`)
-      .then((res) => res.json())
-      .then((data) => {
+  const fetchSystemStatus = async () => {
+    try {
+      let res = await fetch('/api/system/airgap');
+      if (!res.ok) {
+        res = await fetch(`${API}/api/system/airgap`);
+      }
+      if (res.ok) {
+        const data = await res.json();
         setAirgap(data);
-        setLoading(false);
-      })
-      .catch(() => {
-        setLoading(false);
-      });
+      }
+    } catch {
+      try {
+        const res = await fetch(`${API}/api/system/airgap`);
+        if (res.ok) {
+          const data = await res.json();
+          setAirgap(data);
+        }
+      } catch {}
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -78,9 +89,19 @@ export default function SettingsPage() {
       setSwitchingMode(true);
       const targetAiMode = isOnline ? 'airgapped' : 'online';
       const targetDbMode = isOnline ? 'sqlite' : 'supabase';
-      await fetch(`${API}/api/system/ai-switch?mode=${targetAiMode}`, { method: 'POST' });
-      await fetch(`${API}/api/system/db-switch?mode=${targetDbMode}`, { method: 'POST' });
-      fetchSystemStatus();
+
+      const postSwitch = async (url: string) => {
+        try {
+          const r = await fetch(url, { method: 'POST' });
+          if (r.ok) return r;
+        } catch {}
+        const direct = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000${url}` : `${API}${url}`;
+        return await fetch(direct, { method: 'POST' });
+      };
+
+      await postSwitch(`/api/system/ai-switch?mode=${targetAiMode}`);
+      await postSwitch(`/api/system/db-switch?mode=${targetDbMode}`);
+      await fetchSystemStatus();
     } catch (e) {
       console.error('Mode toggle error:', e);
     } finally {

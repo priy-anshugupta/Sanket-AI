@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
   Mic, 
@@ -23,6 +24,7 @@ import {
   UploadCloud,
   Check,
   Trash2,
+  ArrowRight,
   X
 } from 'lucide-react';
 
@@ -104,6 +106,24 @@ export default function FieldWorkerTerminal() {
       }
     } catch {}
   }, []);
+
+  // Poll system air-gap status
+  const [airgapStatus, setAirgapStatus] = useState<{ is_airgapped: boolean; outbound_kbps?: number } | null>(null);
+
+  useEffect(() => {
+    const fetchAirgap = async () => {
+      try {
+        const res = await universalFetch('/api/system/airgap');
+        if (res && res.ok) {
+          const d = await res.json();
+          setAirgapStatus(d);
+        }
+      } catch {}
+    };
+    fetchAirgap();
+    const interval = setInterval(fetchAirgap, 5000);
+    return () => clearInterval(interval);
+  }, [universalFetch]);
 
   // Fetch real submitted worker reports from database
   const fetchWorkerHistory = useCallback(async () => {
@@ -541,19 +561,37 @@ export default function FieldWorkerTerminal() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
-            <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-[11px] font-semibold flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              ONLINE
+          <div className="flex items-center gap-2">
+            <span className={`px-2.5 py-1 rounded-full border font-mono text-[11px] font-semibold flex items-center gap-1.5 ${
+              airgapStatus && !airgapStatus.is_airgapped
+                ? 'bg-blue-500/10 border-blue-500/20 text-blue-400'
+                : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+            }`}>
+              <span className={`w-2 h-2 rounded-full ${
+                airgapStatus && !airgapStatus.is_airgapped ? 'bg-blue-400 animate-pulse' : 'bg-emerald-400'
+              }`} />
+              <span>{airgapStatus && !airgapStatus.is_airgapped ? 'HYBRID ONLINE' : 'SOVEREIGN AIR-GAP'}</span>
             </span>
+
+            <Link
+              href="/dashboard"
+              onClick={() => {
+                try { localStorage.setItem('sanket_demo_override', 'true'); } catch {}
+              }}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#1D3234] hover:bg-[#264245] text-[#8BA4A7] hover:text-white border border-[#264245] text-[11px] font-bold transition-all cursor-pointer"
+              title="Switch to HQ Safety Manager Dashboard"
+            >
+              <span>HQ Console</span>
+              <ArrowRight className="w-3 h-3 text-[#1B8A6C]" />
+            </Link>
 
             <button suppressHydrationWarning
               type="button"
               onClick={handleLogout}
-              className="p-2 rounded-lg bg-[#1D3234] active:bg-[#264245] text-[#8BA4A7] hover:text-white transition-colors cursor-pointer border border-[#264245] flex items-center gap-1 text-xs touch-manipulation"
+              className="p-1.5 rounded-lg bg-[#1D3234] active:bg-[#264245] text-[#8BA4A7] hover:text-white transition-colors cursor-pointer border border-[#264245] flex items-center gap-1 text-xs touch-manipulation"
+              title="Sign Out"
             >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Sign Out</span>
+              <LogOut className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>

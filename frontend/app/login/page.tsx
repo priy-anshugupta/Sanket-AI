@@ -15,7 +15,14 @@ export default function LoginPage() {
   const [badgeId, setBadgeId] = useState('4491');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [error, setError] = useState('');
-  const [demoBypass, setDemoBypass] = useState(false);
+  const [demoBypass, setDemoBypass] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem('sanket_demo_override') === 'true';
+      } catch {}
+    }
+    return false;
+  });
 
   // Mobile Device Detection (Locks Manager Login on Phone)
   useEffect(() => {
@@ -234,7 +241,11 @@ export default function LoginPage() {
                   </button>
                   <button suppressHydrationWarning
                     type="button"
-                    onClick={() => { setDemoBypass(true); setError(''); }}
+                    onClick={() => {
+                      setDemoBypass(true);
+                      try { localStorage.setItem('sanket_demo_override', 'true'); } catch {}
+                      setError('');
+                    }}
                     className="w-full py-2 bg-transparent hover:bg-white/5 text-[#0A6B63] hover:text-[#0D8A80] font-mono text-[11px] font-bold rounded-lg border border-[#0A6B63]/40 flex items-center justify-center gap-1 cursor-pointer"
                   >
                     ⚡ Demo Override: Unlock HQ Login on Narrow Screen
