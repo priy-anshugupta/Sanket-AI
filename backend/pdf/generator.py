@@ -64,75 +64,74 @@ class PDFReportGenerator:
         # Paragraph Styles
         style_govt_header = ParagraphStyle(
             'GovtHeader', parent=styles['Normal'],
-            fontName='Helvetica-Bold', fontSize=7, leading=8.5,
+            fontName='Helvetica-Bold', fontSize=7.5, leading=9.5,
             alignment=1, textColor=colors.HexColor('#475569')
         )
         style_company_title = ParagraphStyle(
             'CompanyTitle', parent=styles['Normal'],
-            fontName='Helvetica-Bold', fontSize=11, leading=13,
+            fontName='Helvetica-Bold', fontSize=12, leading=14.5,
             alignment=1, textColor=c_oil_green
         )
         style_doc_title = ParagraphStyle(
             'DocTitle', parent=styles['Normal'],
-            fontName='Helvetica-Bold', fontSize=8.5, leading=10.5,
+            fontName='Helvetica-Bold', fontSize=9.5, leading=12,
             alignment=1, textColor=c_slate_dark
         )
         style_doc_meta = ParagraphStyle(
             'DocMeta', parent=styles['Normal'],
-            fontName='Helvetica', fontSize=6.5, leading=8,
+            fontName='Helvetica', fontSize=6.8, leading=8.5,
             alignment=1, textColor=c_slate_light
         )
         style_sec_header = ParagraphStyle(
             'SecHeader', parent=styles['Normal'],
-            fontName='Helvetica-Bold', fontSize=7.5, leading=9.5,
+            fontName='Helvetica-Bold', fontSize=8.5, leading=11,
             textColor=colors.HexColor('#0F172A')
         )
         style_cell_header = ParagraphStyle(
             'CellHeader', parent=styles['Normal'],
-            fontName='Helvetica-Bold', fontSize=6.5, leading=8,
+            fontName='Helvetica-Bold', fontSize=7.5, leading=9.5,
             textColor=colors.HexColor('#0F172A')
         )
         style_cell = ParagraphStyle(
             'Cell', parent=styles['Normal'],
-            fontName='Helvetica', fontSize=6.3, leading=8,
+            fontName='Helvetica', fontSize=7.2, leading=9.5,
             textColor=c_slate_text
         )
         style_cell_bold = ParagraphStyle(
             'CellBold', parent=styles['Normal'],
-            fontName='Helvetica-Bold', fontSize=6.3, leading=8,
+            fontName='Helvetica-Bold', fontSize=7.2, leading=9.5,
             textColor=c_slate_text
         )
         style_badge_red = ParagraphStyle(
             'BadgeRed', parent=styles['Normal'],
-            fontName='Helvetica-Bold', fontSize=6.2, leading=7.5,
+            fontName='Helvetica-Bold', fontSize=7.0, leading=8.5,
             alignment=1, textColor=colors.HexColor('#991B1B')
         )
         style_badge_amber = ParagraphStyle(
             'BadgeAmber', parent=styles['Normal'],
-            fontName='Helvetica-Bold', fontSize=6.2, leading=7.5,
+            fontName='Helvetica-Bold', fontSize=7.0, leading=8.5,
             alignment=1, textColor=colors.HexColor('#92400E')
         )
 
         # ── 1. HEADER: MoPNG & Oil India Limited Statutory Banner ──
         header_table_data = [
             [Paragraph("<b>GOVERNMENT OF INDIA · MINISTRY OF PETROLEUM & NATURAL GAS (MoPNG)</b>", style_govt_header)],
-            [Paragraph("ऑयल इंडिया लिमिटेड · OIL INDIA LIMITED (A Navratna Enterprise)", style_company_title)],
-            [Paragraph("<b>STATUTORY PROCESS SAFETY SHIFT TURNOVER & SIF PRECURSOR LOG</b><br/>"
-                       "<font size='6' color='#475569'>MANDATED UNDER MINES ACT 1952 · OIL MINES REGULATIONS 2017 · OISD STANDARD 189 SECTION 7.4</font>", style_doc_title)],
-            [Paragraph("<b>DOCUMENT NO:</b> OIL/OPS/PSM-189/2026-SHR-05 &nbsp;|&nbsp; <b>SECURITY:</b> STATUTORY SAFETY RECORD &nbsp;|&nbsp; <b>AIR-GAP:</b> 0 KB/s EGRESS VERIFIED", style_doc_meta)]
+            [Paragraph("<b>OIL INDIA LIMITED &nbsp;·&nbsp; A NAVRATNA ENTERPRISE</b>", style_company_title)],
+            [Paragraph("<b>12-HOUR SAFETY SHIFT HANDOVER REPORT</b><br/>"
+                       "<font size='6.8' color='#475569'>Mandatory Operational Safety Turnover · Compliant with Mines Act & OISD Safety Standards</font>", style_doc_title)],
+            [Paragraph("<b>REF NO:</b> OIL/OPS/SANKET/2026-SHR-05 &nbsp;|&nbsp; <b>DOCUMENT TYPE:</b> OFFICIAL SHIFT HANDOVER LOG &nbsp;|&nbsp; <b>SYSTEM:</b> SANKET AI AIR-GAP", style_doc_meta)]
         ]
         t_header = Table(header_table_data, colWidths=[7.8 * inch])
         t_header.setStyle(TableStyle([
             ('ALIGN', (0,0), (-1,-1), 'CENTER'),
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 0.5),
-            ('TOPPADDING', (0,0), (-1,-1), 0.5),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 1),
+            ('TOPPADDING', (0,0), (-1,-1), 1),
         ]))
         story.append(t_header)
-        story.append(HRFlowable(width="100%", thickness=1.5, color=c_oil_green, spaceBefore=2, spaceAfter=3))
+        story.append(HRFlowable(width="100%", thickness=1.5, color=c_oil_green, spaceBefore=3, spaceAfter=4))
 
-        # ── 2. METADATA: Rig ID, Shift Turnover & Environmental Parameters ──
-        # ── 2. METADATA: Rig ID, Shift Turnover & Environmental Parameters ──
+        # ── 2. METADATA: Work Site, Shift Turnover & Weather ──
         rig_id = (shift_data or {}).get('rig_id', 'OIL-RIG-05 (Baghjan Complex / Upper Assam Basin)')
         shift_name = (shift_data or {}).get('shift_name', 'DAY SHIFT (06:00 – 18:00 IST) ➔ NIGHT SHIFT RELIEF')
         sup_out = (shift_data or {}).get('outgoing_supervisor', 'Tikheswar Gohain (Badge: OIL-SUP-2940)')
@@ -142,16 +141,16 @@ class PDFReportGenerator:
 
         meta_table_data = [
             [
-                Paragraph(f"<b>Installation / Rig ID:</b> {rig_id}", style_cell),
-                Paragraph(f"<b>Shift Turnover:</b> {shift_name}", style_cell),
+                Paragraph(f"<b>Work Site / Rig:</b> {rig_id}", style_cell),
+                Paragraph(f"<b>Shift Timing:</b> {shift_name}", style_cell),
             ],
             [
-                Paragraph(f"<b>Outgoing Shift In-Charge:</b> {sup_out}", style_cell),
-                Paragraph(f"<b>Incoming Relieving In-Charge:</b> {sup_in}", style_cell),
+                Paragraph(f"<b>Outgoing Supervisor:</b> {sup_out}", style_cell),
+                Paragraph(f"<b>Incoming Supervisor:</b> {sup_in}", style_cell),
             ],
             [
-                Paragraph(f"<b>Turnover Date & Time:</b> {dt_str}", style_cell),
-                Paragraph(f"<b>Ambient & Weather:</b> {weather_str}", style_cell),
+                Paragraph(f"<b>Handover Date & Time:</b> {dt_str}", style_cell),
+                Paragraph(f"<b>Weather & Environment:</b> {weather_str}", style_cell),
             ]
         ]
         t_meta = Table(meta_table_data, colWidths=[3.9 * inch, 3.9 * inch])
@@ -159,35 +158,35 @@ class PDFReportGenerator:
             ('BACKGROUND', (0,0), (-1,-1), c_bg_subtle),
             ('BOX', (0,0), (-1,-1), 0.75, c_border),
             ('INNERGRID', (0,0), (-1,-1), 0.5, c_grid),
-            ('PADDING', (0,0), (-1,-1), 2.5),
+            ('PADDING', (0,0), (-1,-1), 3.5),
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ]))
         story.append(t_meta)
-        story.append(Spacer(1, 3))
+        story.append(Spacer(1, 4))
 
-        # ── 3. SECTION 1: 500m SWA Digital Perimeter & Wellhead Process Barrier Status ──
+        # ── 3. SECTION 1: Safety Status & 500m Emergency Zone ──
         has_active_swa = (shift_data or {}).get('has_active_swa', False)
-        top_hazard = (shift_data or {}).get('top_hazard_desc', 'Annular BOP secondary packoff weeping hydraulic fluid under 1,800 PSI vibration flutter.')
+        top_hazard = (shift_data or {}).get('top_hazard_desc', 'High-pressure BOP valve seal showing minor hydraulic fluid seepage under vibration. Monitoring in progress.')
 
         perimeter_title = (
-            "<font color='#B91C1C'><b>PERIMETER STATUS: ELEVATED SWA WATCH (LEVEL 2)</b></font>"
+            "<font color='#B91C1C'><b>SAFETY ALERT: STOP-WORK ACTIVE (LEVEL 2)</b></font>"
             if has_active_swa else
-            "<font color='#15803D'><b>PERIMETER STATUS: ROUTINE NORMAL WATCH (LEVEL 1)</b></font>"
+            "<font color='#15803D'><b>SITE STATUS: ALL CLEAR · NORMAL (LEVEL 1)</b></font>"
         )
 
         lockout_desc = (
-            "<font color='#B91C1C'><b>LOCKOUT ACTIVE:</b></font> 3 electronic e-PTWs frozen (PTW-774 Hot Work, PTW-812 Confined Space, PTW-820 Crane Overhaul)."
+            "<font color='#B91C1C'><b>STOP WORK ACTIVE:</b></font> High-risk work paused inside 500m zone. 3 permits frozen pending safety clearance."
             if has_active_swa else
-            "<font color='#15803D'><b>ALL CLEAR:</b></font> 0 Active SWA Lockouts. Routine hot work permitted under continuous LEL gas monitoring."
+            "<font color='#15803D'><b>NORMAL OPERATIONS:</b></font> 500m safety perimeter clear. Routine maintenance permitted under continuous gas monitoring."
         )
 
         sec1_banner_data = [
             [
-                Paragraph("<b>1. CRITICAL PROCESS SAFETY & 500m SWA PERIMETER STATUS (OISD-189 COMPLIANCE)</b>", style_sec_header),
+                Paragraph("<b>1. CURRENT SAFETY STATUS & 500-METER EXCLUSION ZONE</b>", style_sec_header),
                 Paragraph(perimeter_title, ParagraphStyle('AlertRight', parent=style_sec_header, alignment=2))
             ]
         ]
-        t_sec1_title = Table(sec1_banner_data, colWidths=[5.3 * inch, 2.5 * inch])
+        t_sec1_title = Table(sec1_banner_data, colWidths=[5.1 * inch, 2.7 * inch])
         t_sec1_title.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
             ('PADDING', (0,0), (-1,-1), 0.5),
@@ -196,14 +195,14 @@ class PDFReportGenerator:
 
         barrier_box_data = [
             [
-                Paragraph(f"<b>Primary Well Control Barrier:</b><br/>{top_hazard}", style_cell),
-                Paragraph("<b>Secondary Barrier (Shear Rams):</b><br/>"
-                          "Blind Shear Rams hydraulic accumulator pressure nominal at 2,950 PSI. Mechanical manual locking stems inspected.", style_cell),
+                Paragraph(f"<b>Current Safety Issue on Site:</b><br/>{top_hazard}", style_cell),
+                Paragraph("<b>Emergency Shut-Off Valves (BOP):</b><br/>"
+                          "Blind Shear Rams hydraulic pressure healthy at 2,950 PSI. Manual emergency locking handles inspected and ready.", style_cell),
             ],
             [
-                Paragraph(f"<b>500m SWA Spatial Lockout Status:</b><br/>{lockout_desc}", style_cell),
-                Paragraph("<b>Gas Detection & Atmosphere:</b><br/>"
-                          "Cellar Pit LEL: 0% · H2S: 0.0 PPM · Flare line liquid seal verified · Rig acoustic flutter sensor active.", style_cell),
+                Paragraph(f"<b>500m Safety Perimeter Status:</b><br/>{lockout_desc}", style_cell),
+                Paragraph("<b>Air Quality & Gas Leak Checks:</b><br/>"
+                          "Flammable Gas (LEL): 0% (Safe) · Toxic H2S Gas: 0.0 PPM (Safe) · Flare gas line sealed · Leak sensors normal.", style_cell),
             ]
         ]
         t_barrier = Table(barrier_box_data, colWidths=[3.9 * inch, 3.9 * inch])
@@ -211,32 +210,33 @@ class PDFReportGenerator:
             ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#FEF2F2') if has_active_swa else colors.HexColor('#F0FDF4')),
             ('BOX', (0,0), (-1,-1), 1, colors.HexColor('#F87171') if has_active_swa else colors.HexColor('#86EFAC')),
             ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor('#FCA5A5') if has_active_swa else colors.HexColor('#BBF7D0')),
-            ('PADDING', (0,0), (-1,-1), 2.5),
+            ('PADDING', (0,0), (-1,-1), 3.5),
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ]))
         story.append(t_barrier)
-        story.append(Spacer(1, 3))
+        story.append(Spacer(1, 4))
 
-        # ── 4. SECTION 2: Table of Active SIF Precursors & Barrier Cascades ──
-        story.append(Paragraph("<b>2. ACTIVE SIF PRECURSOR SIGNALS & BARRIER DEGRADATION CASCADE LOG</b>", style_sec_header))
+        # ── 4. SECTION 2: Top Danger Alerts & High-Risk Warnings ──
+        story.append(Paragraph("<b>2. TOP DANGER ALERTS & HIGH-RISK WARNINGS (LAST 12 HOURS)</b>", style_sec_header))
 
         precursor_rows = [
             [
-                Paragraph("<b>Ref ID</b>", style_cell_header),
-                Paragraph("<b>Asset / Location</b>", style_cell_header),
-                Paragraph("<b>SIF Rating</b>", style_cell_header),
-                Paragraph("<b>Observed Precursor Signal & Degraded Barrier</b>", style_cell_header),
-                Paragraph("<b>IOGP Rule</b>", style_cell_header),
-                Paragraph("<b>CAPA SLA</b>", style_cell_header),
+                Paragraph("<b>Alert ID</b>", style_cell_header),
+                Paragraph("<b>Location</b>", style_cell_header),
+                Paragraph("<b>Danger Level</b>", style_cell_header),
+                Paragraph("<b>What Happened (Hazard Description)</b>", style_cell_header),
+                Paragraph("<b>Safety Rule</b>", style_cell_header),
+                Paragraph("<b>Action Deadline</b>", style_cell_header),
             ]
         ]
 
         if open_reports and len(open_reports) > 0:
-            for rep in open_reports[:4]:
+            for rep in open_reports[:3]:
                 sif_label = getattr(rep, 'sif_label', 'HIGH') or 'HIGH'
                 sif_score = getattr(rep, 'sif_score', 0.85) or 0.85
                 badge_style = style_badge_red if sif_label == 'HIGH' else style_badge_amber
-                badge_cell = Paragraph(f"<b>{sif_label}</b> ({sif_score:.2f})", badge_style)
+                danger_title = "HIGH RISK" if sif_label == 'HIGH' else "MEDIUM RISK"
+                badge_cell = Paragraph(f"<b>{danger_title}</b><br/><font size='6' color='#64748B'>Score: {sif_score:.2f}</font>", badge_style)
 
                 loc = (getattr(rep, 'location', None) or 'Well Pad 7')[:22]
                 raw_txt = (getattr(rep, 'raw_text', None) or 'Precursor observation').strip()
@@ -247,10 +247,10 @@ class PDFReportGenerator:
                 rule = (getattr(rep, 'iogp_rule', None) or 'Energy Isolation')[:20]
                 raw_id = getattr(rep, 'id', 'REP-001') or 'REP-001'
                 rep_id = f"#{raw_id[:8].upper()}"
-                sla = "24h (Critical)" if sif_label == 'HIGH' else "48h (High)"
+                sla = "Fix in 24h" if sif_label == 'HIGH' else "Fix in 48h"
 
                 precursor_rows.append([
-                    Paragraph(f"<b>{rep_id}</b>", style_cell),
+                    Paragraph(f"<b>{rep_id}</b>", style_cell_bold),
                     Paragraph(loc, style_cell),
                     badge_cell,
                     Paragraph(text_snippet, style_cell),
@@ -259,90 +259,89 @@ class PDFReportGenerator:
                 ])
         else:
             demo_items = [
-                ("REP-089", "Well Pad 7 (Annular BOP)", "HIGH (0.94)", style_badge_red,
-                 "Annular BOP secondary valve seal weeping hydraulic fluid under 1800 PSI vibration flutter.", "Energy Isolation", "24h (Critical)"),
-                ("REP-084", "Standpipe Manifold #02", "HIGH (0.88)", style_badge_red,
-                 "Standpipe pressure needle flutter 80 PSI observed with minor mud aeration in ditch.", "Bypassing Controls", "24h (Critical)"),
-                ("REP-079", "Mud Pump #2 Fluid End", "MEDIUM (0.68)", style_badge_amber,
-                 "Discharge pulsation dampener nitrogen pre-charge low (800 PSI vs 1500 PSI nominal).", "Asset Integrity", "48h (High)"),
+                ("ALERT-089", "Well Pad 7 (Safety Valve)", "HIGH RISK", "0.94", style_badge_red,
+                 "Secondary safety valve seal leaking hydraulic fluid under high vibration. Needs seal replacement.", "Energy Isolation", "Fix in 24h"),
+                ("ALERT-084", "Mud Pipe Manifold #02", "HIGH RISK", "0.88", style_badge_red,
+                 "Pressure gauge needle shaking erratically by 80 PSI; slight gas bubbles noticed in mud return ditch.", "Safe Systems", "Fix in 24h"),
+                ("ALERT-079", "Mud Pump #2 Outlet", "MEDIUM RISK", "0.68", style_badge_amber,
+                 "Shock absorber nitrogen pressure is below recommended limit (800 PSI vs 1500 PSI standard).", "Asset Integrity", "Fix in 48h"),
             ]
-            for r_id, r_loc, r_rating, r_style, r_desc, r_rule, r_sla in demo_items:
+            for r_id, r_loc, r_rating, r_score, r_style, r_desc, r_rule, r_sla in demo_items:
+                badge_cell = Paragraph(f"<b>{r_rating}</b><br/><font size='6' color='#64748B'>Score: {r_score}</font>", r_style)
                 precursor_rows.append([
-                    Paragraph(f"<b>#{r_id}</b>", style_cell),
+                    Paragraph(f"<b>#{r_id}</b>", style_cell_bold),
                     Paragraph(r_loc, style_cell),
-                    Paragraph(f"<b>{r_rating}</b>", r_style),
+                    badge_cell,
                     Paragraph(r_desc, style_cell),
                     Paragraph(r_rule, style_cell),
                     Paragraph(f"<b>{r_sla}</b>", style_cell),
                 ])
 
-        t_precursor = Table(precursor_rows, colWidths=[0.95 * inch, 1.45 * inch, 0.95 * inch, 2.75 * inch, 0.95 * inch, 0.75 * inch])
+        t_precursor = Table(precursor_rows, colWidths=[0.9 * inch, 1.4 * inch, 1.0 * inch, 2.7 * inch, 1.0 * inch, 0.8 * inch])
         t_precursor.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F1F5F9')),
             ('BOX', (0,0), (-1,-1), 0.75, c_border),
             ('INNERGRID', (0,0), (-1,-1), 0.5, c_grid),
-            ('PADDING', (0,0), (-1,-1), 2.2),
+            ('PADDING', (0,0), (-1,-1), 3.0),
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
             ('ALIGN', (2,1), (2,-1), 'CENTER'),
             ('ALIGN', (5,1), (5,-1), 'CENTER'),
         ]))
         story.append(t_precursor)
-        story.append(Spacer(1, 3))
+        story.append(Spacer(1, 4))
 
-        # ── 5. SECTION 3: Active Lockout / Tagout (LOTO) & Critical Barrier Isolations ──
-        story.append(Paragraph("<b>3. MECHANICAL LOCKOUT / TAGOUT (LOTO) & CRITICAL ISOLATIONS REGISTER</b>", style_sec_header))
+        # ── 5. SECTION 3: Locked Equipment & Shut-Off Valves (Safety Register) ──
+        story.append(Paragraph("<b>3. LOCKED EQUIPMENT & SHUT-OFF VALVES (SAFETY REGISTER)</b>", style_sec_header))
 
         loto_rows = [
             [
-                Paragraph("<b>LOTO Tag #</b>", style_cell_header),
-                Paragraph("<b>Equipment / Valve Unit</b>", style_cell_header),
-                Paragraph("<b>Method of Isolation</b>", style_cell_header),
-                Paragraph("<b>Key Holder / Applied By</b>", style_cell_header),
-                Paragraph("<b>Status & Physical Verification</b>", style_cell_header),
+                Paragraph("<b>Lock Tag #</b>", style_cell_header),
+                Paragraph("<b>Equipment Name</b>", style_cell_header),
+                Paragraph("<b>How It Is Locked</b>", style_cell_header),
+                Paragraph("<b>Locked By</b>", style_cell_header),
+                Paragraph("<b>Safety Status</b>", style_cell_header),
             ],
             [
-                Paragraph("<b>LOTO-OIL-881</b>", style_cell_bold),
-                Paragraph("Mud Pump #2 Suction Manifold", style_cell),
-                Paragraph("Double Block & Bleed + Blind Flange", style_cell),
-                Paragraph("B. Das (Roughneck / Badge 4491)", style_cell),
-                Paragraph("<font color='#166534'><b>VERIFIED LOCKED (Key Box #4)</b></font>", style_cell),
+                Paragraph("<b>LOTO-881</b>", style_cell_bold),
+                Paragraph("Mud Pump #2 Intake Valve", style_cell),
+                Paragraph("Dual valves closed & locked with steel blind plate", style_cell),
+                Paragraph("B. Das (Crew / Badge 4491)", style_cell),
+                Paragraph("<font color='#166534'><b>VERIFIED LOCKED</b></font><br/><font size='6' color='#475569'>Key secured in Key Box #4</font>", style_cell),
             ],
             [
-                Paragraph("<b>LOTO-OIL-894</b>", style_cell_bold),
-                Paragraph("Standpipe Choke Manifold Valve #4", style_cell),
-                Paragraph("Mechanical Interlock Lockout Padlock", style_cell),
-                Paragraph("T. Gohain (Toolpusher / Badge 2940)", style_cell),
-                Paragraph("<font color='#166534'><b>PADLOCKED & TAGGED IN PLACE</b></font>", style_cell),
+                Paragraph("<b>LOTO-894</b>", style_cell_bold),
+                Paragraph("High-Pressure Choke Valve #4", style_cell),
+                Paragraph("Padlocked with heavy steel clamp & hazard tag", style_cell),
+                Paragraph("T. Gohain (Supervisor / Badge 2940)", style_cell),
+                Paragraph("<font color='#166534'><b>LOCKED & TAGGED</b></font><br/><font size='6' color='#475569'>Physical padlock verified</font>", style_cell),
             ],
             [
-                Paragraph("<b>LOTO-OIL-905</b>", style_cell_bold),
-                Paragraph("Cellar Pit Submersible Sump Pump", style_cell),
-                Paragraph("Electrical Breaker Padlock + Red Hasp", style_cell),
+                Paragraph("<b>LOTO-905</b>", style_cell_bold),
+                Paragraph("Cellar Pit Drainage Pump", style_cell),
+                Paragraph("Electric breaker shut down with lockout hasp", style_cell),
                 Paragraph("R. Baruah (Chief Electrician)", style_cell),
-                Paragraph("<font color='#D97706'><b>UNDER MAINTENANCE (PTW-812)</b></font>", style_cell),
+                Paragraph("<font color='#D97706'><b>UNDER REPAIR</b></font><br/><font size='6' color='#475569'>Work permit PTW-812 active</font>", style_cell),
             ]
         ]
-        t_loto = Table(loto_rows, colWidths=[1.1 * inch, 1.85 * inch, 1.95 * inch, 1.5 * inch, 1.4 * inch])
+        t_loto = Table(loto_rows, colWidths=[1.1 * inch, 1.8 * inch, 1.9 * inch, 1.4 * inch, 1.6 * inch])
         t_loto.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F1F5F9')),
             ('BOX', (0,0), (-1,-1), 0.75, c_border),
             ('INNERGRID', (0,0), (-1,-1), 0.5, c_grid),
-            ('PADDING', (0,0), (-1,-1), 2.2),
+            ('PADDING', (0,0), (-1,-1), 3.0),
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ]))
         story.append(t_loto)
-        story.append(Spacer(1, 3))
+        story.append(Spacer(1, 4))
 
-        # ── 6. SECTION 4: Statutory Sign-Off & Verification Box (3 Signature Blocks) ──
-        story.append(Paragraph("<b>4. STATUTORY SHIFT TURNOVER DECLARATION & FORMAL ACCEPTANCE (DGMS AUDITABLE)</b>", style_sec_header))
+        # ── 6. SECTION 4: Shift Handover Declaration & Crew Sign-Off ──
+        story.append(Paragraph("<b>4. SHIFT HANDOVER DECLARATION & CREW SIGN-OFF</b>", style_sec_header))
 
         legal_declaration = (
-            "I hereby declare under the Mines Act 1952 and Oil Mines Regulations 2017 that all above-listed SIF precursor "
-            "signals, equipment anomalies, active 500m SWA digital permit freezes, and LOTO mechanical isolations have been "
-            "physically inspected on the rig floor and verbally communicated during this formal shift changeover. Zero uncommunicated "
-            "isolations exist on this installation."
+            "We confirm that all safety alerts, locked equipment, shut-off valves, and emergency exclusion zones listed above have been "
+            "physically inspected on site and verbally explained to the incoming relief crew. No uncommunicated dangers or hidden hazards remain on this installation."
         )
-        story.append(Paragraph(legal_declaration, ParagraphStyle('Legal', parent=styles['Normal'], fontName='Helvetica-Oblique', fontSize=5.8, leading=7.2, textColor=colors.HexColor('#334155'))))
+        story.append(Paragraph(legal_declaration, ParagraphStyle('Legal', parent=styles['Normal'], fontName='Helvetica-Oblique', fontSize=6.5, leading=8.2, textColor=colors.HexColor('#334155'))))
         story.append(Spacer(1, 2))
 
         relinq_at = (shift_data or {}).get('relinquished_at', '18:00 IST')
@@ -352,24 +351,24 @@ class PDFReportGenerator:
 
         signoff_boxes_data = [
             [
-                Paragraph("<b>A. OUTGOING SHIFT IN-CHARGE</b><br/>"
+                Paragraph("<b>A. OUTGOING SUPERVISOR</b><br/>"
                           f"<b>Name:</b> {sup_out}<br/>"
-                          "<b>Designation:</b> Senior Toolpusher / Rig Head<br/>"
-                          f"<b>Relinquished At:</b> {relinq_at}<br/><br/>"
+                          "<b>Role:</b> Shift Rig Supervisor<br/>"
+                          f"<b>Handed Over:</b> {relinq_at}<br/><br/>"
                           f"<b>Signature:</b> <u>&nbsp;&nbsp;{out_name_only}&nbsp;&nbsp;</u><br/>"
-                          "<font size='5' color='#64748B'>Certified Physical Handover Complete</font>", style_cell),
-                Paragraph("<b>B. INCOMING RELIEVING IN-CHARGE</b><br/>"
+                          "<font size='5.5' color='#166534'><b>[PHYSICALLY HANDED OVER]</b></font>", style_cell),
+                Paragraph("<b>B. INCOMING SUPERVISOR</b><br/>"
                           f"<b>Name:</b> {sup_in}<br/>"
-                          "<b>Designation:</b> Relief Toolpusher / Rig Head<br/>"
-                          f"<b>Accepted At:</b> {accept_at}<br/><br/>"
+                          "<b>Role:</b> Relief Rig Supervisor<br/>"
+                          f"<b>Accepted Duty:</b> {accept_at}<br/><br/>"
                           f"<b>Signature:</b> <u>&nbsp;&nbsp;{in_name_only}&nbsp;&nbsp;</u><br/>"
-                          "<font size='5' color='#64748B'>All Isolations & Precursors Accepted</font>", style_cell),
-                Paragraph("<b>C. DGMS / COMPANY SAFETY OFFICER</b><br/>"
+                          "<font size='5.5' color='#166534'><b>[SITE WALK & DUTY ACCEPTED]</b></font>", style_cell),
+                Paragraph("<b>C. SAFETY MANAGER (OIL)</b><br/>"
                           "<b>Name:</b> Rajesh Kumar<br/>"
-                          "<b>Designation:</b> General Manager (HSE), OIL<br/>"
-                          "<b>Inspection Ref:</b> DGMS/EZ/OIL-2026/09<br/><br/>"
+                          "<b>Role:</b> GM (Health, Safety & Environment)<br/>"
+                          "<b>Audit Ref:</b> OIL/HSE/2026-V1<br/><br/>"
                           "<b>Signature:</b> <u>&nbsp;&nbsp;Rajesh Kumar (HSE)&nbsp;&nbsp;</u><br/>"
-                          "<font size='5' color='#0A5C36'><b>[OIL INDIA LTD · PSM VERIFIED]</b></font>", style_cell),
+                          "<font size='5.5' color='#0A5C36'><b>[VERIFIED IN SAFETY REGISTER]</b></font>", style_cell),
             ]
         ]
         t_signoff = Table(signoff_boxes_data, colWidths=[2.6 * inch, 2.6 * inch, 2.6 * inch])
@@ -377,7 +376,7 @@ class PDFReportGenerator:
             ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#FAFAFA')),
             ('BOX', (0,0), (-1,-1), 0.75, colors.HexColor('#94A3B8')),
             ('INNERGRID', (0,0), (-1,-1), 0.5, c_border),
-            ('PADDING', (0,0), (-1,-1), 2.5),
+            ('PADDING', (0,0), (-1,-1), 3.0),
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ]))
         story.append(t_signoff)
@@ -386,10 +385,10 @@ class PDFReportGenerator:
         story.append(Spacer(1, 3))
         story.append(HRFlowable(width="100%", thickness=0.75, color=c_oil_green, spaceBefore=1, spaceAfter=2))
         footer_text = (
-            "OFFICIAL STATUTORY RECORD — OIL INDIA LIMITED · SANKET AI SOVEREIGN PROCESS SAFETY MANAGEMENT SYSTEM "
-            "· ZERO INTERNET EGRESS (0 KB/s OUT) · PROCESSED ON LOCAL HARDWARE · CERT-In & DGMS COMPLIANT · PAGE 1 OF 1"
+            "OFFICIAL SAFETY RECORD — OIL INDIA LIMITED · SANKET AI PROCESS SAFETY SYSTEM "
+            "· SECURE LOCAL PROCESSING · DGMS & OISD COMPLIANT · PAGE 1 OF 1"
         )
-        story.append(Paragraph(footer_text, ParagraphStyle('FooterStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=5.5, leading=6.8, alignment=1, textColor=colors.HexColor('#475569'))))
+        story.append(Paragraph(footer_text, ParagraphStyle('FooterStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=6.0, leading=7.5, alignment=1, textColor=colors.HexColor('#475569'))))
 
         # Build PDF
         doc.build(story)
