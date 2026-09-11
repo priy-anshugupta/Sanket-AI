@@ -13,14 +13,14 @@ html_content = f'''<!DOCTYPE html>
 <style>
   @page {{ 
     size: A4 portrait; 
-    margin: 7mm 10mm 6mm 10mm; 
+    margin: 8mm 11mm 7mm 11mm; 
   }}
   * {{ margin: 0; padding: 0; box-sizing: border-box; }}
   body {{
     font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
     color: #1e293b;
-    font-size: 8.6pt;
-    line-height: 1.38;
+    font-size: 8.7pt;
+    line-height: 1.4;
     background: #ffffff;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
@@ -32,11 +32,11 @@ html_content = f'''<!DOCTYPE html>
     justify-content: space-between;
     align-items: center;
     border-bottom: 3.5px solid #0A5C36;
-    padding-bottom: 5px;
-    margin-bottom: 6px;
+    padding-bottom: 6px;
+    margin-bottom: 7px;
   }}
   .header-left h1 {{
-    font-size: 23pt;
+    font-size: 23.5pt;
     font-weight: 900;
     color: #0F172A;
     letter-spacing: -0.6px;
@@ -44,19 +44,19 @@ html_content = f'''<!DOCTYPE html>
   }}
   .header-left h1 span {{ color: #0A5C36; }}
   .header-left .tagline {{
-    font-size: 8.8pt;
+    font-size: 8.9pt;
     color: #475569;
     font-weight: 600;
-    margin-top: 2px;
+    margin-top: 2.5px;
   }}
   .header-right {{
     text-align: right;
-    font-size: 7.8pt;
+    font-size: 7.9pt;
     color: #475569;
-    line-height: 1.35;
+    line-height: 1.38;
   }}
   .header-right .ps-code {{
-    font-size: 12pt;
+    font-size: 12.5pt;
     font-weight: 900;
     color: #0A5C36;
   }}
@@ -67,48 +67,48 @@ html_content = f'''<!DOCTYPE html>
     border: 1px solid #fecaca;
     border-left: 4.5px solid #dc2626;
     border-radius: 6px;
-    padding: 6px 10px;
-    margin-bottom: 6px;
+    padding: 6.5px 10.5px;
+    margin-bottom: 7px;
   }}
   .problem-box .title {{
-    font-size: 7.8pt;
+    font-size: 7.9pt;
     font-weight: 800;
     color: #dc2626;
     text-transform: uppercase;
     letter-spacing: 0.8px;
-    margin-bottom: 1px;
+    margin-bottom: 1.5px;
   }}
   .problem-box p {{
-    font-size: 8.2pt;
+    font-size: 8.3pt;
     color: #7f1d1d;
-    line-height: 1.32;
+    line-height: 1.33;
   }}
   .problem-box strong {{ color: #991b1b; }}
 
   /* ── SECTION TITLE ── */
   .section-title {{
-    font-size: 8.2pt;
+    font-size: 8.3pt;
     font-weight: 800;
     color: #0A5C36;
     text-transform: uppercase;
     letter-spacing: 0.8px;
     border-bottom: 1.5px solid #d1fae5;
     padding-bottom: 2px;
-    margin: 6px 0 4px 0;
+    margin: 7px 0 4.5px 0;
   }}
 
   /* ── METRICS ROW ── */
   .metrics-row {{
     display: flex;
-    gap: 5px;
-    margin-bottom: 6px;
+    gap: 5.5px;
+    margin-bottom: 7px;
   }}
   .metric {{
     flex: 1;
     background: #f0fdf4;
     border: 1px solid #bbf7d0;
     border-radius: 6px;
-    padding: 3.5px 4px;
+    padding: 4px 4.5px;
     text-align: center;
   }}
   .metric .val {{
@@ -118,7 +118,7 @@ html_content = f'''<!DOCTYPE html>
     line-height: 1.1;
   }}
   .metric .lbl {{
-    font-size: 6pt;
+    font-size: 6.1pt;
     color: #475569;
     text-transform: uppercase;
     letter-spacing: 0.4px;
@@ -126,16 +126,19 @@ html_content = f'''<!DOCTYPE html>
     margin-top: 1px;
   }}
 
-  /* ── FEATURE GRID (2x6) ── */
+  /* ── FEATURE GRID (11 MODULES) ── */
   .feature-grid {{
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 3.5px 11px;
+    gap: 4px 12px;
   }}
   .feature-item {{
     display: flex;
     align-items: flex-start;
-    gap: 5px;
+    gap: 5.5px;
+  }}
+  .feature-item.full-width {{
+    grid-column: span 2;
   }}
   .feature-item .num {{
     flex-shrink: 0;
@@ -152,24 +155,24 @@ html_content = f'''<!DOCTYPE html>
     margin-top: 1px;
   }}
   .feature-item .text {{
-    font-size: 7.9pt;
-    line-height: 1.28;
+    font-size: 8pt;
+    line-height: 1.3;
   }}
-  .feature-item .text strong {{ color: #0F172A; font-size: 8.1pt; }}
+  .feature-item .text strong {{ color: #0F172A; font-size: 8.2pt; }}
 
   /* ── AGENT PIPELINE (STRICT 2-ROW GRID) ── */
   .agent-pipeline {{
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
-    padding: 5px 7px;
-    margin: 5px 0 6px 0;
+    padding: 5.5px 7.5px;
+    margin: 5.5px 0 7px 0;
   }}
   .pipeline-row {{
     display: grid;
     grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
     align-items: center;
-    gap: 4px;
+    gap: 4.5px;
   }}
   .agent-card {{
     background: #ffffff;
@@ -192,7 +195,7 @@ html_content = f'''<!DOCTYPE html>
     letter-spacing: 0.3px;
   }}
   .agent-title {{
-    font-size: 7.4pt;
+    font-size: 7.5pt;
     font-weight: 800;
     color: #065f46;
     white-space: nowrap;
@@ -200,7 +203,7 @@ html_content = f'''<!DOCTYPE html>
     text-overflow: ellipsis;
   }}
   .agent-desc {{
-    font-size: 6.3pt;
+    font-size: 6.4pt;
     color: #475569;
     white-space: nowrap;
     line-height: 1.15;
@@ -240,7 +243,7 @@ html_content = f'''<!DOCTYPE html>
     color: #0A5C36;
     letter-spacing: 0.7px;
     text-transform: uppercase;
-    margin: 3px 0;
+    margin: 3.5px 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -257,7 +260,7 @@ html_content = f'''<!DOCTYPE html>
   .two-col {{
     display: flex;
     gap: 11px;
-    margin-top: 3px;
+    margin-top: 3.5px;
   }}
   .col-60 {{ flex: 1.23; }}
   .col-40 {{ flex: 0.77; }}
@@ -266,48 +269,48 @@ html_content = f'''<!DOCTYPE html>
   .comp-table {{
     width: 100%;
     border-collapse: collapse;
-    font-size: 7.4pt;
-    margin-top: 2px;
+    font-size: 7.5pt;
+    margin-top: 2.5px;
   }}
   .comp-table th {{
     background: #0A5C36;
     color: white;
-    padding: 3.5px 5px;
+    padding: 3.8px 5.5px;
     text-align: left;
     font-weight: 700;
-    font-size: 7pt;
+    font-size: 7.1pt;
   }}
   .comp-table td {{
-    padding: 3px 5px;
+    padding: 3.2px 5.5px;
     border-bottom: 1px solid #e2e8f0;
   }}
   .comp-table tr:nth-child(even) {{ background: #f8fafc; }}
-  .ck {{ color: #16a34a; font-weight: 800; font-size: 8.2pt; }}
-  .cx {{ color: #dc2626; font-weight: 800; font-size: 8.2pt; }}
+  .ck {{ color: #16a34a; font-weight: 800; font-size: 8.3pt; }}
+  .cx {{ color: #dc2626; font-weight: 800; font-size: 8.3pt; }}
 
   /* ── TECH TAGS ── */
   .tech-tags {{
     display: flex;
     flex-wrap: wrap;
     gap: 2.5px;
-    margin-top: 2px;
+    margin-top: 2.5px;
   }}
   .tag {{
     background: #f1f5f9;
     border: 1px solid #cbd5e1;
     border-radius: 3px;
-    padding: 1.2px 5.5px;
-    font-size: 6.6pt;
+    padding: 1.3px 5.8px;
+    font-size: 6.7pt;
     font-weight: 600;
     color: #334155;
   }}
 
   /* ── REGULATORY ── */
   .reg {{
-    font-size: 6.4pt;
+    font-size: 6.5pt;
     color: #64748b;
-    margin-top: 4px;
-    padding: 3.5px 5px;
+    margin-top: 4.5px;
+    padding: 3.8px 5.5px;
     background: #f8fafc;
     border-radius: 3px;
     border: 1px solid #e2e8f0;
@@ -320,12 +323,12 @@ html_content = f'''<!DOCTYPE html>
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 6px;
+    margin-top: 7px;
     padding-top: 6px;
     border-top: 2px solid #0A5C36;
   }}
   .bottom-bar .team {{
-    font-size: 7.2pt;
+    font-size: 7.3pt;
     color: #475569;
     line-height: 1.38;
   }}
@@ -370,7 +373,7 @@ html_content = f'''<!DOCTYPE html>
   }}
   .qr-domain {{
     font-family: 'Consolas', monospace;
-    font-size: 8.2pt;
+    font-size: 8.3pt;
     font-weight: 900;
     color: #0F172A;
     letter-spacing: -0.2px;
@@ -418,8 +421,8 @@ html_content = f'''<!DOCTYPE html>
   <div class="metric"><div class="val">24/7</div><div class="lbl">Real-Time Cloud Monitor</div></div>
 </div>
 
-<!-- ═══════ COMPLETE FEATURE SET (12 MODULES) ═══════ -->
-<div class="section-title">🔍 Complete Safety Intelligence Platform (12 Modules)</div>
+<!-- ═══════ COMPLETE FEATURE SET (11 MODULES) ═══════ -->
+<div class="section-title">🔍 Complete Safety Intelligence Platform (11 Modules)</div>
 <div class="feature-grid">
   <div class="feature-item">
     <div class="num">1</div>
@@ -461,13 +464,9 @@ html_content = f'''<!DOCTYPE html>
     <div class="num">10</div>
     <div class="text"><strong>Emergency Stop Work Authority (SWA)</strong> — One-click safety interlock: instantly broadcasts SMS/push alarm to all on-site personnel with GPS lockdown zone &amp; emergency muster route.</div>
   </div>
-  <div class="feature-item">
+  <div class="feature-item full-width">
     <div class="num">11</div>
-    <div class="text"><strong>Automated Shift Handover PDF</strong> — One-click generation of statutory shift handover dossiers containing SIF metrics, top hazard clusters, pending CAPA work orders, and toolpusher sign-off.</div>
-  </div>
-  <div class="feature-item">
-    <div class="num">12</div>
-    <div class="text"><strong>FastMCP Tool Registry + CAPA Dispatch</strong> — Model Context Protocol tools expose safety database for AI agents. Action Agent auto-dispatches CAPA corrective actions with SLAs.</div>
+    <div class="text"><strong>Automated Shift Handover Dossier &amp; PDF</strong> — One-click generation of statutory shift handover dossiers containing SIF metrics, top hazard clusters, pending CAPA corrective actions, and toolpusher sign-off for compliance.</div>
   </div>
 </div>
 
@@ -566,7 +565,7 @@ html_content = f'''<!DOCTYPE html>
       <span class="tag">Supabase (PostgreSQL)</span>
       <span class="tag">WebSocket (Real-time)</span>
       <span class="tag">Leaflet.js (GIS/Satellite)</span>
-      <span class="tag">FastMCP (Tool Registry)</span>
+      <span class="tag">ReportLab (PDF Engine)</span>
       <span class="tag">TailwindCSS</span>
       <span class="tag">Docker</span>
       <span class="tag">Railway (Cloud)</span>
@@ -586,7 +585,7 @@ html_content = f'''<!DOCTYPE html>
   <div class="team">
     <strong>Team SANKET</strong> · Smart India Hackathon 2026 · Problem Statement: <strong>SIH26165</strong><br>
     Developed for <strong>Oil India Limited (OIL)</strong> · Ministry of Petroleum &amp; Natural Gas<br>
-    <span style="font-size:6.5pt; color:#64748b; font-style:italic;">"Every precursor detected is a disaster prevented — Protecting lives through predictive intelligence."</span>
+    <span style="font-size:6.6pt; color:#64748b; font-style:italic;">"Every precursor detected is a disaster prevented — Protecting lives through predictive intelligence."</span>
   </div>
 
   <div class="qr-card">
@@ -606,4 +605,4 @@ html_content = f'''<!DOCTYPE html>
 with open('frontend/public/SANKET_AI_JURY_HANDOUT.html', 'w', encoding='utf-8') as f:
     f.write(html_content)
 
-print("[SUCCESS] Created updated SANKET_AI_JURY_HANDOUT.html")
+print("[SUCCESS] Updated SANKET_AI_JURY_HANDOUT.html with 11 modules!")
