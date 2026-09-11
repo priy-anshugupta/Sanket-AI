@@ -3,18 +3,19 @@ SANKET · AI — Central Configuration
 Pydantic Settings for all environment variables and thresholds.
 """
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Literal
 
 
 class Settings(BaseSettings):
-    """Central configuration loaded from .env file."""
+    """Central configuration loaded from .env file and environment variables."""
 
     # --- App ---
     APP_NAME: str = "SANKET · AI"
     APP_VERSION: str = "1.0.0"
     AI_MODE: Literal["online", "airgapped"] = "online"
     DEBUG: bool = True
+    PORT: int = 8000
 
     # --- Database ---
     DATABASE_URL: str = "postgresql+asyncpg://postgres.hbpcldlvsgnsyaqyaosq:qAvX%2BD77%40nK6g6Z@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres"
@@ -84,10 +85,11 @@ class Settings(BaseSettings):
         "nai", "nohoy", "nahoi", "nohoi", "nehi",
     ]
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = True
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
 
 # Singleton instance
