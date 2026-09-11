@@ -17,10 +17,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy and install python dependencies (CPU-optimized PyTorch first for fast cloud builds)
+# Copy and install python dependencies (using PyTorch CPU wheel index for fast cloud builds)
 COPY requirements.txt .
-RUN pip install --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu && \
-    pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
 
 # Copy application source code and data assets
 COPY backend/ ./backend/
