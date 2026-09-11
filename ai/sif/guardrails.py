@@ -80,8 +80,11 @@ class SafetyGuardrailEngine:
             guardrail_status = "AMBIGUITY_RESOLVED_CONSERVATIVELY"
             audit_notes.append("Conservative physical safety principle enforced per DGMS standard")
 
+        # ABSOLUTE FINAL CLAMP — no SIF score may ever exceed 0.99
+        final_score = max(0.0, min(float(final_score), 0.99))
+
         return {
-            "final_sif_score": round(float(final_score), 4),
+            "final_sif_score": round(final_score, 4),
             "final_sif_label": final_label,
             "consensus_confidence": round(float(confidence), 2),
             "is_sif_precursor": final_label in ("HIGH", "MEDIUM"),

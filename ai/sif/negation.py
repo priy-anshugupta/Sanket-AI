@@ -60,13 +60,20 @@ class NegationParser:
             if token_idx is None:
                 continue
 
-            # Check 5-token window before the keyword
+            # Check 5-token window BEFORE the keyword (English: "no explosion")
             window_start = max(0, token_idx - 5)
             preceding_tokens = tokens[window_start:token_idx]
 
-            # Check if any negation term is in the window
             for token in preceding_tokens:
-                # Strip punctuation for comparison
+                clean_token = re.sub(r"[^\w]", "", token)
+                if clean_token in self.negation_terms:
+                    return True
+
+            # Check 5-token window AFTER the keyword (Hindi/Assamese: "leak nahi hai", "leak nai")
+            window_end = min(len(tokens), token_idx + 6)
+            following_tokens = tokens[token_idx + 1:window_end]
+
+            for token in following_tokens:
                 clean_token = re.sub(r"[^\w]", "", token)
                 if clean_token in self.negation_terms:
                     return True

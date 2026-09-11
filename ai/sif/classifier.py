@@ -33,8 +33,12 @@ class SIFClassifier:
             return
 
         print(f"[SIF Classifier] Loading embedding model: {settings.EMBEDDING_MODEL}")
-        self.model = SentenceTransformer(settings.EMBEDDING_MODEL)
-        print(f"[SIF Classifier] Model loaded. Embedding dim: {self.model.get_sentence_embedding_dimension()}")
+        try:
+            self.model = SentenceTransformer(settings.EMBEDDING_MODEL, local_files_only=True)
+        except Exception:
+            self.model = SentenceTransformer(settings.EMBEDDING_MODEL)
+        dim = self.model.get_embedding_dimension() if hasattr(self.model, 'get_embedding_dimension') else self.model.get_sentence_embedding_dimension()
+        print(f"[SIF Classifier] Model loaded. Embedding dim: {dim}")
 
         # Precompute anchor embeddings
         anchor_library.load(embedding_model=self.model)
@@ -143,6 +147,7 @@ class SIFClassifier:
         """
         Classify a batch of report texts efficiently.
         Uses batched encoding for performance (200 reports < 5s target).
+        Delegates to classify() per-report for full calibration + guardrails consistency.
         """
         if not self._initialized:
             self.initialize()
@@ -150,48 +155,8 @@ class SIFClassifier:
         if not texts:
             return []
 
-        # Batch encode all reports
-        report_embeddings = self.model.encode(
-            [f"query: {t}" for t in texts],
-            normalize_embeddings=True,
-            show_progress_bar=False,
-            batch_size=64,
-        )
-
-        results = []
-        for i, (text, embedding) in enumerate(zip(texts, report_embeddings)):
-            # Cosine similarity
-            similarities = np.dot(anchor_library.anchor_embeddings, embedding)
-            max_idx = int(np.argmax(similarities))
-            max_similarity = float(similarities[max_idx])
-            matched_anchor = anchor_library.anchors[max_idx]
-
-            # Keyword boost
-            keyword_results = negation_parser.check_keywords(text, settings.CRITICAL_KEYWORDS)
-            boosted = [kr["keyword"] for kr in keyword_results if kr["should_boost"]]
-            boost = settings.KEYWORD_BOOST if boosted else 0.0
-
-            score = float(np.clip(max_similarity + boost, 0.0, 1.0))
-
-            if score >= settings.SIF_HIGH_THRESHOLD:
-                label = "HIGH"
-            elif score >= settings.SIF_MEDIUM_THRESHOLD:
-                label = "MEDIUM"
-            else:
-                label = "LOW"
-
-            results.append({
-                "sif_score": round(score, 4),
-                "sif_label": label,
-                "is_sif_precursor": label in ("HIGH", "MEDIUM"),
-                "matched_anchor_id": matched_anchor["id"],
-                "matched_anchor_text": matched_anchor["text"],
-                "matched_anchor_similarity": round(max_similarity, 4),
-                "keyword_boost_applied": bool(boosted),
-                "boosted_keywords": boosted,
-            })
-
-        return results
+        # Delegate to single classify() to ensure consistent scoring with guardrails
+        return [self.classify(text) for text in texts]
 
 
 # Singleton
