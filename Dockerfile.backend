@@ -1,5 +1,5 @@
 # =======================================================
-# SANKET · AI — Backend Dockerfile (Air-Gapped Sovereign)
+# SANKET · AI — Backend Service (Railway Production)
 # =======================================================
 
 FROM python:3.11-slim
