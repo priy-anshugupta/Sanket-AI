@@ -464,8 +464,8 @@ class PDFReportGenerator:
                 Paragraph(f"<b>SIF Precursor Score:</b> {sif_score:.4f} / 1.0000", section_heading)
             ],
             [
-                Paragraph(f"<b>Location:</b> {report.location or 'Unspecified'}<br/><b>Activity:</b> {report.activity_type or 'General'}", body_style),
-                Paragraph(f"<b>IOGP Rule:</b> {report.iogp_rule or 'General Safety'}<br/><b>Shift:</b> {report.shift or 'DAY'}", body_style)
+                Paragraph(f"<b>Location:</b> {getattr(report, 'location', None) or 'Unspecified'}<br/><b>Activity:</b> {getattr(report, 'activity_type', None) or 'General'}", body_style),
+                Paragraph(f"<b>IOGP Rule:</b> {getattr(report, 'iogp_rule', None) or 'General Safety'}<br/><b>Shift:</b> {getattr(report, 'shift', None) or 'DAY'}", body_style)
             ]
         ]
         t_summary = Table(summary_box_data, colWidths=[3.5 * inch, 3.5 * inch])
