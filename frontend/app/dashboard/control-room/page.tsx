@@ -42,6 +42,8 @@ export default function ControlRoomPage() {
   const [stats, setStats] = useState({ total: 509, high: 159, medium: 80, low: 270 });
   const [lastAlarm, setLastAlarm] = useState<string | null>(null);
 
+  const [fleetMatrix, setFleetMatrix] = useState<{ name: string; risk: number; label: string; hazard: string; color: string }[]>([]);
+
   // Live Clock (Client-only to prevent SSR hydration mismatch)
   useEffect(() => {
     const updateTime = () => {
@@ -90,6 +92,47 @@ export default function ControlRoomPage() {
         }
       }
     } catch {}
+
+    try {
+      const hRes = await fetch(`${API_BASE}/api/analytics/heatmap`);
+      if (hRes.ok) {
+        const hData = await hRes.json();
+        const siteDensities: Record<string, number> = hData.site_densities || {};
+        const siteTelemetry: Record<string, any> = hData.site_telemetry || {};
+
+        const entries = Object.entries(siteDensities).map(([name, density]) => {
+          const tel = siteTelemetry[name];
+          const hazard = tel?.latest_hazard || (density > 35 ? 'Precursor concentration elevated' : 'Routine operations · All barriers green');
+          
+          const riskVal = Math.round(density);
+          let color = 'green';
+          let label = 'NORMAL';
+          if (riskVal >= 35) {
+            color = 'red';
+            label = 'HIGH RISK';
+          } else if (riskVal >= 25) {
+            color = 'amber';
+            label = 'ELEVATED';
+          } else {
+            color = 'green';
+            label = 'NORMAL';
+          }
+
+          return {
+            name,
+            risk: riskVal,
+            label,
+            hazard,
+            color,
+          };
+        });
+
+        entries.sort((a, b) => b.risk - a.risk);
+        if (entries.length > 0) {
+          setFleetMatrix(entries.slice(0, 5));
+        }
+      }
+    } catch {}
   };
 
   useEffect(() => {
@@ -133,13 +176,15 @@ export default function ControlRoomPage() {
     setTimeout(() => setLastAlarm(null), 5000);
   };
 
-  const assetThreats = [
-    { name: 'Baghjan Well #5', risk: 96, label: 'HIGH RISK', hazard: 'Gas kick & BOP seal weeping under 1800 PSI', color: 'red' },
-    { name: 'Well Pad 7', risk: 92, label: 'HIGH RISK', hazard: '12m scaffold tower without safety harness', color: 'red' },
-    { name: 'Moran OCS-3', risk: 88, label: 'HIGH RISK', hazard: 'Crane lift near 33kV live overhead line', color: 'amber' },
-    { name: 'Geleki Processing', risk: 85, label: 'HIGH RISK', hazard: 'Speeding forklift near gas cylinder bank', color: 'amber' },
+  const defaultThreats = [
+    { name: 'Well Pad 7', risk: 48, label: 'HIGH RISK', hazard: '12m scaffold tower without safety harness over manifold', color: 'red' },
+    { name: 'Baghjan Well #5', risk: 37, label: 'HIGH RISK', hazard: 'Gas kick & BOP seal weeping under 1800 PSI surge', color: 'red' },
+    { name: 'Naharkatia Field', risk: 33, label: 'ELEVATED', hazard: 'High vibration 42mm/s detected on mud pump #2', color: 'amber' },
+    { name: 'Moran OCS-3', risk: 26, label: 'ELEVATED', hazard: 'Crane lift near 33kV live overhead line', color: 'amber' },
     { name: 'Duliajan Central HQ', risk: 15, label: 'NORMAL', hazard: 'Routine operations · All barriers green', color: 'green' }
   ];
+
+  const displayedThreats = fleetMatrix.length > 0 ? fleetMatrix : defaultThreats;
 
   return (
     <div className="dashboard-page space-y-5 p-6 bg-[#F7F8F5] min-h-screen text-[#1A2B2D]">
@@ -322,7 +367,7 @@ export default function ControlRoomPage() {
             </div>
 
             <div className="space-y-2">
-              {assetThreats.map((asset) => (
+              {displayedThreats.map((asset) => (
                 <div
                   key={asset.name}
                   onClick={() => router.push(`/dashboard/emergency?location=${encodeURIComponent(asset.name)}`)}
@@ -335,7 +380,7 @@ export default function ControlRoomPage() {
                       asset.color === 'amber' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
                       'bg-emerald-50 text-emerald-700 border border-emerald-200'
                     }`}>
-                      {asset.risk}% RISK
+                      {asset.risk}% {asset.label || 'RISK'}
                     </span>
                   </div>
                   <p className="text-[11px] text-[#5E7072] line-clamp-1">
