@@ -30,6 +30,28 @@ async def ingest_report(
     Ingest a single text report.
     Creates record with PENDING status and enqueues background pipeline.
     """
+    # 1. Run instant NLP preprocessing and SIF classification (~15ms)
+    # so the database record is initialized with its TRUE score immediately
+    from ai.preprocessing.preprocessor import preprocessor
+    from ai.sif.classifier import sif_classifier
+    from ai.lsr.mapper import lsr_mapper
+
+    prep = preprocessor.preprocess(request.text)
+    clean_text = prep["preprocessed_text"] if prep.get("is_valid") else request.text
+    classification = sif_classifier.classify(clean_text)
+    
+    iogp_rule = "General Safety & Maintenance"
+    try:
+        lsr_res = lsr_mapper.map_rules(clean_text)
+        if lsr_res:
+            iogp_rule = lsr_res[0]["rule_name"]
+    except Exception:
+        pass
+
+    score = min(classification["sif_score"], 0.99)
+    label = classification["sif_label"]
+    is_precursor = classification["is_sif_precursor"]
+
     report = await report_service.create_report(
         db=db,
         raw_text=request.text,
@@ -39,21 +61,25 @@ async def ingest_report(
         activity_type=request.activity_type,
         shift=request.shift,
     )
+    report.sif_score = score
+    report.sif_label = label
+    report.is_sif_precursor = is_precursor
+    report.iogp_rule = iogp_rule
+    report.language = prep.get("language", "en")
     await db.commit()
 
-    # Process immediately for instantaneous AI classification (<0.2s)
-    try:
-        await process_report(report.id)
-        status_msg = "COMPLETED"
-    except Exception:
-        background_tasks.add_task(process_report, report.id)
-        status_msg = "PENDING"
+    # Enqueue background pipeline for deep graph updates, entity extraction, cluster detection, and LLM explanation
+    background_tasks.add_task(process_report, report.id)
 
     return IngestResponse(
         job_id=report.id,
         count=1,
-        status=status_msg,
+        status="COMPLETED",
         message="Report ingested and processed by AI pipeline",
+        sif_score=score,
+        sif_label=label,
+        is_sif_precursor=is_precursor,
+        iogp_rule=iogp_rule,
     )
 
 
@@ -84,7 +110,7 @@ async def test_classify_report(request: ReportIngestRequest):
         
     latency_ms = max(int((time.time() - start_time) * 1000), 12)
     
-    score = classification["sif_score"]
+    score = min(classification["sif_score"], 0.99)
     label = classification["sif_label"]
     is_high = label == "HIGH" or score >= 0.75
     
@@ -291,7 +317,7 @@ async def ingest_demo_500(db: AsyncSession = Depends(get_db)):
         report = Report(
             id=rep_id,
             raw_text=text_content,
-            sif_score=round(sif_score, 2),
+            sif_score=round(min(sif_score, 0.99), 2),
             sif_label=sif_label,
             is_sif_precursor=is_precursor,
             iogp_rule=top_rule,

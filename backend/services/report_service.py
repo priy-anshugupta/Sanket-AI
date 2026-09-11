@@ -17,6 +17,34 @@ from backend.models.entity import Entity
 from backend.models.feedback import FeedbackLog
 
 
+def normalize_site_location(loc: Optional[str]) -> str:
+    """Normalize any noisy or suffixed site name to canonical operational asset name."""
+    if not loc:
+        return "Well Pad 7"
+    loc_clean = loc.strip()
+    if "Well Pad 7" in loc_clean:
+        return "Well Pad 7"
+    if "Baghjan" in loc_clean:
+        return "Baghjan Well #5"
+    if "Duliajan" in loc_clean:
+        return "Duliajan Plant"
+    if "Moran" in loc_clean:
+        return "Moran OCS-3"
+    if "Digboi" in loc_clean:
+        return "Digboi Pad 14"
+    if "Naharkatia" in loc_clean:
+        return "Naharkatia Field"
+    if "Tengakhat" in loc_clean:
+        return "Tengakhat Station"
+    if "Lakwa" in loc_clean:
+        return "Lakwa Gathering"
+    if "Geleki" in loc_clean:
+        return "Geleki Processing"
+    if "Rudrasagar" in loc_clean:
+        return "Rudrasagar Pad 2"
+    return loc_clean
+
+
 class ReportService:
     """
     Business logic for report management.
@@ -34,11 +62,12 @@ class ReportService:
         shift: Optional[str] = None,
     ) -> Report:
         """Create a new report record with PENDING status."""
+        canonical_location = normalize_site_location(location) if location else "Well Pad 7"
         report = Report(
             id=str(uuid.uuid4()),
             raw_text=raw_text,
             source=source,
-            location=location,
+            location=canonical_location,
             asset_id=asset_id,
             activity_type=activity_type,
             shift=shift,
@@ -293,6 +322,7 @@ class ReportService:
         """
         Generate SIF-Precursor Density Heatmap data.
         D_SIF = (Confirmed SIFp Reports / Total Reports) × 100
+        Includes per-site live telemetry: latest hazard observation, live SIF density, etc.
         """
         result = await db.execute(
             select(
@@ -313,39 +343,44 @@ class ReportService:
         )
         rows = result.all()
 
-        cells = []
+        cells_dict = {}  # (normalized_site, activity) -> {"total": int, "sif": int}
         sites = set()
         activities = set()
         site_totals = {}
 
         for row in rows:
-            location = row[0] or "Unknown"
-            activity = row[1] or "Unknown"
-            total = row[2] or 0
+            raw_location = row[0] or "Unknown"
+            location = normalize_site_location(raw_location)
+            activity = row[1] or "Drilling"
+            total = int(row[2] or 0)
             sif_count = int(row[3] or 0)
-            density = (sif_count / total * 100) if total > 0 else 0.0
 
             sites.add(location)
             activities.add(activity)
+
+            key = (location, activity)
+            if key not in cells_dict:
+                cells_dict[key] = {"sif": 0, "total": 0}
+            cells_dict[key]["sif"] += sif_count
+            cells_dict[key]["total"] += total
 
             if location not in site_totals:
                 site_totals[location] = {"sif": 0, "total": 0}
             site_totals[location]["sif"] += sif_count
             site_totals[location]["total"] += total
 
-            if density >= 25:
-                label = "HIGH"
-            elif density >= 10:
-                label = "MEDIUM"
-            else:
-                label = "LOW"
-
+        cells = []
+        for (loc, act), stats in cells_dict.items():
+            tot = stats["total"]
+            sif_c = stats["sif"]
+            dens = (sif_c / tot * 100) if tot > 0 else 0.0
+            label = "HIGH" if dens >= 25 else ("MEDIUM" if dens >= 10 else "LOW")
             cells.append({
-                "site": location,
-                "activity": activity,
-                "sif_count": sif_count,
-                "total_count": total,
-                "density": round(density, 1),
+                "site": loc,
+                "activity": act,
+                "sif_count": sif_c,
+                "total_count": tot,
+                "density": round(dens, 1),
                 "label": label,
             })
 
@@ -354,11 +389,39 @@ class ReportService:
             d = (data["sif"] / data["total"] * 100) if data["total"] > 0 else 0.0
             site_densities[site] = round(d, 1)
 
+        # Query latest real reports per site for real-time telemetry drawer
+        site_telemetry = {}
+        recent_reports_res = await db.execute(
+            select(Report)
+            .where(Report.location.isnot(None))
+            .order_by(Report.created_at.desc())
+        )
+        recent_reports = recent_reports_res.scalars().all()
+
+        for rep in recent_reports:
+            norm_loc = normalize_site_location(rep.location)
+            if norm_loc not in site_telemetry:
+                tot = site_totals.get(norm_loc, {}).get("total", 1)
+                sif_c = site_totals.get(norm_loc, {}).get("sif", 1 if rep.sif_score and rep.sif_score >= 0.75 else 0)
+                dens = site_densities.get(norm_loc, round((sif_c / tot * 100), 1) if tot > 0 else 0.0)
+
+                site_telemetry[norm_loc] = {
+                    "latest_hazard": rep.raw_text,
+                    "latest_sif_score": round(rep.sif_score, 2) if rep.sif_score is not None else 0.5,
+                    "latest_sif_label": rep.sif_label or ("HIGH" if rep.sif_score and rep.sif_score >= 0.75 else "MEDIUM"),
+                    "latest_report_id": rep.id,
+                    "latest_created_at": rep.created_at.isoformat() if rep.created_at else None,
+                    "total_reports": tot,
+                    "sif_count": sif_c,
+                    "density": dens,
+                }
+
         return {
             "sites": sorted(sites),
             "activities": sorted(activities),
             "cells": cells,
             "site_densities": site_densities,
+            "site_telemetry": site_telemetry,
         }
 
 

@@ -55,7 +55,7 @@ async def process_report(report_id: str):
             await report_service.update_report_classification(
                 db,
                 report_id=report_id,
-                sif_score=classification["sif_score"],
+                sif_score=min(classification["sif_score"], 0.99),
                 sif_label=classification["sif_label"],
                 is_sif_precursor=classification["is_sif_precursor"],
                 matched_anchor_id=classification["matched_anchor_id"],
@@ -187,7 +187,7 @@ async def process_report(report_id: str):
                     "id": report_id,
                     "report_id": report_id,
                     "raw_text": report.raw_text,
-                    "sif_score": classification["sif_score"],
+                    "sif_score": min(classification["sif_score"], 0.99),
                     "sif_label": classification["sif_label"],
                     "is_sif_precursor": classification["is_sif_precursor"],
                     "location": report.location or "Well Pad 7 (Upper Assam)",
