@@ -65,6 +65,7 @@ async def create_action(req: CreateActionRequest, db: AsyncSession = Depends(get
         status="OPEN",
         created_at=now,
     )
+    report.status = "ACTION_DISPATCHED"
     db.add(action)
     await db.commit()
 

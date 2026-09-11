@@ -419,15 +419,15 @@ export default function TriageDashboard() {
 
                     {/* Status */}
                     <td>
-                      {report.status === 'RESOLVED' || report.status === 'CLOSED' ? (
-                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#EDFAF4] text-[#1B8A6C] border border-[#BFEADB]">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#1B8A6C]" />
-                          RESOLVED
-                        </span>
-                      ) : report.status === 'ACTION_DISPATCHED' ? (
+                      {report.status === 'ACTION_DISPATCHED' ? (
                         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#E8F4F0] text-[#0A6B63] border border-[#BCE3DC]">
                           <span className="w-1.5 h-1.5 rounded-full bg-[#0A6B63]" />
                           CAPA ACTIVE
+                        </span>
+                      ) : report.status === 'RESOLVED' || report.status === 'CLOSED' ? (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#EDFAF4] text-[#1B8A6C] border border-[#BFEADB]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#1B8A6C]" />
+                          RESOLVED
                         </span>
                       ) : report.sif_label === 'HIGH' ? (
                         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#FDF2F2] text-[#D63B3B] border border-[#F5C6C6]">
@@ -440,9 +440,9 @@ export default function TriageDashboard() {
                           IN REVIEW
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#EDFAF4] text-[#1B8A6C] border border-[#BFEADB]">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#1B8A6C]" />
-                          RESOLVED
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#F0F4F4] text-[#3E5052] border border-[#C2CEC2]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#5E7072]" />
+                          LOW RISK
                         </span>
                       )}
                     </td>

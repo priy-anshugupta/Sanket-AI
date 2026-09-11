@@ -212,9 +212,9 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
         setActionSuccess('✅ CAPA Work Order Generated & Dispatched!');
         setActionNotes('');
         if (report) {
-          setReport({ ...report, status: 'RESOLVED' });
+          setReport({ ...report, status: 'ACTION_DISPATCHED' });
         }
-        window.dispatchEvent(new CustomEvent('sanket:new_report', { detail: { id: reportId, status: 'RESOLVED' } }));
+        window.dispatchEvent(new CustomEvent('sanket:new_report', { detail: { id: reportId, status: 'ACTION_DISPATCHED' } }));
         await fetchReport();
       } else {
         setActionError('Failed to dispatch CAPA work order. Server returned an error.');
@@ -373,7 +373,11 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
             <div>
               <div className="text-[10px] uppercase font-semibold text-[#5E7072]">Status</div>
               <div className="font-semibold text-xs">
-                {report.status === 'RESOLVED' ? (
+                {report.status === 'ACTION_DISPATCHED' ? (
+                  <span className="text-[#0A6B63] font-bold flex items-center gap-1">
+                    <Wrench className="w-3.5 h-3.5" /> CAPA ACTIVE
+                  </span>
+                ) : report.status === 'RESOLVED' || report.status === 'CLOSED' ? (
                   <span className="text-[#1B8A6C] font-bold flex items-center gap-1">
                     <CheckCircle2 className="w-3.5 h-3.5" /> RESOLVED
                   </span>
@@ -567,7 +571,12 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
                 </button>
               </div>
 
-              {report.status === 'RESOLVED' && (
+              {report.status === 'ACTION_DISPATCHED' && (
+                <div className="pt-2 text-center text-xs font-semibold text-[#0A6B63] flex items-center justify-center gap-1">
+                  <Wrench className="w-3.5 h-3.5" /> CAPA Work Order Dispatched & Active
+                </div>
+              )}
+              {(report.status === 'RESOLVED' || report.status === 'CLOSED') && (
                 <div className="pt-2 text-center text-xs font-semibold text-[#1B8A6C] flex items-center justify-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5" /> Incident Marked as Resolved
                 </div>
