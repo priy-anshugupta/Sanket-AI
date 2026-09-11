@@ -658,6 +658,37 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
                 {actionSuccess}
               </div>
             )}
+
+            {/* Dispatched Work Orders List */}
+            {report.actions && report.actions.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-[#C2CEC2] space-y-2">
+                <div className="text-[10px] uppercase font-bold text-[#5E7072] tracking-wider flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#0A6B63]" /> Active Dispatched Orders ({report.actions.length})
+                </div>
+                <div className="space-y-1.5">
+                  {report.actions.map((act) => (
+                    <div key={act.id} className="p-2.5 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2] text-xs flex items-center justify-between gap-2">
+                      <div>
+                        <div className="font-bold text-[#1A2B2D] flex items-center gap-1.5">
+                          <span className="font-mono text-[10px] text-[#0A6B63] bg-[#E8F4F0] px-1.5 py-0.5 rounded border border-[#BCE3DC]">
+                            #{act.id.slice(0, 8).toUpperCase()}
+                          </span>
+                          <span>{act.action_type.replace(/_/g, ' ')}</span>
+                        </div>
+                        <div className="text-[11px] text-[#5E7072] mt-0.5">
+                          Assigned: <strong className="text-[#1A2B2D]">{act.assigned_to || 'Field Safety Lead'}</strong> · Due: {act.due_date ? new Date(act.due_date).toLocaleDateString() : '48h SLA'}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#EDFAF4] text-[#1B8A6C] border border-[#BFEADB]">
+                          {act.status || 'OPEN'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
