@@ -132,11 +132,13 @@ class PDFReportGenerator:
         story.append(HRFlowable(width="100%", thickness=1.5, color=c_oil_green, spaceBefore=2, spaceAfter=3))
 
         # ── 2. METADATA: Rig ID, Shift Turnover & Environmental Parameters ──
+        # ── 2. METADATA: Rig ID, Shift Turnover & Environmental Parameters ──
         rig_id = (shift_data or {}).get('rig_id', 'OIL-RIG-05 (Baghjan Complex / Upper Assam Basin)')
         shift_name = (shift_data or {}).get('shift_name', 'DAY SHIFT (06:00 – 18:00 IST) ➔ NIGHT SHIFT RELIEF')
         sup_out = (shift_data or {}).get('outgoing_supervisor', 'Tikheswar Gohain (Badge: OIL-SUP-2940)')
         sup_in = (shift_data or {}).get('incoming_supervisor', 'Pranjal Borah (Badge: OIL-SUP-3185)')
-        dt_str = now.strftime('%d-%b-%Y | 18:00 IST')
+        dt_str = (shift_data or {}).get('turnover_dt_str', now.strftime('%d-%b-%Y | %H:%M IST'))
+        weather_str = (shift_data or {}).get('weather_desc', '31°C · Humidity 82% · Barometer 1008 hPa · Wind 12 km/h WNW')
 
         meta_table_data = [
             [
@@ -149,7 +151,7 @@ class PDFReportGenerator:
             ],
             [
                 Paragraph(f"<b>Turnover Date & Time:</b> {dt_str}", style_cell),
-                Paragraph("<b>Ambient & Weather:</b> 31°C · Humidity 82% · Barometer 1008 hPa · Wind 12 km/h WNW", style_cell),
+                Paragraph(f"<b>Ambient & Weather:</b> {weather_str}", style_cell),
             ]
         ]
         t_meta = Table(meta_table_data, colWidths=[3.9 * inch, 3.9 * inch])
@@ -164,10 +166,25 @@ class PDFReportGenerator:
         story.append(Spacer(1, 3))
 
         # ── 3. SECTION 1: 500m SWA Digital Perimeter & Wellhead Process Barrier Status ──
+        has_active_swa = (shift_data or {}).get('has_active_swa', False)
+        top_hazard = (shift_data or {}).get('top_hazard_desc', 'Annular BOP secondary packoff weeping hydraulic fluid under 1,800 PSI vibration flutter.')
+
+        perimeter_title = (
+            "<font color='#B91C1C'><b>PERIMETER STATUS: ELEVATED SWA WATCH (LEVEL 2)</b></font>"
+            if has_active_swa else
+            "<font color='#15803D'><b>PERIMETER STATUS: ROUTINE NORMAL WATCH (LEVEL 1)</b></font>"
+        )
+
+        lockout_desc = (
+            "<font color='#B91C1C'><b>LOCKOUT ACTIVE:</b></font> 3 electronic e-PTWs frozen (PTW-774 Hot Work, PTW-812 Confined Space, PTW-820 Crane Overhaul)."
+            if has_active_swa else
+            "<font color='#15803D'><b>ALL CLEAR:</b></font> 0 Active SWA Lockouts. Routine hot work permitted under continuous LEL gas monitoring."
+        )
+
         sec1_banner_data = [
             [
                 Paragraph("<b>1. CRITICAL PROCESS SAFETY & 500m SWA PERIMETER STATUS (OISD-189 COMPLIANCE)</b>", style_sec_header),
-                Paragraph("<font color='#B91C1C'><b>PERIMETER STATUS: ELEVATED RISK WATCH (LEVEL 2)</b></font>", ParagraphStyle('AlertRight', parent=style_sec_header, alignment=2))
+                Paragraph(perimeter_title, ParagraphStyle('AlertRight', parent=style_sec_header, alignment=2))
             ]
         ]
         t_sec1_title = Table(sec1_banner_data, colWidths=[5.3 * inch, 2.5 * inch])
@@ -179,23 +196,21 @@ class PDFReportGenerator:
 
         barrier_box_data = [
             [
-                Paragraph("<b>Primary Well Control Barrier:</b><br/>"
-                          "Annular BOP secondary packoff weeping hydraulic fluid under 1,800 PSI vibration flutter. <i>(Precursor Alert SIF=0.88)</i>", style_cell),
+                Paragraph(f"<b>Primary Well Control Barrier:</b><br/>{top_hazard}", style_cell),
                 Paragraph("<b>Secondary Barrier (Shear Rams):</b><br/>"
                           "Blind Shear Rams hydraulic accumulator pressure nominal at 2,950 PSI. Mechanical manual locking stems inspected.", style_cell),
             ],
             [
-                Paragraph("<b>500m SWA Spatial Lockout Status:</b><br/>"
-                          "<font color='#B91C1C'><b>LOCKOUT ACTIVE:</b></font> 3 electronic e-PTWs frozen (PTW-774 Hot Work, PTW-812 Confined Space, PTW-820 Crane Overhaul).", style_cell),
+                Paragraph(f"<b>500m SWA Spatial Lockout Status:</b><br/>{lockout_desc}", style_cell),
                 Paragraph("<b>Gas Detection & Atmosphere:</b><br/>"
                           "Cellar Pit LEL: 0% · H2S: 0.0 PPM · Flare line liquid seal verified · Rig acoustic flutter sensor active.", style_cell),
             ]
         ]
         t_barrier = Table(barrier_box_data, colWidths=[3.9 * inch, 3.9 * inch])
         t_barrier.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#FEF2F2')),
-            ('BOX', (0,0), (-1,-1), 1, colors.HexColor('#F87171')),
-            ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor('#FCA5A5')),
+            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#FEF2F2') if has_active_swa else colors.HexColor('#F0FDF4')),
+            ('BOX', (0,0), (-1,-1), 1, colors.HexColor('#F87171') if has_active_swa else colors.HexColor('#86EFAC')),
+            ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor('#FCA5A5') if has_active_swa else colors.HexColor('#BBF7D0')),
             ('PADDING', (0,0), (-1,-1), 2.5),
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ]))
@@ -217,16 +232,21 @@ class PDFReportGenerator:
         ]
 
         if open_reports and len(open_reports) > 0:
-            for rep in open_reports[:3]:
+            for rep in open_reports[:4]:
                 sif_label = getattr(rep, 'sif_label', 'HIGH') or 'HIGH'
                 sif_score = getattr(rep, 'sif_score', 0.85) or 0.85
                 badge_style = style_badge_red if sif_label == 'HIGH' else style_badge_amber
                 badge_cell = Paragraph(f"<b>{sif_label}</b> ({sif_score:.2f})", badge_style)
 
-                loc = (getattr(rep, 'location', None) or 'Baghjan Pad #5')[:20]
-                text_snippet = (getattr(rep, 'raw_text', None) or 'Precursor observation')[:68] + "..."
-                rule = (getattr(rep, 'iogp_rule', None) or 'Energy Isolation')[:18]
-                rep_id = (getattr(rep, 'id', 'REP-001'))[:9]
+                loc = (getattr(rep, 'location', None) or 'Well Pad 7')[:22]
+                raw_txt = (getattr(rep, 'raw_text', None) or 'Precursor observation').strip()
+                if len(raw_txt) > 85:
+                    text_snippet = raw_txt[:82] + "..."
+                else:
+                    text_snippet = raw_txt
+                rule = (getattr(rep, 'iogp_rule', None) or 'Energy Isolation')[:20]
+                raw_id = getattr(rep, 'id', 'REP-001') or 'REP-001'
+                rep_id = f"#{raw_id[:8].upper()}"
                 sla = "24h (Critical)" if sif_label == 'HIGH' else "48h (High)"
 
                 precursor_rows.append([
@@ -239,16 +259,16 @@ class PDFReportGenerator:
                 ])
         else:
             demo_items = [
-                ("REP-2026-089", "Well Pad 7 (Annular BOP)", "HIGH (0.94)", style_badge_red,
-                 "Annular BOP secondary valve seal weeping hydraulic fluid under 1800 PSI vibration flutter.", "Energy Isolation", "24h / Shutdown"),
-                ("REP-2026-084", "Standpipe Manifold #02", "HIGH (0.88)", style_badge_red,
-                 "Standpipe pressure needle flutter 80 PSI observed with minor mud aeration in ditch.", "Bypassing Controls", "24h / Immediate"),
-                ("REP-2026-079", "Mud Pump #2 Fluid End", "MEDIUM (0.68)", style_badge_amber,
-                 "Discharge pulsation dampener nitrogen pre-charge low (800 PSI vs 1500 PSI nominal).", "Asset Integrity", "48h / Work Order"),
+                ("REP-089", "Well Pad 7 (Annular BOP)", "HIGH (0.94)", style_badge_red,
+                 "Annular BOP secondary valve seal weeping hydraulic fluid under 1800 PSI vibration flutter.", "Energy Isolation", "24h (Critical)"),
+                ("REP-084", "Standpipe Manifold #02", "HIGH (0.88)", style_badge_red,
+                 "Standpipe pressure needle flutter 80 PSI observed with minor mud aeration in ditch.", "Bypassing Controls", "24h (Critical)"),
+                ("REP-079", "Mud Pump #2 Fluid End", "MEDIUM (0.68)", style_badge_amber,
+                 "Discharge pulsation dampener nitrogen pre-charge low (800 PSI vs 1500 PSI nominal).", "Asset Integrity", "48h (High)"),
             ]
             for r_id, r_loc, r_rating, r_style, r_desc, r_rule, r_sla in demo_items:
                 precursor_rows.append([
-                    Paragraph(f"<b>{r_id}</b>", style_cell),
+                    Paragraph(f"<b>#{r_id}</b>", style_cell),
                     Paragraph(r_loc, style_cell),
                     Paragraph(f"<b>{r_rating}</b>", r_style),
                     Paragraph(r_desc, style_cell),
@@ -325,19 +345,24 @@ class PDFReportGenerator:
         story.append(Paragraph(legal_declaration, ParagraphStyle('Legal', parent=styles['Normal'], fontName='Helvetica-Oblique', fontSize=5.8, leading=7.2, textColor=colors.HexColor('#334155'))))
         story.append(Spacer(1, 2))
 
+        relinq_at = (shift_data or {}).get('relinquished_at', '18:00 IST')
+        accept_at = (shift_data or {}).get('accepted_at', '18:05 IST')
+        out_name_only = sup_out.split('(')[0].strip()
+        in_name_only = sup_in.split('(')[0].strip()
+
         signoff_boxes_data = [
             [
                 Paragraph("<b>A. OUTGOING SHIFT IN-CHARGE</b><br/>"
                           f"<b>Name:</b> {sup_out}<br/>"
                           "<b>Designation:</b> Senior Toolpusher / Rig Head<br/>"
-                          "<b>Relinquished At:</b> 18:00 IST<br/><br/>"
-                          "<b>Signature:</b> <u>&nbsp;&nbsp;Tikheswar Gohain&nbsp;&nbsp;</u><br/>"
+                          f"<b>Relinquished At:</b> {relinq_at}<br/><br/>"
+                          f"<b>Signature:</b> <u>&nbsp;&nbsp;{out_name_only}&nbsp;&nbsp;</u><br/>"
                           "<font size='5' color='#64748B'>Certified Physical Handover Complete</font>", style_cell),
                 Paragraph("<b>B. INCOMING RELIEVING IN-CHARGE</b><br/>"
                           f"<b>Name:</b> {sup_in}<br/>"
                           "<b>Designation:</b> Relief Toolpusher / Rig Head<br/>"
-                          "<b>Accepted At:</b> 18:05 IST<br/><br/>"
-                          "<b>Signature:</b> <u>&nbsp;&nbsp;Pranjal Borah&nbsp;&nbsp;</u><br/>"
+                          f"<b>Accepted At:</b> {accept_at}<br/><br/>"
+                          f"<b>Signature:</b> <u>&nbsp;&nbsp;{in_name_only}&nbsp;&nbsp;</u><br/>"
                           "<font size='5' color='#64748B'>All Isolations & Precursors Accepted</font>", style_cell),
                 Paragraph("<b>C. DGMS / COMPANY SAFETY OFFICER</b><br/>"
                           "<b>Name:</b> Rajesh Kumar<br/>"
