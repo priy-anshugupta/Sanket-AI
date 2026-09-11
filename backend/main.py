@@ -8,6 +8,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
+import sys
+
+# Ensure UTF-8 output encoding on Windows so Indic/multilingual text doesn't crash with charmap encode errors
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 from backend.config.settings import settings
 from backend.db.engine import (
@@ -42,7 +51,7 @@ async def lifespan(app: FastAPI):
 
     # 1. Synchronously initialize DB & seed users before port accepts traffic
     try:
-        await asyncio.wait_for(init_db(), timeout=15.0)
+        await asyncio.wait_for(init_db(), timeout=30.0)
         print("[Startup] [OK] Database connected & initialized", flush=True)
         await seed_default_users()
     except Exception as e:
@@ -104,7 +113,7 @@ app.add_middleware(
         "http://localhost:8000",
         "http://127.0.0.1:8000",
     ],
-    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+)(:\d+)?",
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -166,13 +175,14 @@ async def airgap_status():
     outbound_count = len(connections) if not is_airgapped else 0
     outbound_kbps = round(1.4 + (outbound_count * 0.2), 1) if (not is_airgapped and has_online_key) else 0.0
 
-    active_model = "Local Deterministic Anchor Scorer"
-    if settings.OPENAI_API_KEY:
+    if is_airgapped:
+        active_model = f"Local Ollama ({settings.OLLAMA_MODEL})"
+    elif settings.OPENAI_API_KEY:
         active_model = f"OpenAI {settings.OPENAI_MODEL}"
     elif settings.GROQ_API_KEY:
         active_model = f"Groq {settings.GROQ_MODEL}"
-    elif settings.AI_MODE == "airgapped":
-        active_model = f"Local Ollama ({settings.OLLAMA_MODEL})"
+    else:
+        active_model = "Local Deterministic Anchor Scorer"
 
     return {
         "is_airgapped": is_airgapped,

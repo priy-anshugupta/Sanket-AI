@@ -131,6 +131,10 @@ class IngestResponse(BaseModel):
     count: int
     status: str
     message: str
+    sif_score: Optional[float] = None
+    sif_label: Optional[str] = None
+    is_sif_precursor: Optional[bool] = None
+    iogp_rule: Optional[str] = None
 
 
 class HeatmapCell(BaseModel):

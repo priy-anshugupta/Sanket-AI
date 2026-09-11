@@ -184,16 +184,16 @@ async def init_db():
         await switch_to_sqlite()
         return
 
-    # Auto or Supabase mode — test connection
+    # Auto or Supabase mode — test connection with crisp 4.0s fail-fast timeout
     try:
-        print(f"[Database] Testing connection to Supabase...", flush=True)
-        async with asyncio.timeout(15.0):
+        print(f"[Database] Testing connection to Supabase (4s limit)...", flush=True)
+        async with asyncio.timeout(4.0):
             async with _current_engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
         active_db_type = "supabase"
         print("[Database] [OK] Supabase PostgreSQL connected & verified (Cloud Mode)", flush=True)
     except Exception as e:
-        print(f"[Database] [WARN] Supabase unreachable ({e})", flush=True)
+        print(f"[Database] [WARN] Supabase unreachable or timed out ({e})", flush=True)
         print("[Database] [AUTO-SWITCH] Seamlessly falling back to local SQLite (sanket.db)...", flush=True)
         await switch_to_sqlite()
 
