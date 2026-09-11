@@ -1,5 +1,6 @@
 import base64
 import os
+import subprocess
 
 with open('frontend/public/oil_sanket_qr.png', 'rb') as f:
     b64 = base64.b64encode(f.read()).decode('ascii')
@@ -10,13 +11,16 @@ html_content = f'''<!DOCTYPE html>
 <meta charset="UTF-8">
 <title>SANKET · AI — Jury Executive Brief</title>
 <style>
-  @page {{ size: A4 portrait; margin: 8mm 10mm 6mm 10mm; }}
+  @page {{ 
+    size: A4 portrait; 
+    margin: 7mm 10mm 6mm 10mm; 
+  }}
   * {{ margin: 0; padding: 0; box-sizing: border-box; }}
   body {{
     font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
     color: #1e293b;
-    font-size: 8.3pt;
-    line-height: 1.35;
+    font-size: 8.6pt;
+    line-height: 1.38;
     background: #ffffff;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
@@ -27,32 +31,32 @@ html_content = f'''<!DOCTYPE html>
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 3px solid #0A5C36;
+    border-bottom: 3.5px solid #0A5C36;
     padding-bottom: 5px;
     margin-bottom: 6px;
   }}
   .header-left h1 {{
-    font-size: 21pt;
+    font-size: 23pt;
     font-weight: 900;
     color: #0F172A;
-    letter-spacing: -0.5px;
+    letter-spacing: -0.6px;
     line-height: 1;
   }}
   .header-left h1 span {{ color: #0A5C36; }}
   .header-left .tagline {{
-    font-size: 8.3pt;
+    font-size: 8.8pt;
     color: #475569;
     font-weight: 600;
     margin-top: 2px;
   }}
   .header-right {{
     text-align: right;
-    font-size: 7.5pt;
+    font-size: 7.8pt;
     color: #475569;
     line-height: 1.35;
   }}
   .header-right .ps-code {{
-    font-size: 11pt;
+    font-size: 12pt;
     font-weight: 900;
     color: #0A5C36;
   }}
@@ -61,13 +65,13 @@ html_content = f'''<!DOCTYPE html>
   .problem-box {{
     background: linear-gradient(135deg, #fef2f2, #fff7ed);
     border: 1px solid #fecaca;
-    border-left: 4px solid #dc2626;
-    border-radius: 5px;
-    padding: 5px 9px;
+    border-left: 4.5px solid #dc2626;
+    border-radius: 6px;
+    padding: 6px 10px;
     margin-bottom: 6px;
   }}
   .problem-box .title {{
-    font-size: 7.3pt;
+    font-size: 7.8pt;
     font-weight: 800;
     color: #dc2626;
     text-transform: uppercase;
@@ -75,19 +79,19 @@ html_content = f'''<!DOCTYPE html>
     margin-bottom: 1px;
   }}
   .problem-box p {{
-    font-size: 7.8pt;
+    font-size: 8.2pt;
     color: #7f1d1d;
-    line-height: 1.3;
+    line-height: 1.32;
   }}
   .problem-box strong {{ color: #991b1b; }}
 
   /* ── SECTION TITLE ── */
   .section-title {{
-    font-size: 7.8pt;
+    font-size: 8.2pt;
     font-weight: 800;
     color: #0A5C36;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.8px;
     border-bottom: 1.5px solid #d1fae5;
     padding-bottom: 2px;
     margin: 6px 0 4px 0;
@@ -103,29 +107,30 @@ html_content = f'''<!DOCTYPE html>
     flex: 1;
     background: #f0fdf4;
     border: 1px solid #bbf7d0;
-    border-radius: 5px;
-    padding: 3px 4px;
+    border-radius: 6px;
+    padding: 3.5px 4px;
     text-align: center;
   }}
   .metric .val {{
-    font-size: 12pt;
+    font-size: 13.5pt;
     font-weight: 900;
     color: #0A5C36;
     line-height: 1.1;
   }}
   .metric .lbl {{
-    font-size: 5.8pt;
+    font-size: 6pt;
     color: #475569;
     text-transform: uppercase;
     letter-spacing: 0.4px;
     font-weight: 700;
+    margin-top: 1px;
   }}
 
   /* ── FEATURE GRID (2x6) ── */
   .feature-grid {{
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 3px 10px;
+    gap: 3.5px 11px;
   }}
   .feature-item {{
     display: flex;
@@ -134,31 +139,31 @@ html_content = f'''<!DOCTYPE html>
   }}
   .feature-item .num {{
     flex-shrink: 0;
-    width: 14px;
-    height: 14px;
+    width: 15px;
+    height: 15px;
     background: #0A5C36;
     color: white;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 6.8pt;
+    font-size: 7.2pt;
     font-weight: 800;
     margin-top: 1px;
   }}
   .feature-item .text {{
-    font-size: 7.5pt;
-    line-height: 1.25;
+    font-size: 7.9pt;
+    line-height: 1.28;
   }}
-  .feature-item .text strong {{ color: #0F172A; font-size: 7.7pt; }}
+  .feature-item .text strong {{ color: #0F172A; font-size: 8.1pt; }}
 
   /* ── AGENT PIPELINE (STRICT 2-ROW GRID) ── */
   .agent-pipeline {{
-    background: #fafafa;
+    background: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
-    padding: 5px 6px;
-    margin: 4px 0 6px 0;
+    padding: 5px 7px;
+    margin: 5px 0 6px 0;
   }}
   .pipeline-row {{
     display: grid;
@@ -169,25 +174,25 @@ html_content = f'''<!DOCTYPE html>
   .agent-card {{
     background: #ffffff;
     border: 1px solid #bbf7d0;
-    border-radius: 4px;
-    padding: 3px 5px;
+    border-radius: 5px;
+    padding: 3.5px 5px;
     text-align: center;
     box-shadow: 0 1px 2px rgba(0,0,0,0.03);
   }}
   .agent-badge {{
-    font-size: 5.3pt;
+    font-size: 5.5pt;
     font-weight: 800;
     text-transform: uppercase;
     color: #047857;
     background: #d1fae5;
     border-radius: 3px;
-    padding: 0.5px 3px;
+    padding: 1px 3.5px;
     display: inline-block;
     margin-bottom: 1px;
     letter-spacing: 0.3px;
   }}
   .agent-title {{
-    font-size: 7.1pt;
+    font-size: 7.4pt;
     font-weight: 800;
     color: #065f46;
     white-space: nowrap;
@@ -195,14 +200,14 @@ html_content = f'''<!DOCTYPE html>
     text-overflow: ellipsis;
   }}
   .agent-desc {{
-    font-size: 6pt;
+    font-size: 6.3pt;
     color: #475569;
     white-space: nowrap;
     line-height: 1.15;
   }}
   .pipeline-arrow {{
     color: #0A5C36;
-    font-size: 8.5pt;
+    font-size: 9pt;
     font-weight: 900;
     user-select: none;
     padding: 0 1px;
@@ -230,16 +235,16 @@ html_content = f'''<!DOCTYPE html>
 
   .pipeline-connector {{
     text-align: center;
-    font-size: 5.8pt;
+    font-size: 6pt;
     font-weight: 700;
     color: #0A5C36;
-    letter-spacing: 0.6px;
+    letter-spacing: 0.7px;
     text-transform: uppercase;
     margin: 3px 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 7px;
   }}
   .pipeline-connector::before, .pipeline-connector::after {{
     content: '';
@@ -251,17 +256,17 @@ html_content = f'''<!DOCTYPE html>
   /* ── TWO COLUMN BOTTOM ── */
   .two-col {{
     display: flex;
-    gap: 10px;
-    margin-top: 2px;
+    gap: 11px;
+    margin-top: 3px;
   }}
-  .col-60 {{ flex: 1.25; }}
-  .col-40 {{ flex: 0.75; }}
+  .col-60 {{ flex: 1.23; }}
+  .col-40 {{ flex: 0.77; }}
 
   /* ── COMPARISON TABLE ── */
   .comp-table {{
     width: 100%;
     border-collapse: collapse;
-    font-size: 7.2pt;
+    font-size: 7.4pt;
     margin-top: 2px;
   }}
   .comp-table th {{
@@ -270,15 +275,15 @@ html_content = f'''<!DOCTYPE html>
     padding: 3.5px 5px;
     text-align: left;
     font-weight: 700;
-    font-size: 6.8pt;
+    font-size: 7pt;
   }}
   .comp-table td {{
-    padding: 2.8px 5px;
+    padding: 3px 5px;
     border-bottom: 1px solid #e2e8f0;
   }}
   .comp-table tr:nth-child(even) {{ background: #f8fafc; }}
-  .ck {{ color: #16a34a; font-weight: 800; font-size: 8pt; }}
-  .cx {{ color: #dc2626; font-weight: 800; font-size: 8pt; }}
+  .ck {{ color: #16a34a; font-weight: 800; font-size: 8.2pt; }}
+  .cx {{ color: #dc2626; font-weight: 800; font-size: 8.2pt; }}
 
   /* ── TECH TAGS ── */
   .tech-tags {{
@@ -291,22 +296,22 @@ html_content = f'''<!DOCTYPE html>
     background: #f1f5f9;
     border: 1px solid #cbd5e1;
     border-radius: 3px;
-    padding: 1px 5px;
-    font-size: 6.5pt;
+    padding: 1.2px 5.5px;
+    font-size: 6.6pt;
     font-weight: 600;
     color: #334155;
   }}
 
   /* ── REGULATORY ── */
   .reg {{
-    font-size: 6.2pt;
+    font-size: 6.4pt;
     color: #64748b;
-    margin-top: 3px;
-    padding: 3px 5px;
+    margin-top: 4px;
+    padding: 3.5px 5px;
     background: #f8fafc;
     border-radius: 3px;
     border: 1px solid #e2e8f0;
-    line-height: 1.25;
+    line-height: 1.28;
   }}
   .reg strong {{ color: #475569; }}
 
@@ -316,13 +321,13 @@ html_content = f'''<!DOCTYPE html>
     justify-content: space-between;
     align-items: center;
     margin-top: 6px;
-    padding-top: 5px;
+    padding-top: 6px;
     border-top: 2px solid #0A5C36;
   }}
   .bottom-bar .team {{
-    font-size: 7pt;
+    font-size: 7.2pt;
     color: #475569;
-    line-height: 1.35;
+    line-height: 1.38;
   }}
   .bottom-bar .team strong {{ color: #0F172A; }}
 
@@ -333,12 +338,12 @@ html_content = f'''<!DOCTYPE html>
     background: #f8fafc;
     border: 1.5px solid #0A5C36;
     border-radius: 6px;
-    padding: 4px 7px 4px 5px;
+    padding: 3.5px 7px 3.5px 5px;
     box-shadow: 0 1px 3px rgba(10,92,54,0.08);
   }}
   .qr-card img {{
-    width: 52px;
-    height: 52px;
+    width: 55px;
+    height: 55px;
     display: block;
     background: white;
     border-radius: 3px;
@@ -351,7 +356,7 @@ html_content = f'''<!DOCTYPE html>
     text-align: left;
   }}
   .qr-badge {{
-    font-size: 5.8pt;
+    font-size: 6pt;
     font-weight: 800;
     color: #ffffff;
     background: #0A5C36;
@@ -361,17 +366,17 @@ html_content = f'''<!DOCTYPE html>
     width: fit-content;
     text-transform: uppercase;
     letter-spacing: 0.4px;
-    margin-bottom: 1px;
+    margin-bottom: 1.5px;
   }}
   .qr-domain {{
     font-family: 'Consolas', monospace;
-    font-size: 7.8pt;
+    font-size: 8.2pt;
     font-weight: 900;
     color: #0F172A;
     letter-spacing: -0.2px;
   }}
   .qr-sub {{
-    font-size: 5.8pt;
+    font-size: 6pt;
     color: #64748b;
     margin-top: 0.5px;
   }}
@@ -581,7 +586,7 @@ html_content = f'''<!DOCTYPE html>
   <div class="team">
     <strong>Team SANKET</strong> · Smart India Hackathon 2026 · Problem Statement: <strong>SIH26165</strong><br>
     Developed for <strong>Oil India Limited (OIL)</strong> · Ministry of Petroleum &amp; Natural Gas<br>
-    <span style="font-size:6.3pt; color:#64748b; font-style:italic;">"Every precursor detected is a disaster prevented — Protecting lives through predictive intelligence."</span>
+    <span style="font-size:6.5pt; color:#64748b; font-style:italic;">"Every precursor detected is a disaster prevented — Protecting lives through predictive intelligence."</span>
   </div>
 
   <div class="qr-card">
@@ -590,7 +595,7 @@ html_content = f'''<!DOCTYPE html>
       <div class="qr-badge">📱 Live Cloud Demo</div>
       <div class="qr-domain">oil-sanket.up.railway.app</div>
       <div class="qr-sub">Scan with phone camera for instant demo</div>
-      <div class="qr-sub" style="color:#0A5C36; font-weight:700;">Worker Mobile Terminal: /worker</div>
+      <div class="qr-sub" style="color:#0A5C36; font-weight:800;">Worker Mobile Terminal: /worker</div>
     </div>
   </div>
 </div>
@@ -601,4 +606,4 @@ html_content = f'''<!DOCTYPE html>
 with open('frontend/public/SANKET_AI_JURY_HANDOUT.html', 'w', encoding='utf-8') as f:
     f.write(html_content)
 
-print("[SUCCESS] Created frontend/public/SANKET_AI_JURY_HANDOUT.html")
+print("[SUCCESS] Created updated SANKET_AI_JURY_HANDOUT.html")
