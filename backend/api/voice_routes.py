@@ -24,17 +24,39 @@ async def transcribe_audio_only(
     for worker review / editing before final ingestion.
     """
     content = await audio.read()
-    if not content or len(content) < 100:
-        return {"text": "", "status": "NO_AUDIO", "message": "Audio file too short or empty"}
-    transcription = voice_transcriber.transcribe_audio_file(content, audio.filename or "recording.m4a")
-    text = transcription.get("text", "")
+    try:
+        print(f"[Voice API] Received audio upload: '{audio.filename}', size={len(content)} bytes", flush=True)
+    except Exception:
+        pass
+
+    if not content or len(content) < 50:
+        return {"text": "", "status": "NO_AUDIO", "message": "Audio file too short or empty. Hold mic longer while speaking."}
+
+    transcription = voice_transcriber.transcribe_audio_file(content, audio.filename or "recording.webm")
+    text = transcription.get("text", "").strip()
+
+    try:
+        print(f"[Voice API] Whisper transcription result: '{text}' (lang={transcription.get('language')})", flush=True)
+    except Exception:
+        print(f"[Voice API] Whisper transcription completed (lang={transcription.get('language')})", flush=True)
+
+    if not text:
+        err_msg = transcription.get("error")
+        return {
+            "text": "",
+            "language": "en",
+            "confidence": 0.0,
+            "duration_seconds": 0.0,
+            "status": "NO_SPEECH_DETECTED",
+            "message": err_msg or "No speech detected. Please speak closer to phone mic."
+        }
 
     return {
         "text": text,
         "language": transcription.get("language", "en"),
         "confidence": transcription.get("confidence", 0.95),
         "duration_seconds": transcription.get("duration", 3.0),
-        "status": "TRANSCRIBED" if text else "NO_SPEECH_DETECTED",
+        "status": "TRANSCRIBED",
     }
 
 
