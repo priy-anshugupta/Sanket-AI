@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Map, 
   AlertTriangle, 
@@ -24,7 +24,9 @@ import {
 } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 
-const API = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000';
+const API = process.env.NEXT_PUBLIC_API_URL
+  ? process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
+  : (typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000');
 
 interface HeatmapCell {
   site: string;
@@ -139,7 +141,7 @@ const GEO_ASSETS: GeoAsset[] = [
   },
   {
     id: 'ASSET-DLHQ',
-    name: 'Duliajan Plant (Central HQ)',
+    name: 'Duliajan Plant',
     district: 'Dibrugarh (Main Refinery & OIL Township)',
     lat: 27.3560,
     lng: 95.3180,
@@ -376,13 +378,57 @@ export default function DualHeatmapAndMapPage() {
     activities: string[];
     cells: HeatmapCell[];
     site_densities: Record<string, number>;
+    site_telemetry?: Record<string, {
+      latest_hazard: string;
+      latest_sif_score: number;
+      latest_sif_label: string;
+      latest_report_id?: string;
+      latest_created_at?: string;
+      total_reports: number;
+      sif_count: number;
+      density: number;
+    }>;
   } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedAsset, setSelectedAsset] = useState<GeoAsset | null>(GEO_ASSETS[0]);
+  const [selectedAssetId, setSelectedAssetId] = useState<string>('ASSET-WP7');
   const [swaToast, setSwaToast] = useState<string | null>(null);
 
+  // ── DYNAMIC ASSET MERGING: Syncs static GPS data with live backend reports ──
+  const liveAssets = useMemo<GeoAsset[]>(() => {
+    return GEO_ASSETS.map(base => {
+      const tel = data?.site_telemetry?.[base.name];
+      const liveDensity = data?.site_densities?.[base.name] ?? base.sif_density;
+
+      if (!tel) {
+        return {
+          ...base,
+          sif_density: liveDensity,
+        };
+      }
+
+      const isHigh = tel.latest_sif_label === 'HIGH' || tel.density >= 25 || tel.latest_sif_score >= 0.75;
+      const isMed = !isHigh && (tel.latest_sif_label === 'MEDIUM' || tel.density >= 10);
+      const computedLabel: 'HIGH' | 'MEDIUM' | 'LOW' = isHigh ? 'HIGH' : isMed ? 'MEDIUM' : 'LOW';
+
+      return {
+        ...base,
+        sif_density: tel.density ?? liveDensity,
+        sif_score: tel.latest_sif_score ?? base.sif_score,
+        sif_label: computedLabel,
+        latest_hazard: tel.latest_hazard || base.latest_hazard,
+        precursor_count: tel.sif_count ?? base.precursor_count,
+        total_reports: tel.total_reports ?? base.total_reports,
+      };
+    });
+  }, [data]);
+
+  const selectedAsset = useMemo<GeoAsset | null>(() => {
+    if (selectedAssetId === 'OVERVIEW') return null;
+    return liveAssets.find((a: GeoAsset) => a.id === selectedAssetId || a.name === selectedAssetId) || liveAssets[1] || liveAssets[0];
+  }, [liveAssets, selectedAssetId]);
+
   const flyToAsset = (asset: GeoAsset) => {
-    setSelectedAsset(asset);
+    setSelectedAssetId(asset.id);
     if (mapInstanceRef.current) {
       mapInstanceRef.current.flyTo([asset.lat, asset.lng], 13, { duration: 1.2 });
     }
@@ -486,41 +532,6 @@ export default function DualHeatmapAndMapPage() {
       thermalGroupRef.current = L.featureGroup().addTo(map);
       markersGroupRef.current = L.featureGroup().addTo(map);
 
-      GEO_ASSETS.forEach(asset => {
-        const isHigh = asset.sif_label === 'HIGH';
-        const isMed = asset.sif_label === 'MEDIUM';
-
-        const iconHtml = `
-          <div class="relative flex flex-col items-center justify-center -translate-x-1/2 -translate-y-full cursor-pointer group" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));">
-            ${isHigh ? '<div class="absolute -top-1 w-12 h-12 rounded-full bg-red-500/35 animate-ping pointer-events-none"></div>' : ''}
-            <div class="relative w-9 h-9 rounded-2xl flex items-center justify-center shadow-lg border-2 border-white transition-transform group-hover:scale-110 ${
-              isHigh ? 'bg-[#DC2626] text-white' : isMed ? 'bg-[#D97706] text-white' : 'bg-[#059669] text-white'
-            }">
-              <span style="font-size: 16px;">${isHigh ? '🔥' : isMed ? '⚠️' : '✅'}</span>
-            </div>
-            <div class="w-2 h-2 bg-white rotate-45 -mt-1 shadow-xs ${isHigh ? 'bg-[#DC2626]' : isMed ? 'bg-[#D97706]' : 'bg-[#059669]'}"></div>
-            <div class="mt-1 px-2 py-0.5 rounded-md font-mono text-[10px] font-bold whitespace-nowrap shadow-md border ${
-              isHigh ? 'bg-[#450A0A] text-[#FEE2E2] border-[#DC2626]' : isMed ? 'bg-[#451A03] text-[#FEF3C7] border-[#D97706]' : 'bg-[#064E3B] text-[#D1FAE5] border-[#059669]'
-            }">
-              ${asset.name}
-            </div>
-          </div>
-        `;
-
-        const customIcon = L.divIcon({
-          html: iconHtml,
-          className: 'custom-leaflet-pin',
-          iconSize: [36, 36],
-          iconAnchor: [18, 36],
-        });
-
-        const marker = L.marker([asset.lat, asset.lng], { icon: customIcon }).addTo(markersGroupRef.current);
-        marker.on('click', () => {
-          setSelectedAsset(asset);
-          map.flyTo([asset.lat, asset.lng], 14, { duration: 1.2 });
-        });
-      });
-
       mapInstanceRef.current = map;
       setTimeout(() => map.invalidateSize(), 150);
     };
@@ -535,6 +546,51 @@ export default function DualHeatmapAndMapPage() {
       }
     };
   }, [activeTab]);
+
+  // ── LAYER 0: REACTIVE ASSET MARKERS (Syncs with live reports & database telemetry) ──
+  useEffect(() => {
+    const L = LRef.current;
+    const group = markersGroupRef.current;
+    const map = mapInstanceRef.current;
+    if (!L || !group || !map) return;
+
+    group.clearLayers();
+    liveAssets.forEach((asset: GeoAsset) => {
+      const isHigh = asset.sif_label === 'HIGH';
+      const isMed = asset.sif_label === 'MEDIUM';
+      const isSelected = selectedAsset?.id === asset.id;
+
+      const iconHtml = `
+        <div class="relative flex flex-col items-center justify-center -translate-x-1/2 -translate-y-full cursor-pointer group" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));">
+          ${isHigh ? '<div class="absolute -top-1 w-12 h-12 rounded-full bg-red-500/35 animate-ping pointer-events-none"></div>' : ''}
+          <div class="relative w-9 h-9 rounded-2xl flex items-center justify-center shadow-lg border-2 ${isSelected ? 'border-amber-300 ring-2 ring-red-500 scale-110' : 'border-white'} transition-transform group-hover:scale-110 ${
+            isHigh ? 'bg-[#DC2626] text-white' : isMed ? 'bg-[#D97706] text-white' : 'bg-[#059669] text-white'
+          }">
+            <span style="font-size: 16px;">${isHigh ? '🔥' : isMed ? '⚠️' : '✅'}</span>
+          </div>
+          <div class="w-2 h-2 bg-white rotate-45 -mt-1 shadow-xs ${isHigh ? 'bg-[#DC2626]' : isMed ? 'bg-[#D97706]' : 'bg-[#059669]'}"></div>
+          <div class="mt-1 px-2 py-0.5 rounded-md font-mono text-[10px] font-bold whitespace-nowrap shadow-md border ${
+            isHigh ? 'bg-[#450A0A] text-[#FEE2E2] border-[#DC2626]' : isMed ? 'bg-[#451A03] text-[#FEF3C7] border-[#D97706]' : 'bg-[#064E3B] text-[#D1FAE5] border-[#059669]'
+          }">
+            ${asset.name}
+          </div>
+        </div>
+      `;
+
+      const customIcon = L.divIcon({
+        html: iconHtml,
+        className: 'custom-leaflet-pin',
+        iconSize: [36, 36],
+        iconAnchor: [18, 36],
+      });
+
+      const marker = L.marker([asset.lat, asset.lng], { icon: customIcon }).addTo(group);
+      marker.on('click', () => {
+        setSelectedAssetId(asset.id);
+        map.flyTo([asset.lat, asset.lng], 14, { duration: 1.2 });
+      });
+    });
+  }, [liveAssets, selectedAsset?.id]);
 
   useEffect(() => {
     const map = mapInstanceRef.current;
@@ -597,7 +653,7 @@ export default function DualHeatmapAndMapPage() {
             <div>• <b>Flow Rate:</b> ${pipe.flow}</div>
             <div style="color: #059669; font-weight: bold; margin-top: 2px;">✓ SCADA Telemetry Normal</div>
           </div>
-        `, { sticky: true });
+        `, { direction: 'auto' });
 
         // Add Valve Station Markers
         pipe.valves.forEach(valve => {
@@ -610,7 +666,7 @@ export default function DualHeatmapAndMapPage() {
           `;
           L.marker([valve.lat, valve.lng], {
             icon: L.divIcon({ html: valveHtml, className: 'valve-pin', iconSize: [16, 16], iconAnchor: [8, 8] })
-          }).bindTooltip(`<b>${valve.name}</b><br><span style="color: #0A6B63;">Sectional Isolation Valve (OISD-189 Certified)</span>`, { sticky: true }).addTo(group);
+          }).bindTooltip(`<b>${valve.name}</b><br><span style="color: #0A6B63;">Sectional Isolation Valve (OISD-189 Certified)</span>`, { direction: 'top', offset: [0, -8] }).addTo(group);
         });
       });
     }
@@ -636,16 +692,9 @@ export default function DualHeatmapAndMapPage() {
         weight: 2.5,
         fillColor: '#0284C7',
         fillOpacity: 0.28,
-        dashArray: '6, 6'
-      }).bindTooltip(`
-        <div style="font-family: sans-serif; font-size: 11px; padding: 4px;">
-          <div style="font-weight: bold; color: #0284C7; font-size: 12px;">🌊 Dibru-Saikhowa / Lohit Flood Basin</div>
-          <div>• <b>Hydrological Risk:</b> SEVERE Monsoon Silt Inundation</div>
-          <div>• <b>Water Depth Range:</b> 1.4m - 2.8m</div>
-          <div>• <b>Vulnerable Assets:</b> North Corridor Pipeline Crossings</div>
-          <div>• <b>Evacuation Path:</b> Elevated NH-37 Highway Corridor</div>
-        </div>
-      `, { sticky: true }).addTo(group);
+        dashArray: '6, 6',
+        interactive: false,
+      }).addTo(group);
 
       // Basin 2: Burhi Dihing River Lowlands
       L.polygon([
@@ -658,8 +707,9 @@ export default function DualHeatmapAndMapPage() {
         weight: 2,
         fillColor: '#0284C7',
         fillOpacity: 0.20,
-        dashArray: '4, 4'
-      }).bindTooltip("🌊 Burhi Dihing Lowland Floodplain (Moderate Inundation Risk)", { sticky: true }).addTo(group);
+        dashArray: '4, 4',
+        interactive: false,
+      }).addTo(group);
     }
   }, [showFloodRisk]);
 
@@ -671,7 +721,7 @@ export default function DualHeatmapAndMapPage() {
 
     group.clearLayers();
     if (showGasPlume) {
-      GEO_ASSETS.filter(a => a.sif_label === 'HIGH').forEach(asset => {
+      liveAssets.filter((a: GeoAsset) => a.sif_label === 'HIGH').forEach((asset: GeoAsset) => {
         const angleRad = (245 * Math.PI) / 180; // Wind 245° SW
 
         // Zone 3: Outer ERPG-1 Odor Threshold (5.5 km)
@@ -693,7 +743,8 @@ export default function DualHeatmapAndMapPage() {
           weight: 1.5,
           fillColor: '#F59E0B',
           fillOpacity: 0.18,
-          dashArray: '3, 3'
+          dashArray: '3, 3',
+          interactive: false,
         }).addTo(group);
 
         // Zone 2: Middle ERPG-2 Severe Irritation Arc (3.2 km)
@@ -715,6 +766,7 @@ export default function DualHeatmapAndMapPage() {
           weight: 2,
           fillColor: '#EA580C',
           fillOpacity: 0.30,
+          interactive: false,
         }).addTo(group);
 
         // Zone 1: Inner Lethal IDLH Arc (1.2 km)
@@ -726,7 +778,7 @@ export default function DualHeatmapAndMapPage() {
         const rightLat1 = asset.lat + Math.cos(angleRad + 0.20) * len1 * 0.75;
         const rightLng1 = asset.lng + Math.sin(angleRad + 0.20) * len1 * 0.75;
 
-        const innerPlume = L.polygon([
+        L.polygon([
           [asset.lat, asset.lng],
           [leftLat1, leftLng1],
           [tipLat1, tipLng1],
@@ -736,22 +788,11 @@ export default function DualHeatmapAndMapPage() {
           weight: 2.5,
           fillColor: '#DC2626',
           fillOpacity: 0.55,
+          interactive: false,
         }).addTo(group);
-
-        innerPlume.bindTooltip(`
-          <div style="font-family: sans-serif; font-size: 11px; padding: 4px;">
-            <div style="font-weight: bold; color: #DC2626; font-size: 12px;">💨 ALOHA Toxic Gas Plume: ${asset.name}</div>
-            <div>• <b>Gas Species:</b> ${asset.gas_type}</div>
-            <div>• <b>Wind Vector:</b> 245° SW @ ${windVector.speedKmh} km/h</div>
-            <div>• <b>Zone 1 (Lethal IDLH &gt;100 ppm):</b> 1.2 km Arc</div>
-            <div>• <b>Zone 2 (ERPG-2 &gt;30 ppm):</b> 3.2 km Arc</div>
-            <div>• <b>Zone 3 (Precautionary &gt;5 ppm):</b> 5.5 km Arc</div>
-            <div style="color: #DC2626; font-weight: bold; margin-top: 3px;">🚨 ACTION: Immediate Upwind Muster to Point B</div>
-          </div>
-        `, { sticky: true });
       });
     }
-  }, [showGasPlume, windVector]);
+  }, [showGasPlume, windVector, liveAssets]);
 
   // ── LAYER 4: NASA FIRMS SATELLITE THERMAL INFRARED FLARE STACKS ──
   useEffect(() => {
@@ -761,7 +802,7 @@ export default function DualHeatmapAndMapPage() {
 
     group.clearLayers();
     if (showNasaFirms) {
-      GEO_ASSETS.filter(a => a.flare_temp_c >= 400).forEach(asset => {
+      liveAssets.filter((a: GeoAsset) => a.flare_temp_c >= 400).forEach((asset: GeoAsset) => {
         // Infrared Glow Marker
         const thermalHtml = `
           <div class="relative flex items-center justify-center -translate-x-1/2 -translate-y-1/2 cursor-pointer group">
@@ -782,10 +823,10 @@ export default function DualHeatmapAndMapPage() {
             <div>• <b>Radiative Power:</b> 14.8 MW</div>
             <div>• <b>Detection Confidence:</b> 98% (High Anomaly)</div>
           </div>
-        `, { sticky: true }).addTo(group);
+        `, { direction: 'top', offset: [0, -12] }).addTo(group);
       });
     }
-  }, [showNasaFirms]);
+  }, [showNasaFirms, liveAssets]);
 
   // ── LAYER 5: DYNAMIC SWA SAFETY PERIMETER BUFFER (250m, 500m, 1000m) ──
   useEffect(() => {
@@ -794,44 +835,24 @@ export default function DualHeatmapAndMapPage() {
     if (!L || !group) return;
 
     group.clearLayers();
-    GEO_ASSETS.forEach(asset => {
+    liveAssets.forEach((asset: GeoAsset) => {
       const isHigh = asset.sif_label === 'HIGH';
       const isSelected = selectedAsset?.id === asset.id;
 
       if (isSelected || isHigh) {
-        // High-visibility outer perimeter ring
-        const circle = L.circle([asset.lat, asset.lng], {
+        // High-visibility outer perimeter ring (non-interactive to allow clicking map/pins without cursor tooltips)
+        L.circle([asset.lat, asset.lng], {
           radius: bufferRadiusMeters,
           color: isHigh ? '#DC2626' : '#D97706',
           weight: isSelected ? 3.5 : 2.5,
           dashArray: isSelected ? '10, 6' : '6, 6',
           fillColor: isHigh ? '#DC2626' : '#D97706',
           fillOpacity: isSelected ? 0.28 : 0.16,
+          interactive: false,
         }).addTo(group);
-
-        const estWorkers = bufferRadiusMeters === 250 
-          ? Math.round(asset.workers_on_site * 0.45) 
-          : bufferRadiusMeters === 500 
-          ? Math.round(asset.workers_on_site * 0.8) 
-          : asset.workers_on_site;
-
-        circle.bindTooltip(`
-          <div style="font-family: sans-serif; font-size: 11px; padding: 5px; line-height: 1.4;">
-            <div style="font-weight: bold; color: ${isHigh ? '#DC2626' : '#D97706'}; font-size: 12px; margin-bottom: 2px;">
-              🛑 SWA ${bufferRadiusMeters}m Perimeter Isolation Zone
-            </div>
-            <div>• <b>Protected Asset:</b> ${asset.name} (${asset.district})</div>
-            <div>• <b>Exclusion Radius:</b> <span style="font-weight: bold; color: #1A2B2D;">${bufferRadiusMeters}m (${(bufferRadiusMeters/1000).toFixed(2)} km)</span></div>
-            <div>• <b>Personnel in Buffer:</b> <span style="color: #DC2626; font-weight: bold;">${estWorkers} field workers</span></div>
-            <div>• <b>Active e-PTWs Suspended:</b> <span style="color: #DC2626; font-weight: bold;">${asset.active_permits} digital permits</span></div>
-            <div style="color: #DC2626; font-weight: bold; margin-top: 4px; border-top: 1px solid #FECACA; padding-top: 3px;">
-              ⚡ OISD-189 Section 7.4 Fail-Safe Isolation Enforced
-            </div>
-          </div>
-        `, { sticky: true });
       }
     });
-  }, [bufferRadiusMeters, selectedAsset]);
+  }, [bufferRadiusMeters, selectedAsset?.id, liveAssets]);
 
   const getCellData = (site: string, activity: string): HeatmapCell | null => {
     return data?.cells?.find(c => c.site === site && c.activity === activity) || null;
@@ -1041,7 +1062,7 @@ export default function DualHeatmapAndMapPage() {
 
                   <button type="button" suppressHydrationWarning
                     onClick={() => {
-                      setSelectedAsset(null);
+                      setSelectedAssetId('OVERVIEW');
                       if (mapInstanceRef.current) {
                         mapInstanceRef.current.flyTo([27.28, 95.18], 10, { duration: 1.2 });
                       }
@@ -1106,7 +1127,7 @@ export default function DualHeatmapAndMapPage() {
                     type="button"
                     suppressHydrationWarning
                     onClick={() => {
-                      setSelectedAsset(null);
+                      setSelectedAssetId('OVERVIEW');
                       if (mapInstanceRef.current) {
                         mapInstanceRef.current.flyTo([27.35, 95.30], 10, { duration: 1.2, easeLinearity: 0.2 });
                       }
@@ -1270,15 +1291,26 @@ export default function DualHeatmapAndMapPage() {
                       </div>
                     </div>
 
-                    {/* Section 4: Latest Hazard */}
-                    <div className="p-3 rounded-lg bg-[#FEF7EC] border border-[#F8DFB6] space-y-1">
-                      <div className="text-[10px] font-semibold text-[#D4820A] flex items-center gap-1">
-                        <AlertTriangle className="w-3.5 h-3.5 text-[#D4820A]" />
-                        Latest Hazard Observation:
+                    {/* Section 4: Latest Hazard (Live Synced with Field Terminal) */}
+                    <div className="p-3 rounded-lg bg-[#FEF7EC] border border-[#F8DFB6] space-y-1.5">
+                      <div className="text-[10px] font-semibold text-[#D4820A] flex items-center justify-between">
+                        <div className="flex items-center gap-1">
+                          <AlertTriangle className="w-3.5 h-3.5 text-[#D4820A]" />
+                          Latest Hazard Observation:
+                        </div>
+                        {data?.site_telemetry?.[selectedAsset.name] ? (
+                          <span className="text-[9px] font-mono text-[#0A6B63] bg-[#E8F4F0] px-1.5 py-0.5 rounded border border-[#BCE3DC] font-bold">
+                            SYNCED LIVE
+                          </span>
+                        ) : null}
                       </div>
-                      <p className="text-xs text-[#1A2B2D] leading-relaxed">
+                      <p className="text-xs text-[#1A2B2D] leading-relaxed font-medium">
                         "{selectedAsset.latest_hazard}"
                       </p>
+                      <div className="text-[10px] text-[#5E7072] flex items-center justify-between pt-1.5 border-t border-[#F8DFB6]/70 mt-1">
+                        <span>Precursor Signals: <strong className="text-[#D63B3B]">{selectedAsset.precursor_count}</strong> / {selectedAsset.total_reports}</span>
+                        <span>SIF Score: <strong className="text-[#D63B3B]">{(selectedAsset.sif_score * 100).toFixed(0)}%</strong></span>
+                      </div>
                     </div>
 
                     {/* Section 5: Toolpusher CTA */}
@@ -1312,12 +1344,12 @@ export default function DualHeatmapAndMapPage() {
                     <div className="p-2.5 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2] space-y-1">
                       <div className="text-[10px] font-medium text-[#5E7072]">Jump to Asset Pin:</div>
                       <div className="flex flex-wrap gap-1">
-                        {GEO_ASSETS.map(a => (
+                        {liveAssets.map((a: GeoAsset) => (
                           <button type="button" suppressHydrationWarning
                             key={a.id}
                             onClick={() => flyToAsset(a)}
                             className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all cursor-pointer ${
-                              selectedAsset.id === a.id ? 'bg-[#0A6B63] text-white' : 'bg-white hover:bg-[#E2E8E2] text-[#5E7072] border border-[#C2CEC2]'
+                              selectedAsset.id === a.id ? 'bg-[#0A6B63] text-white font-bold shadow-2xs' : 'bg-white hover:bg-[#E2E8E2] text-[#5E7072] border border-[#C2CEC2]'
                             }`}
                           >
                             {a.name.split(' ')[0]}

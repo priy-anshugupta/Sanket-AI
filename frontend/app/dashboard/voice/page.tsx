@@ -20,7 +20,9 @@ import {
   RadioTower
 } from 'lucide-react';
 
-const API = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000';
+const API = process.env.NEXT_PUBLIC_API_URL
+  ? process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
+  : (typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000');
 
 const CHANNEL_DETAILS = {
   roip_walkie: {

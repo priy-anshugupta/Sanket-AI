@@ -72,7 +72,9 @@ interface ReportDetail {
   actions: Action[];
 }
 
-const API = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000');
+const API = process.env.NEXT_PUBLIC_API_URL
+  ? process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
+  : (typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000');
 
 const ENTITY_BADGE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   EQUIPMENT: { bg: 'bg-[#E8F4F0]', text: 'text-[#0A6B63]', border: 'border-[#BCE3DC]' },
