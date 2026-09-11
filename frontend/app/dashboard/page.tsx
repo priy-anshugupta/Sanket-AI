@@ -438,12 +438,18 @@ export default function TriageDashboard() {
 
                     {/* Time */}
                     <td className="text-xs text-[#5E7072] font-mono">
-                      {new Date(report.created_at || Date.now()).toLocaleDateString('en-GB', {
-                        day: '2-digit',
-                        month: 'short',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                      {(() => {
+                        const raw = report.created_at;
+                        if (!raw) return 'Just now';
+                        const iso = raw.endsWith('Z') || raw.includes('+') ? raw : `${raw.replace(' ', 'T')}Z`;
+                        return new Date(iso).toLocaleDateString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: true,
+                        });
+                      })()}
                     </td>
 
                     {/* Detail Arrow */}
