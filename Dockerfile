@@ -6,6 +6,10 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Prevent Python from buffering stdout so logs appear in real-time
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
 # Install system dependencies (build tools, curl for healthcheck, ffmpeg for audio)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -24,7 +28,7 @@ COPY ai/ ./ai/
 COPY graph/ ./graph/
 COPY data/ ./data/
 COPY scripts/ ./scripts/
-COPY .env.example .env
+COPY .env.example* .env
 
 # Create directories for persistent assets
 RUN mkdir -p generated_pdfs uploads data/synthetic
