@@ -171,7 +171,10 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
       if (res.ok) {
         setFeedbackSuccess(`✅ Decision Recorded: Label set to ${correctedLabel} & Incident RESOLVED!`);
         if (report) {
-          setReport({ ...report, sif_label: correctedLabel, status: 'RESOLVED' });
+          const newScore = correctedLabel === 'HIGH' 
+            ? Math.max(report.sif_score || 0, 0.88) 
+            : (correctedLabel === 'LOW' ? Math.min(report.sif_score || 1, 0.18) : 0.55);
+          setReport({ ...report, sif_label: correctedLabel, sif_score: newScore, status: 'RESOLVED' });
         }
         window.dispatchEvent(new CustomEvent('sanket:new_report', { detail: { id: reportId, status: 'RESOLVED' } }));
         await fetchReport();
@@ -260,7 +263,13 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
   }
 
   const sifScore = report.sif_score ?? 0;
-  const sifLabel = report.sif_label ?? 'LOW';
+  // Strict consistency safeguard: A low score (< 0.35) must never render as HIGH risk
+  let sifLabel = report.sif_label || (sifScore >= 0.70 ? 'HIGH' : sifScore >= 0.35 ? 'MEDIUM' : 'LOW');
+  if (sifScore < 0.35 && sifLabel === 'HIGH') {
+    sifLabel = 'LOW';
+  } else if (sifScore >= 0.70 && sifLabel === 'LOW') {
+    sifLabel = 'HIGH';
+  }
 
   return (
     <div className="dashboard-page max-w-6xl space-y-5 p-6 bg-[#F7F8F5] min-h-screen text-[#1A2B2D]">
@@ -294,7 +303,7 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
 
           <button type="button" suppressHydrationWarning
             onClick={handleDownloadPDF}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#C2CEC2] hover:bg-[#F0F2ED] rounded-lg text-xs font-semibold text-[#1A2B2D] shadow-xs transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-white border border-[#C2CEC2] hover:bg-[#F0F2ED] rounded-lg text-xs font-semibold text-[#1A2B2D] shadow-xs transition-colors cursor-pointer"
           >
             <Download className="w-3.5 h-3.5 text-[#0A6B63]" /> Download Executive PDF Brief
           </button>
@@ -318,8 +327,12 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-sans font-semibold tracking-wider uppercase px-2 py-0.5 rounded bg-white border border-[#C2CEC2] text-[#1A2B2D]">
-                  Potential SIF Precursor
+                <span className={`text-[10px] font-sans font-semibold tracking-wider uppercase px-2 py-0.5 rounded border ${
+                  sifLabel === 'HIGH' ? 'bg-red-50 text-red-700 border-red-200' :
+                  sifLabel === 'MEDIUM' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                  'bg-emerald-50 text-emerald-700 border-emerald-200'
+                }`}>
+                  {sifLabel === 'HIGH' ? '🚨 Potential SIF Precursor' : sifLabel === 'MEDIUM' ? '⚠️ Medium Risk Hazard' : '🛡️ Standard Observation (Non-SIF)'}
                 </span>
                 <span className="text-xs text-[#5E7072] font-mono">
                   {new Date(report.created_at).toLocaleString()}

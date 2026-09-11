@@ -267,6 +267,16 @@ class ReportService:
 
         # Update displayed label and status
         report.sif_label = corrected_label
+        if corrected_label == "HIGH":
+            report.sif_score = max(report.sif_score or 0.0, 0.88)
+            report.is_sif_precursor = True
+        elif corrected_label == "MEDIUM":
+            report.sif_score = 0.55
+            report.is_sif_precursor = False
+        elif corrected_label == "LOW":
+            report.sif_score = min(report.sif_score or 1.0, 0.18)
+            report.is_sif_precursor = False
+
         report.status = "RESOLVED"
         report.updated_at = datetime.utcnow()
 

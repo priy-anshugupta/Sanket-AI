@@ -378,18 +378,27 @@ export default function TriageDashboard() {
 
                     {/* SIF Score Pill */}
                     <td>
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono font-medium ${
-                        report.sif_label === 'HIGH'
-                          ? 'bg-[#FDF2F2] text-[#D63B3B] border border-[#F5C6C6]'
-                          : report.sif_label === 'MEDIUM'
-                          ? 'bg-[#FEF7EC] text-[#D4820A] border border-[#F8DFB6]'
-                          : 'bg-[#EDFAF4] text-[#1B8A6C] border border-[#BFEADB]'
-                      }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${
-                          report.sif_label === 'HIGH' ? 'bg-[#D63B3B]' : report.sif_label === 'MEDIUM' ? 'bg-[#D4820A]' : 'bg-[#1B8A6C]'
-                        }`} />
-                        {report.sif_label} {report.sif_score !== undefined && report.sif_score !== null ? `${Math.round(report.sif_score * 100)}% (${report.sif_score.toFixed(2)})` : '—'}
-                      </span>
+                      {(() => {
+                        const effectiveLabel = (report.sif_score !== undefined && report.sif_score < 0.35)
+                          ? 'LOW'
+                          : (report.sif_score !== undefined && report.sif_score >= 0.70)
+                          ? 'HIGH'
+                          : report.sif_label;
+                        return (
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono font-medium ${
+                            effectiveLabel === 'HIGH'
+                              ? 'bg-[#FDF2F2] text-[#D63B3B] border border-[#F5C6C6]'
+                              : effectiveLabel === 'MEDIUM'
+                              ? 'bg-[#FEF7EC] text-[#D4820A] border border-[#F8DFB6]'
+                              : 'bg-[#EDFAF4] text-[#1B8A6C] border border-[#BFEADB]'
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${
+                              effectiveLabel === 'HIGH' ? 'bg-[#D63B3B]' : effectiveLabel === 'MEDIUM' ? 'bg-[#D4820A]' : 'bg-[#1B8A6C]'
+                            }`} />
+                            {effectiveLabel} {report.sif_score !== undefined && report.sif_score !== null ? `${Math.round(report.sif_score * 100)}% (${report.sif_score.toFixed(2)})` : '—'}
+                          </span>
+                        );
+                      })()}
                     </td>
 
                     {/* IOGP Rule */}
