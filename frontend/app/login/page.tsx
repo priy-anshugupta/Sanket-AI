@@ -15,24 +15,25 @@ export default function LoginPage() {
   const [badgeId, setBadgeId] = useState('4491');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [error, setError] = useState('');
+  const [demoBypass, setDemoBypass] = useState(false);
 
   // Mobile Device Detection (Locks Manager Login on Phone)
   useEffect(() => {
     const checkMobile = () => {
       const isMobile = window.innerWidth < 480 || /iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       setIsMobileDevice(isMobile);
-      if (isMobile) {
+      if (isMobile && !demoBypass) {
         setActiveTab('worker');
       }
     };
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  }, [demoBypass]);
 
   const handleManagerLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isMobileDevice) {
+    if (isMobileDevice && !demoBypass) {
       setError('🔒 Access Denied: Safety Manager Operations are restricted to HQ Desktop/Laptop workstations per OISD-189.');
       return;
     }
@@ -40,7 +41,11 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const res = await fetch(`http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:8000/api/auth/login`, {
+      const loginUrl = process.env.NEXT_PUBLIC_API_URL
+        ? `${process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')}/api/auth/login`
+        : (typeof window !== 'undefined' ? `http://${window.location.hostname}:8000/api/auth/login` : 'http://localhost:8000/api/auth/login');
+
+      const res = await fetch(loginUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
@@ -68,8 +73,8 @@ export default function LoginPage() {
   };
 
   const quickLogin = async (u: string, p: string, targetPath?: string) => {
-    if (isMobileDevice && (u === 'rajesh' || u === 'priya')) {
-      setError('🔒 Access Denied: Manager accounts (Rajesh/Priya) cannot be used on mobile phones. Please use Field Worker Terminal (Bikash/Horen).');
+    if (isMobileDevice && !demoBypass && (u === 'rajesh' || u === 'priya')) {
+      setError('🔒 Access Denied: Manager accounts (Rajesh/Priya) cannot be used on mobile phones. Please use Field Worker Terminal or tap Demo Override.');
       setActiveTab('worker');
       return;
     }
@@ -82,7 +87,11 @@ export default function LoginPage() {
     const destination = targetPath || defaultPath;
 
     try {
-      const res = await fetch(`http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:8000/api/auth/login`, {
+      const loginUrl = process.env.NEXT_PUBLIC_API_URL
+        ? `${process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')}/api/auth/login`
+        : (typeof window !== 'undefined' ? `http://${window.location.hostname}:8000/api/auth/login` : 'http://localhost:8000/api/auth/login');
+
+      const res = await fetch(loginUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: u, password: p }),
@@ -202,7 +211,7 @@ export default function LoginPage() {
           {/* ── PORTAL 1: SAFETY MANAGER LOGIN ── */}
           {activeTab === 'manager' && (
             <div className="space-y-5" suppressHydrationWarning>
-              {isMobileDevice ? (
+              {isMobileDevice && !demoBypass ? (
                 <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-center space-y-3">
                   <div className="w-10 h-10 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
                     <Shield className="w-5 h-5" />
@@ -222,6 +231,13 @@ export default function LoginPage() {
                   >
                     <HardHat className="w-4 h-4" />
                     Use Field Worker Terminal on Mobile
+                  </button>
+                  <button suppressHydrationWarning
+                    type="button"
+                    onClick={() => { setDemoBypass(true); setError(''); }}
+                    className="w-full py-2 bg-transparent hover:bg-white/5 text-[#0A6B63] hover:text-[#0D8A80] font-mono text-[11px] font-bold rounded-lg border border-[#0A6B63]/40 flex items-center justify-center gap-1 cursor-pointer"
+                  >
+                    ⚡ Demo Override: Unlock HQ Login on Narrow Screen
                   </button>
                 </div>
               ) : (
