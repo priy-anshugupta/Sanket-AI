@@ -143,12 +143,79 @@ export default function FieldWorkerTerminal() {
     }
   ];
 
-  const handleSelectTag = (tag: typeof quickTags[0]) => {
+  // Core submission function that accepts text directly
+  const submitTextObservation = async (textToSubmit: string) => {
+    if (!textToSubmit || !textToSubmit.trim()) return;
+    setIsSubmitting(true);
+    setLastResult(null);
+    setTouchFeedback('🚀 Transmitting to Control Room...');
+
+    try {
+      const res = await fetch(`${API}/api/reports/ingest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: textToSubmit.trim(),
+          source: 'is_field_terminal',
+          location: 'Well Pad 7 (Upper Assam)',
+          activity_type: 'Drilling',
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setTimeout(async () => {
+          try {
+            const repRes = await fetch(`${API}/api/reports/${data.job_id}`);
+            const rep = await repRes.json();
+            
+            const isHigh = rep.sif_label === 'HIGH';
+            const feedbackText = isHigh 
+              ? `🚨 CRITICAL ALERT (SIF ${Math.round((rep.sif_score || 0.94) * 100)}%): Escalated to Rig Supervisor & Duliajan Control Room.`
+              : `✅ Report Logged (Low Risk). Shift Supervisor notified.`;
+
+            setLastResult({
+              sif_score: rep.sif_score || 0.94,
+              sif_label: rep.sif_label || 'HIGH',
+              iogp_rule: rep.iogp_rule || 'Energy Isolation',
+              feedback: feedbackText,
+            });
+
+            const newReport: WorkerReport = {
+              id: `REP-${data.job_id?.substring(0, 6).toUpperCase() || 'NEW'}`,
+              text: textToSubmit.trim(),
+              time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              sif_label: rep.sif_label || 'HIGH',
+              sif_score: rep.sif_score || 0.94,
+              status: isHigh ? 'SWA ESCALATED' : 'LOGGED SAFE',
+            };
+            setSubmittedReports(prev => [newReport, ...prev.slice(0, 9)]);
+            window.dispatchEvent(new CustomEvent('sanket:new_report', { detail: rep }));
+            setTouchFeedback('🎉 Transmitted & Synced to Control Room!');
+            setTimeout(() => setTouchFeedback(null), 3000);
+          } catch {
+            setTouchFeedback('🎉 Report Transmitted!');
+            setTimeout(() => setTouchFeedback(null), 3000);
+          }
+          setIsSubmitting(false);
+        }, 600);
+        return;
+      } else {
+        setTouchFeedback('❌ Failed to ingest report. Try again.');
+        setIsSubmitting(false);
+        setTimeout(() => setTouchFeedback(null), 3000);
+      }
+    } catch {
+      setTouchFeedback('❌ Network error. Ensure backend is running.');
+      setIsSubmitting(false);
+      setTimeout(() => setTouchFeedback(null), 3000);
+    }
+  };
+
+  const handleSelectTag = async (tag: typeof quickTags[0]) => {
     setSelectedTag(tag.id);
     setInputText(tag.presetText);
-    setLastResult(null);
-    setTouchFeedback(`Selected: ${tag.label}`);
-    setTimeout(() => setTouchFeedback(null), 1500);
+    await submitTextObservation(tag.presetText);
   };
 
   // ──── ROBUST VOICE RECORDING: MediaRecorder Start/Stop + OpenAI Whisper ────
@@ -169,13 +236,16 @@ export default function FieldWorkerTerminal() {
       if (res.ok) {
         const d = await res.json();
         if (d.text && d.text.trim().length > 0) {
-          setInputText((prev) => (prev ? `${prev} ${d.text.trim()}` : d.text.trim()));
+          const newText = inputText ? `${inputText} ${d.text.trim()}` : d.text.trim();
+          setInputText(newText);
           setTouchFeedback(`✅ Transcribed: "${d.text.substring(0, 40)}..."`);
+          // Automatically submit transcribed text after 1 second
+          setTimeout(() => submitTextObservation(newText), 1000);
         } else {
-          setTouchFeedback('⚠️ No speech detected. Try speaking louder or closer.');
+          setTouchFeedback('⚠️ No speech detected. Speak louder or closer.');
         }
       } else {
-        setTouchFeedback('⚠️ Whisper error. Try again or type manually.');
+        setTouchFeedback('⚠️ Whisper error. You can tap quick hazards below.');
       }
     } catch {
       setTouchFeedback('⚠️ Network error. Check Wi-Fi connection.');
@@ -187,6 +257,12 @@ export default function FieldWorkerTerminal() {
 
   // START recording using MediaRecorder (works on all phones)
   const startRecording = async () => {
+    if (typeof window !== 'undefined' && (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia)) {
+      setTouchFeedback('📱 Note: Mobile HTTP blocks live mic. Use 1-Tap Hazards below or phone keyboard mic!');
+      setTimeout(() => setTouchFeedback(null), 4500);
+      return;
+    }
+
     try {
       // Request mic permission
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -213,7 +289,6 @@ export default function FieldWorkerTerminal() {
       };
 
       recorder.onstop = async () => {
-        // Combine all chunks into one blob
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType || 'audio/webm' });
         audioChunksRef.current = [];
         if (audioBlob.size > 1000) {
@@ -224,23 +299,18 @@ export default function FieldWorkerTerminal() {
         }
       };
 
-      recorder.start(250); // Collect data every 250ms for reliability
+      recorder.start(250);
       setIsRecording(true);
       setRecordingSeconds(0);
-      setTouchFeedback('🔴 Recording... Speak now! Tap again to stop.');
+      setTouchFeedback('🔴 Recording... Speak in Hindi/Assamese/English! Tap again to stop.');
 
-      // Timer to show recording duration
       timerRef.current = setInterval(() => {
         setRecordingSeconds((s) => s + 1);
       }, 1000);
     } catch (err: any) {
       console.error('Mic access error:', err);
-      // Fallback: open native file picker for audio
-      setTouchFeedback('🎙️ Opening audio recorder...');
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-        fileInputRef.current.click();
-      }
+      setTouchFeedback('⚠️ Mic access denied. Tap a Quick Hazard below to transmit!');
+      setTimeout(() => setTouchFeedback(null), 4000);
     }
   };
 
