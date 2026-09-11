@@ -13,11 +13,11 @@ from backend.config.settings import settings
 RULE_DOMAIN_KEYWORDS = {
     "Bypassing Safety Controls": ["bop", "psv", "interlock", "alarm", "bypass", "override", "safety critical", "safety valve", "tamper", "prv", "esd", "emergency shutdown"],
     "Energy Isolation": ["pressure", "psi", "bar", "hydraulic", "loto", "isolation", "isolate", "electrical", "voltage", "lockout", "tagout", "bleed", "drain line", "valve weeping", "fluid under", "containment", "piping", "accumulator"],
-    "Confined Space": ["confined", "tank", "vessel", "pit", "cellar", "manhole", "atmosphere", "oxygen", "h2s", "toxic gas", "gas test", "ppm"],
+    "Confined Space": ["confined", "tank", "vessel", "pit", "cellar", "cellar pit", "manhole", "atmosphere", "oxygen", "h2s", "toxic gas", "gas test", "ppm"],
     "Hot Work": ["welding", "grinding", "torch", "cutting", "spark", "hot work", "flame", "flammable"],
     "Safe Mechanical Lifting": ["crane", "rigging", "sling", "hoist", "winch", "suspended load", "lifting", "shackle", "derrick lift"],
     "Working at Height": ["scaffold", "ladder", "roof", "harness", "fall arrest", "fall protection", "mast", "derrick platform", "monkey board", "working at height", "elevated walkway"],
-    "Line of Fire": ["line of fire", "pinch point", "stored energy", "struck by", "whipcheck", "rotating", "kickback", "recoil"],
+    "Line of Fire": ["line of fire", "pinch point", "stored energy", "struck by", "whipcheck", "rotating", "kickback", "recoil", "handrail", "walkway", "staircase", "slip", "trip", "spill", "housekeeping", "loose", "oil on floor"],
     "Ground Disturbance": ["excavat", "trench", "underground", "buried cable", "digging", "pipeline crossing"],
     "Driving Safety": ["vehicle", "driving", "seatbelt", "speed limit", "driver", "transport", "pickup truck", "crash"],
 }
@@ -52,7 +52,10 @@ class LSRMapper:
             self.model = model
         else:
             from sentence_transformers import SentenceTransformer
-            self.model = SentenceTransformer(settings.EMBEDDING_MODEL)
+            try:
+                self.model = SentenceTransformer(settings.EMBEDDING_MODEL, local_files_only=True)
+            except Exception:
+                self.model = SentenceTransformer(settings.EMBEDDING_MODEL)
 
         # Precompute rule description embeddings
         rule_texts = [

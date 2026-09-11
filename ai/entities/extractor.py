@@ -53,6 +53,7 @@ class EntityExtractor:
                 "no permit", "without permit", "no lockout", "without LOTO",
                 "safety valve bypassed", "interlock disabled", "alarm silenced",
                 "gasket leak", "seal failure", "weld defect",
+                "leaking", "leak", "weeping",
             ],
         }
 

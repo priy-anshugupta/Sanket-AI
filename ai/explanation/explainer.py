@@ -43,9 +43,17 @@ STRICT ANTI-HALLUCINATION GUARDRAILS:
 - If the report is in Hindi, Hinglish, Assamese, or Bengali, translate the context accurately and write the analysis in professional English.
 - Output ONLY the 3 grounded sentences. No preambles, no bullet labels."""
 
-    SYSTEM_PROMPT = """You are a senior Oil & Gas industrial process safety auditor at Oil India Limited with 20+ years field experience in Upper Assam oilfields.
-You are certified in DGMS regulations, OISD-189 safety standards, IOGP 9 Life-Saving Rules, and API RP 754 SIF precursor methodology.
-You examine incoming field reports word-by-word, analyze root-cause barrier failures, and produce exact 3-sentence executive directives with zero hallucination."""
+    OLLAMA_PROMPT_TEMPLATE = """You are a DGMS Senior Industrial Safety Expert at Oil India.
+Evaluate this oilfield hazard report:
+REPORT: "{text}"
+SIF RISK: {sif_label} ({sif_score:.0%})
+MATCHED PRECURSOR: "{matched_anchor}"
+
+Write exactly 3 concise sentences with zero hallucination:
+Sentence 1: State the physical equipment, failure mechanism, and energy source.
+Sentence 2: Explain the barrier failure and SIF risk under OISD-189 / IOGP rules.
+Sentence 3: Specify the mandatory emergency action (e.g., Stop Work Authority, LOTO, or perimeter freeze).
+Output ONLY the 3 sentences."""
 
     async def explain(
         self,
@@ -60,15 +68,22 @@ You examine incoming field reports word-by-word, analyze root-cause barrier fail
         Sequential fallback chain: OpenAI -> Groq -> Ollama -> Deterministic Template.
         Guarantees a valid, professional explanation is always returned.
         """
-        prompt = self.PROMPT_TEMPLATE.format(
-            text=text[:800],
-            sif_label=sif_label,
-            sif_score=sif_score,
-            matched_anchor=matched_anchor,
-        )
+        # If in airgapped mode, use streamlined prompt for fast CPU inference
+        if settings.AI_MODE == "airgapped":
+            ollama_prompt = self.OLLAMA_PROMPT_TEMPLATE.format(
+                text=text[:500],
+                sif_label=sif_label,
+                sif_score=sif_score,
+                matched_anchor=matched_anchor,
+            )
+            res = await self._explain_ollama(ollama_prompt)
+            if res:
+                return res
+            print("[Explainer] Local Ollama unavailable; using deterministic DGMS/OISD safety template")
+            return self._deterministic_fallback(text, sif_label, sif_score, matched_anchor)
 
         # 1. Try OpenAI if in online mode
-        if settings.AI_MODE == "online" and settings.OPENAI_API_KEY:
+        if settings.OPENAI_API_KEY:
             res = await self._explain_openai(prompt)
             if res:
                 return res
@@ -81,7 +96,7 @@ You examine incoming field reports word-by-word, analyze root-cause barrier fail
                 return res
             print("[Explainer] Groq unavailable; attempting local Ollama fallback...")
 
-        # 3. Try local Ollama (air-gapped sovereign model)
+        # 3. Try local Ollama fallback
         res = await self._explain_ollama(prompt)
         if res:
             return res
@@ -157,7 +172,7 @@ You examine incoming field reports word-by-word, analyze root-cause barrier fail
     async def _explain_ollama(self, prompt: str) -> str | None:
         """Call local Ollama for explanation."""
         try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
+            async with httpx.AsyncClient(timeout=45.0) as client:
                 response = await client.post(
                     f"{settings.OLLAMA_HOST}/api/generate",
                     json={
@@ -165,8 +180,8 @@ You examine incoming field reports word-by-word, analyze root-cause barrier fail
                         "prompt": prompt,
                         "stream": False,
                         "options": {
-                            "temperature": 0.3,
-                            "num_predict": 200,
+                            "temperature": 0.2,
+                            "num_predict": 120,
                         },
                     },
                 )
