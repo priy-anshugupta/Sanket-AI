@@ -19,7 +19,9 @@ import {
   Flame
 } from 'lucide-react';
 
-const API_BASE = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL
+  ? process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
+  : (typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000');
 
 interface Report {
   id: string;
@@ -386,7 +388,7 @@ export default function TriageDashboard() {
                         <span className={`w-1.5 h-1.5 rounded-full ${
                           report.sif_label === 'HIGH' ? 'bg-[#D63B3B]' : report.sif_label === 'MEDIUM' ? 'bg-[#D4820A]' : 'bg-[#1B8A6C]'
                         }`} />
-                        {report.sif_label} {report.sif_score?.toFixed(2)}
+                        {report.sif_label} {report.sif_score !== undefined && report.sif_score !== null ? `${Math.round(report.sif_score * 100)}% (${report.sif_score.toFixed(2)})` : '—'}
                       </span>
                     </td>
 

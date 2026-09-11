@@ -20,7 +20,9 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-const API_BASE = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL
+  ? process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
+  : (typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000');
 
 interface LiveReport {
   id: string;
@@ -64,7 +66,7 @@ export default function ControlRoomPage() {
           setAlerts(precursorReps.map((r: any) => ({
             id: r.id,
             sif_score: r.sif_score,
-            sif_label: r.sif_label || (r.sif_score >= 0.75 ? 'HIGH' : 'MEDIUM'),
+            sif_label: r.sif_label || (r.sif_score >= 0.75 ? 'HIGH' : r.sif_score >= 0.50 ? 'MEDIUM' : 'LOW'),
             location: r.location || 'Well Pad 7',
             raw_text: r.raw_text,
             iogp_rule: r.iogp_rule || 'Life-Saving Rule Precursor',
@@ -121,7 +123,7 @@ export default function ControlRoomPage() {
       id: `REP-LIVE-${Math.floor(100 + Math.random() * 900)}`,
       sif_score: 0.96,
       sif_label: 'HIGH',
-      location: 'Well Pad 7 (Upper Assam)',
+      location: 'Well Pad 7',
       raw_text: 'Annular BOP valve seal weeping hydraulic fluid under 1800 PSI surge during pipe tripping.',
       iogp_rule: 'Energy Isolation & Barrier Integrity',
       created_at: 'Just now'
@@ -262,7 +264,7 @@ export default function ControlRoomPage() {
                           ? 'bg-[#FDF2F2] text-[#D63B3B] border-[#F5C6C6]'
                           : 'bg-[#FEF7EC] text-[#D4820A] border-[#F8DFB6]'
                       }`}>
-                        SIF {Math.round(alert.sif_score * 100)}% RISK
+                        SIF {Math.round(alert.sif_score * 100)}% ({alert.sif_score.toFixed(2)}) RISK
                       </span>
                       <span className="font-bold text-[#1A2B2D] flex items-center gap-1">
                         <MapPin className="w-3.5 h-3.5 text-[#0A6B63]" />

@@ -155,3 +155,33 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
     padding: 16px 14px;
   }
 }
+
+/* Leaflet Dark UI Overrides - High-integrity industrial aesthetic */
+.leaflet-tooltip {
+  background-color: rgba(15, 27, 29, 0.95) !important;
+  color: #f1f5f9 !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6) !important;
+  backdrop-filter: blur(8px) !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 11px !important;
+  padding: 6px 10px !important;
+}
+
+.leaflet-tooltip-top:before { border-top-color: rgba(15, 27, 29, 0.95) !important; }
+.leaflet-tooltip-bottom:before { border-bottom-color: rgba(15, 27, 29, 0.95) !important; }
+.leaflet-tooltip-left:before { border-left-color: rgba(15, 27, 29, 0.95) !important; }
+.leaflet-tooltip-right:before { border-right-color: rgba(15, 27, 29, 0.95) !important; }
+
+.leaflet-popup-content-wrapper {
+  background-color: rgba(15, 27, 29, 0.96) !important;
+  color: #f1f5f9 !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6) !important;
+}
+
+.leaflet-popup-tip {
+  background-color: rgba(15, 27, 29, 0.96) !important;
+}

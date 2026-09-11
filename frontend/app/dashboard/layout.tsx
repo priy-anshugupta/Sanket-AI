@@ -31,8 +31,12 @@ import {
 } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 
-const API_BASE = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000';
-const WS_BASE = typeof window !== 'undefined' ? `ws://${window.location.hostname}:8000/ws/alerts` : 'ws://localhost:8000/ws/alerts';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL
+  ? process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
+  : (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:8000` : 'http://localhost:8000');
+const WS_BASE = process.env.NEXT_PUBLIC_WS_URL
+  ? process.env.NEXT_PUBLIC_WS_URL.replace(/\/+$/, '')
+  : (typeof window !== 'undefined' ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.hostname}:8000/ws/alerts` : 'ws://localhost:8000/ws/alerts');
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Triage Queue', icon: ClipboardList, shortcut: 'F9' },
@@ -71,7 +75,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       raw_text: 'Annular BOP secondary valve seal weeping hydraulic fluid under 1800 PSI vibration at Well Pad 7.',
       sif_score: 0.94,
       sif_label: 'HIGH',
-      location: 'Well Pad 7 (Upper Assam)',
+      location: 'Well Pad 7',
       iogp_rule: 'Energy Isolation',
       reporter: 'Bikash Das (Rig Floor Operator)',
       created_at: 'Just now'
@@ -100,6 +104,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState<number>(3);
   const [isMobileScreen, setIsMobileScreen] = useState(false);
+  const [isDemoOverridden, setIsDemoOverridden] = useState(false);
   const [systemStatus, setSystemStatus] = useState<any>(null);
 
   const lastSeenIdRef = useRef<string | null>(null);
@@ -222,15 +227,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       if (report.id === lastSeenIdRef.current) return;
       lastSeenIdRef.current = report.id;
 
-      const isHighSif = report.sif_label === 'HIGH' || (report.sif_score && report.sif_score >= 0.70);
+      const isHighSif = report.sif_label === 'HIGH' || (typeof report.sif_score === 'number' && report.sif_score >= 0.70);
+
+      const realScore = typeof report.sif_score === 'number' ? report.sif_score : 0.18;
+      const realLabel = report.sif_label || (realScore >= 0.75 ? 'HIGH' : realScore >= 0.50 ? 'MEDIUM' : 'LOW');
 
       const newAlert: LiveAlert = {
         id: report.id,
         raw_text: report.raw_text,
-        sif_score: report.sif_score || 0.88,
-        sif_label: report.sif_label || (isHighSif ? 'HIGH' : 'MEDIUM'),
-        location: report.location || 'Well Pad 7 (Upper Assam)',
-        iogp_rule: report.iogp_rule || 'Energy Isolation & Barrier Integrity',
+        sif_score: realScore,
+        sif_label: realLabel,
+        location: report.location || 'Well Pad 7',
+        iogp_rule: report.iogp_rule || (isHighSif ? 'Energy Isolation & Barrier Integrity' : 'General Maintenance & Housekeeping'),
         reporter: 'Bikash Das (OIL-OP-4491 · Rig Floor)',
         created_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
@@ -239,10 +247,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setNotifications(prev => [newAlert, ...prev.filter(n => n.id !== newAlert.id).slice(0, 29)]);
       setUnreadCount(c => c + 1);
 
-      // Pop up floating alert banner
-      setActiveAlert(newAlert);
-      if (alertSoundEnabled) {
-        playChime(880, 1174, 0.35);
+      // Pop up floating alert banner ONLY for real High SIF incidents (>= 70% or HIGH label)
+      // Routine safe observations (like 0.18 LOW) are logged in Triage without alarming the operator
+      if (isHighSif) {
+        setActiveAlert(newAlert);
+        if (alertSoundEnabled) {
+          playChime(880, 1174, 0.35);
+        }
       }
 
       window.dispatchEvent(new CustomEvent('sanket:new_report', { detail: report }));
@@ -286,7 +297,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }
 
         if (latest.id !== lastSeenIdRef.current) {
-          handleIncomingReport(latest);
+          // Verify report was submitted in the last 45 seconds to prevent stale database switches from falsely popping alarms
+          const createdStr = latest.created_at || '';
+          const ts = createdStr ? new Date(createdStr.endsWith('Z') ? createdStr : createdStr + 'Z').getTime() : 0;
+          const isFresh = ts > 0 && Math.abs(Date.now() - ts) < 45000;
+
+          if (isFresh) {
+            handleIncomingReport(latest);
+          } else {
+            // Silently sync the ID pointer without alarming the operator
+            lastSeenIdRef.current = latest.id;
+          }
         }
       } catch {
         // Silent catch
@@ -315,7 +336,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const currentNav = NAV_ITEMS.find(i => pathname === i.href || (i.href !== '/dashboard' && pathname?.startsWith(i.href))) || NAV_ITEMS[0];
 
   // ── MOBILE LOCKOUT SCREEN FOR SAFETY MANAGER DASHBOARD ──
-  if (isMobileScreen) {
+  if (isMobileScreen && !isDemoOverridden) {
     return (
       <div className="min-h-screen w-full bg-[#0F1B1D] text-white p-6 flex flex-col items-center justify-center text-center space-y-5 selection:bg-[#0A6B63]">
         <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400">
@@ -343,9 +364,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             Switch to Field Worker Terminal
           </Link>
 
+          <button
+            type="button"
+            onClick={() => setIsDemoOverridden(true)}
+            className="w-full py-2.5 bg-white/5 hover:bg-white/10 text-[#0A6B63] hover:text-[#0D8A80] font-mono font-bold text-[11px] rounded-xl border border-[#0A6B63]/40 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+          >
+            ⚡ Demo Override: Continue to HQ Dashboard
+          </button>
+
           <Link
             href="/login"
-            className="w-full py-2.5 bg-[#1D3234] hover:bg-[#233D3F] text-[#8BA4A7] hover:text-white font-semibold text-xs rounded-xl border border-[#264245] flex items-center justify-center gap-1.5 transition-all"
+            className="w-full py-2 bg-[#1D3234] hover:bg-[#233D3F] text-[#8BA4A7] hover:text-white font-semibold text-xs rounded-xl border border-[#264245] flex items-center justify-center gap-1.5 transition-all"
           >
             <LogOut className="w-3.5 h-3.5" />
             Return to Login Portal
@@ -391,7 +420,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <User className="w-3 h-3" /> {activeAlert.reporter}
                 </span>
                 <span className="px-2 py-0.5 rounded font-bold bg-red-500/20 text-red-300 border border-red-500/40">
-                  SIF {(activeAlert.sif_score * 100).toFixed(0)}% · {activeAlert.sif_label}
+                  SIF {Math.round(activeAlert.sif_score * 100)}% ({activeAlert.sif_score.toFixed(2)}) · {activeAlert.sif_label}
                 </span>
               </div>
 
@@ -731,7 +760,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                               <MapPin className="w-3 h-3 text-[#0A6B63]" /> {notif.location}
                             </span>
                             <span className="px-1.5 py-0.5 rounded font-bold bg-[#FDF2F2] text-[#D63B3B] border border-[#F5C6C6]">
-                              SIF {(notif.sif_score * 100).toFixed(0)}%
+                              SIF {Math.round(notif.sif_score * 100)}% ({notif.sif_score.toFixed(2)})
                             </span>
                           </div>
                         </div>
