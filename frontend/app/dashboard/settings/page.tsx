@@ -43,6 +43,7 @@ export default function SettingsPage() {
   const [lsrThreshold, setLsrThreshold] = useState(0.45);
   const [clusterWindow, setClusterWindow] = useState(7);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [switchingMode, setSwitchingMode] = useState(false);
 
   const fetchSystemStatus = () => {
     fetch(`${API}/api/system/airgap`)
@@ -69,6 +70,21 @@ export default function SettingsPage() {
   };
 
   const isOnline = airgap ? !airgap.is_airgapped : true;
+
+  const toggleAiMode = async () => {
+    try {
+      setSwitchingMode(true);
+      const targetAiMode = isOnline ? 'airgapped' : 'online';
+      const targetDbMode = isOnline ? 'sqlite' : 'supabase';
+      await fetch(`${API}/api/system/ai-switch?mode=${targetAiMode}`, { method: 'POST' });
+      await fetch(`${API}/api/system/db-switch?mode=${targetDbMode}`, { method: 'POST' });
+      fetchSystemStatus();
+    } catch (e) {
+      console.error('Mode toggle error:', e);
+    } finally {
+      setSwitchingMode(false);
+    }
+  };
 
   return (
     <div className="dashboard-page min-h-screen space-y-5 p-6 bg-[#F7F8F5] text-[#1A2B2D]">
@@ -118,13 +134,29 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold border ${
-            isOnline
-              ? 'bg-blue-50 border-blue-200 text-blue-700'
-              : 'bg-[#EDFAF4] border-[#BFEADB] text-[#1B8A6C]'
-          }`}>
-            <span className={`w-2 h-2 rounded-full animate-pulse ${isOnline ? 'bg-blue-600' : 'bg-[#1B8A6C]'}`} />
-            {airgap?.status_badge || (isOnline ? 'ONLINE AI ACTIVE' : 'VERIFIED 100% AIR-GAPPED')}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleAiMode}
+              disabled={switchingMode}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 ${
+                isOnline
+                  ? 'bg-[#0A6B63] hover:bg-[#085B54] text-white'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
+              }`}
+            >
+              {isOnline ? <Lock className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
+              {switchingMode ? 'Switching...' : (isOnline ? 'Simulate 100% Air-Gapped Mode' : 'Switch to Cloud Online Mode')}
+            </button>
+
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold border ${
+              isOnline
+                ? 'bg-blue-50 border-blue-200 text-blue-700'
+                : 'bg-[#EDFAF4] border-[#BFEADB] text-[#1B8A6C]'
+            }`}>
+              <span className={`w-2 h-2 rounded-full animate-pulse ${isOnline ? 'bg-blue-600' : 'bg-[#1B8A6C]'}`} />
+              {airgap?.status_badge || (isOnline ? 'ONLINE AI ACTIVE' : 'VERIFIED 100% AIR-GAPPED')}
+            </div>
           </div>
         </div>
 
