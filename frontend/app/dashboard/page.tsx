@@ -479,6 +479,7 @@ export default function TriageDashboard() {
               <span className="text-[#94A3A5] font-medium">Rows per page:</span>
               {[20, 50, 100, 500].map((size) => (
                 <button
+                  suppressHydrationWarning
                   type="button"
                   key={size}
                   onClick={() => {
@@ -500,6 +501,7 @@ export default function TriageDashboard() {
           {/* Right: Page Navigation Controls */}
           <div className="flex items-center gap-1.5">
             <button
+              suppressHydrationWarning
               type="button"
               onClick={() => setPage(1)}
               disabled={page === 1 || loading}
@@ -509,6 +511,7 @@ export default function TriageDashboard() {
               <ChevronsLeft className="w-3.5 h-3.5" />
             </button>
             <button
+              suppressHydrationWarning
               type="button"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1 || loading}
@@ -534,6 +537,7 @@ export default function TriageDashboard() {
 
                 return (
                   <button
+                    suppressHydrationWarning
                     type="button"
                     key={pageNum}
                     onClick={() => setPage(pageNum)}
@@ -550,6 +554,7 @@ export default function TriageDashboard() {
             </div>
 
             <button
+              suppressHydrationWarning
               type="button"
               onClick={() => setPage((p) => Math.min(Math.ceil(total / pageSize) || 1, p + 1))}
               disabled={page >= (Math.ceil(total / pageSize) || 1) || loading}
@@ -559,6 +564,7 @@ export default function TriageDashboard() {
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
             <button
+              suppressHydrationWarning
               type="button"
               onClick={() => setPage(Math.ceil(total / pageSize) || 1)}
               disabled={page >= (Math.ceil(total / pageSize) || 1) || loading}
