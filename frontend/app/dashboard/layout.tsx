@@ -45,8 +45,8 @@ const NAV_ITEMS = [
   { href: '/dashboard/control-room', label: 'DCS Control Room', icon: Radio, shortcut: 'F2', badge: 'LIVE' },
   { href: '/dashboard/graph', label: 'Signal Graph', icon: Network, shortcut: 'F6' },
   { href: '/dashboard/replay', label: 'Baghjan Replay', icon: History, shortcut: 'F10' },
-  { href: '/dashboard/voice', label: 'Field Reporter', icon: Mic, shortcut: 'F13' },
-  { href: '/dashboard/settings', label: 'System Control', icon: Settings, shortcut: 'F16' },
+  { href: '/dashboard/voice', label: 'Field Reporter', icon: Mic, shortcut: 'F11' },
+  { href: '/dashboard/settings', label: 'System Control', icon: Settings, shortcut: 'F12' },
 ];
 
 interface LiveAlert {
@@ -168,6 +168,36 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // SCADA Industrial Function Key navigation (F1-F12, Alt+1..8)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      const key = e.key.toUpperCase();
+      const match = NAV_ITEMS.find((item, idx) => {
+        if (item.shortcut.toUpperCase() === key) return true;
+        if (e.altKey && e.key === String(idx + 1)) return true;
+        return false;
+      });
+
+      if (match) {
+        e.preventDefault();
+        router.push(match.href);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [router]);
 
   const toggleSound = () => {
     const nextVal = !alertSoundEnabled;
