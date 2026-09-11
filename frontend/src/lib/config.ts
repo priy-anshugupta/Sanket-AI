@@ -40,6 +40,13 @@ export const getWsBase = (): string => {
     return process.env.NEXT_PUBLIC_WS_URL.replace(/\/+$/, '');
   }
 
+  // Derive WebSocket URL automatically from NEXT_PUBLIC_API_URL if configured
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    const wsProto = process.env.NEXT_PUBLIC_API_URL.startsWith('https') ? 'wss:' : 'ws:';
+    const host = process.env.NEXT_PUBLIC_API_URL.replace(/^https?:\/\//, '').replace(/\/+$/, '');
+    return `${wsProto}//${host}/ws/alerts`;
+  }
+
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
     const isLocal =
