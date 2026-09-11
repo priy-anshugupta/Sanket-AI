@@ -39,14 +39,14 @@ const WS_BASE = process.env.NEXT_PUBLIC_WS_URL
   : (typeof window !== 'undefined' ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.hostname}:8000/ws/alerts` : 'ws://localhost:8000/ws/alerts');
 
 const NAV_ITEMS = [
-  { href: '/dashboard', label: 'Triage Queue', icon: ClipboardList, shortcut: 'F9' },
-  { href: '/dashboard/heatmap', label: 'SIF Heatmap', icon: Map, shortcut: 'F8' },
-  { href: '/dashboard/emergency', label: 'Emergency Playbook', icon: ShieldAlert, shortcut: 'F1', badge: 'SWA' },
-  { href: '/dashboard/control-room', label: 'DCS Control Room', icon: Radio, shortcut: 'F2', badge: 'LIVE' },
-  { href: '/dashboard/graph', label: 'Signal Graph', icon: Network, shortcut: 'F6' },
-  { href: '/dashboard/replay', label: 'Baghjan Replay', icon: History, shortcut: 'F10' },
-  { href: '/dashboard/voice', label: 'Field Reporter', icon: Mic, shortcut: 'F11' },
-  { href: '/dashboard/settings', label: 'System Control', icon: Settings, shortcut: 'F12' },
+  { href: '/dashboard', label: 'Triage Queue', icon: ClipboardList, shortcut: 'Alt+1', fnKey: 'F9' },
+  { href: '/dashboard/heatmap', label: 'SIF Heatmap', icon: Map, shortcut: 'Alt+2', fnKey: 'F8' },
+  { href: '/dashboard/emergency', label: 'Emergency Playbook', icon: ShieldAlert, shortcut: 'Alt+3', fnKey: 'F1', badge: 'SWA' },
+  { href: '/dashboard/control-room', label: 'DCS Control Room', icon: Radio, shortcut: 'Alt+4', fnKey: 'F2', badge: 'LIVE' },
+  { href: '/dashboard/graph', label: 'Signal Graph', icon: Network, shortcut: 'Alt+5', fnKey: 'F6' },
+  { href: '/dashboard/replay', label: 'Baghjan Replay', icon: History, shortcut: 'Alt+6', fnKey: 'F10' },
+  { href: '/dashboard/voice', label: 'Field Reporter', icon: Mic, shortcut: 'Alt+7', fnKey: 'F11' },
+  { href: '/dashboard/settings', label: 'System Control', icon: Settings, shortcut: 'Alt+8', fnKey: 'F12' },
 ];
 
 interface LiveAlert {
@@ -169,7 +169,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // SCADA Industrial Function Key navigation (F1-F12, Alt+1..8)
+  // Quick Navigation (Alt+1..8, direct 1..8, or Function keys)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -184,8 +184,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       const key = e.key.toUpperCase();
       const match = NAV_ITEMS.find((item, idx) => {
+        const numStr = String(idx + 1);
+        // Alt + 1..8
+        if (e.altKey && e.key === numStr) return true;
+        // Direct numbers 1..8 (no modifier keys)
+        if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key === numStr) return true;
+        // Function keys (e.g. F1, F2, F8, F9...)
+        if (item.fnKey && item.fnKey.toUpperCase() === key) return true;
         if (item.shortcut.toUpperCase() === key) return true;
-        if (e.altKey && e.key === String(idx + 1)) return true;
         return false;
       });
 
