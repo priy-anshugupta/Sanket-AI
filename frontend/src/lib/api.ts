@@ -5,7 +5,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 import type {
   Report, ReportListResponse, AnalyticsSummary,
-  HeatmapData, GraphData, AirGapStatus, BaghjanEvent,
+  HeatmapData, GraphData, AirGapStatus, BaghjanEvent, SwarmTraceResponse,
 } from '@/types';
 
 class ApiClient {
@@ -84,6 +84,21 @@ class ApiClient {
     return this.fetch('/api/reports/ingest', {
       method: 'POST',
       body: JSON.stringify({ text, source: 'text', ...metadata }),
+    });
+  }
+
+  async executeSwarmTrace(
+    text: string,
+    location = 'Well Pad 7',
+    activityType = 'Drilling'
+  ): Promise<SwarmTraceResponse> {
+    return this.fetch('/api/reports/swarm-trace', {
+      method: 'POST',
+      body: JSON.stringify({
+        text,
+        location,
+        activity_type: activityType,
+      }),
     });
   }
 

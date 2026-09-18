@@ -135,3 +135,31 @@ export interface AirGapStatus {
 export type SIFLabel = 'HIGH' | 'MEDIUM' | 'LOW';
 export type ReportStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
 export type UserRole = 'admin' | 'hse_manager' | 'site_officer' | 'field_worker';
+
+export interface SwarmTraceResponse {
+  report_id: string;
+  sif_score: number;
+  sif_label: 'HIGH' | 'MEDIUM' | 'LOW';
+  is_sif_precursor: boolean;
+  matched_anchor_id?: string | null;
+  matched_anchor_text?: string | null;
+  entities: Array<{
+    type: string;
+    value: string;
+    confidence?: number;
+    start?: number;
+    end?: number;
+  }>;
+  primary_iogp_rule?: string | null;
+  explanation?: string | null;
+  consensus_confidence?: number | null;
+  guardrail_status?: string | null;
+  audit_notes?: string | null;
+  action_recommendation?: {
+    action_type: string;
+    priority: string;
+    suggested_assignee: string;
+    recommended_sla: string;
+  } | null;
+  agent_trace: string[];
+}
