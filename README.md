@@ -38,13 +38,13 @@ flowchart TD
     A[👷 Field Observation / Voice RoIP / Shift Log] --> B[Stage 1: Multilingual Preprocessing & Normalization
 Whisper Base + Regex Normalizer]
     B --> C[Stage 2: Domain Vector Embeddings
-384-Dim MiniLM / BGE-Small vs 48 DEKRA SIF Anchors]
+384-Dim Multilingual-E5 vs 50 DEKRA SIF Anchors]
     C --> D[Stage 3: Zero-Shot Industrial Entity Extraction
 Equipment, 1800 PSI, Flange, Barrier Failure, Location]
     D --> E[Stage 4: IOGP 9 Life-Saving Rules Multi-Label Mapping
 Energy Isolation, Safe Mechanical Lifting, Line of Fire]
     E --> F[Stage 5: Grounded Causal Precursor Scoring S_SIF
-Dual-Mode: Local Deterministic / OpenAI gpt-4o-mini / Groq]
+Dual-Mode: Local Deterministic / OpenAI gpt-4o / Groq / Ollama]
     F --> G[Stage 6: Multi-Signal Knowledge Graph Clustering
 NetworkX Temporal & Spatial Co-occurrence Detection]
     G --> H{SIF Score >= 0.70 or Multiplier Triggered?}
@@ -57,9 +57,9 @@ NetworkX Temporal & Spatial Co-occurrence Detection]
 
 ---
 
-## 🚀 The 8 Operational Workspaces
+## 🚀 The 10 Operational Workspaces
 
-SANKET AI provides 8 purpose-built command interfaces tailored for both boardroom HSE directors and drill-floor roughnecks:
+SANKET AI provides 10 purpose-built command interfaces tailored for both boardroom HSE directors and drill-floor roughnecks:
 
 | # | Operational Workspace | Route | Core Mission & Features |
 |---|---|---|---|
@@ -70,7 +70,9 @@ SANKET AI provides 8 purpose-built command interfaces tailored for both boardroo
 | **5** | **Signal Knowledge Graph** | `/dashboard/graph` | Interactive Cytoscape graph visualizer illustrating multi-node causal paths connecting isolated minor observations across shifts into a unified failure cascade. |
 | **6** | **Baghjan 2020 Disaster Replay** | `/dashboard/replay` | 14-day chronological counterfactual simulator proving how SANKET AI triggers automated SWA at Day 5—averting ₹580 Crores PSU financial loss, 3 fatalities, and 10,000 Ha ecological damage. |
 | **7** | **Field Voice Reporter Studio** | `/dashboard/voice` | Web Audio waveform visualizer with on-device multilingual Whisper transcription supporting Assamese, Hindi, and English oilfield vernacular. |
-| **8** | **ATEX Zone 1 Worker Terminal** | `/worker` | High-contrast, glove-friendly rugged mobile terminal featuring a giant Push-To-Talk voice button and 1-tap hazard presets (*Gas Kick / 1800 PSI*, *H2S Vapor*, *Unsafe Crane*, *PPE Hazard*). |
+| **8** | **System Security & Air-Gap Calibration** | `/dashboard/settings` | Real-time socket egress telemetry monitor (0 KB/s outbound), model RAM footprint monitor, and interactive SIF threshold calibration controls. |
+| **9** | **Report Deep-Dive & Officer Audit** | `/dashboard/report/[id]` | Grounded 3-sentence causal explanation, Human-in-the-Loop review (Confirm, Upgrade, Downgrade), CAPA dispatcher, and ReportLab PDF compiler. |
+| **10** | **ATEX Zone 1 Worker Terminal** | `/worker` | High-contrast, glove-friendly rugged mobile terminal featuring a giant Push-To-Talk voice button and 1-tap hazard presets (*Gas Kick / 1800 PSI*, *H2S Vapor*, *Unsafe Crane*, *PPE Hazard*). |
 
 ---
 
@@ -144,7 +146,7 @@ pip install -r requirements.txt
 # Configure environment variables
 cp .env.example .env
 
-# (Optional) Seed database with 502 Upper Assam safety reports
+# (Optional) Seed database with 553 Upper Assam safety reports
 python scripts/seed_db.py
 
 # Launch FastAPI backend server (Port 8000)

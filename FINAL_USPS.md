@@ -52,7 +52,7 @@
 * **The Problem with Other Solutions**:
   * Teams use raw LLM prompts (*"Rate this risk 1-10"*). Generative models hallucinate, flip severity scores unpredictably between runs, and fail standard industrial reproducibility audits.
 * **What SANKET AI Does Differently**:
-  * **Separation of Scoring from Language Generation**: SANKET AI's continuous SIF risk score ($S_{\\text{SIF}} \\in [0.0, 1.0]$) is computed purely through mathematical cosine similarity against **48 safety-calibrated DEKRA SIF reference anchors**.
+  * **Separation of Scoring from Language Generation**: SANKET AI's continuous SIF risk score ($S_{\\text{SIF}} \\in [0.0, 1.0]$) is computed purely through mathematical cosine similarity against **50 safety-calibrated DEKRA SIF reference anchors**.
   * **5-Token Negation Window Parser**: Explicitly distinguishes affirmative hazards from negative observations (e.g., *"no fire observed"* or *"BOP valve did not shear"* do not trigger false positive score spikes).
   * **Strict Quarantining**: LLMs are utilized strictly for Stage 5 plain-English explanatory synthesis and can never alter the deterministic SIF risk score or IOGP rule classification.
 
