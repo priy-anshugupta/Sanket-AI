@@ -1,5 +1,5 @@
 """
-SANKET · AI — LangGraph 7-Agent Swarm
+SANKET · AI — LangGraph 8-Agent Swarm
 Multi-agent safety intelligence orchestration using LangGraph StateGraph.
 """
 
@@ -17,7 +17,7 @@ from graph.clustering import cluster_detector
 
 
 class ReportState(TypedDict):
-    """Shared state dictionary passed across all 7 swarm agents."""
+    """Shared state dictionary passed across all 8 swarm agents."""
     report_id: str
     raw_text: str
     preprocessed_text: str
@@ -188,7 +188,7 @@ def action_agent(state: ReportState) -> Dict[str, Any]:
 
 # ─── Assemble StateGraph Swarm ───
 def build_sanket_swarm() -> StateGraph:
-    """Builds and compiles the 7-agent LangGraph workflow."""
+    """Builds and compiles the 8-agent LangGraph workflow."""
     workflow = StateGraph(ReportState)
 
     workflow.add_node("supervisor", supervisor_agent)

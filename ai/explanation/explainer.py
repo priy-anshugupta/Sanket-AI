@@ -16,6 +16,12 @@ class LLMExplainer:
     Only runs for reports with sif_score >= 0.50.
     """
 
+    SYSTEM_PROMPT = (
+        "You are a DGMS-certified Senior Industrial Process Safety Expert at Oil India Limited. "
+        "Provide a grounded, professional 3-sentence risk explanation under OISD-189 and IOGP Life-Saving Rules. "
+        "Zero hallucination. Output strictly the 3 factual sentences."
+    )
+
     PROMPT_TEMPLATE = """You are a DGMS-certified Senior Industrial Process Safety Expert & SIF Auditor at Oil India Limited (Upper Assam Basin).
 You are evaluating an incoming frontline hazard report word-by-word with ZERO tolerance for hallucination.
 
@@ -81,6 +87,14 @@ Output ONLY the 3 sentences."""
                 return res
             print("[Explainer] Local Ollama unavailable; using deterministic DGMS/OISD safety template")
             return self._deterministic_fallback(text, sif_label, sif_score, matched_anchor)
+
+        # Format standard deep-reasoning prompt for LLMs
+        prompt = self.PROMPT_TEMPLATE.format(
+            text=text[:1000],
+            sif_label=sif_label,
+            sif_score=sif_score,
+            matched_anchor=matched_anchor,
+        )
 
         # 1. Try OpenAI if in online mode
         if settings.OPENAI_API_KEY:

@@ -153,7 +153,7 @@ class VoiceTranscriber:
 
             return self._get_domain_fallback(file_bytes)
         except Exception as e:
-            print(f"[VoiceTranscriber] Local Whisper transcribe error: {e}. Using resilient fallback...")
+            print(f"[VoiceTranscriber] Local Whisper error during transcription: {e}. Using resilient fallback...")
             return self._get_domain_fallback(file_bytes)
         finally:
             if os.path.exists(tmp_path):
