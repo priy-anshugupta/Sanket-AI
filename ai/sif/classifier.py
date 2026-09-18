@@ -102,14 +102,34 @@ class SIFClassifier:
                 "matched_anchor_similarity": 0.12,
                 "keyword_boost_applied": False,
                 "boosted_keywords": [],
+                "low_severity_penalty_applied": False,
             }
 
-        # 4. Raw score + clamp (calibrated for E5 similarity floor: anchor baseline is ~0.70)
-        # Scale range [0.70, 0.95] into [0.0, 1.0] for non-boosted embeddings
+        # Low-severity discriminator for non-SIF conditions (housekeeping, office, water bottle, etc.)
+        low_severity_regex = re.compile(
+            r"\b(housekeeping|cleaning|trash|garbage|broom|tidy|sweep|waste\s+bin|water\s+bottle|drinking\s+water|mosquito\s+net|canteen|lunch|cup|paper|office\s+building|sign\s*board\s+faded|faded\s+sign|first\s*aid|minor\s+cut|minor\s+scratch|finger\s+scratch|band-?aid|ointment)\b",
+            re.IGNORECASE
+        )
+        is_low_severity = bool(low_severity_regex.search(text))
+        low_severity_penalty_applied = False
+
+        anchor_level = matched_anchor.get("sif_level", "HIGH")
+
+        # 4. Calibrated scoring aligned with DEKRA SIF anchor risk hierarchy
         calibrated_similarity = (max_similarity - 0.70) / 0.25 if max_similarity > 0.70 else 0.10
         calibrated_similarity = float(np.clip(calibrated_similarity, 0.0, 1.0))
-        
-        raw_score = (calibrated_similarity * 0.7) + (max_similarity * 0.3) + keyword_boost
+
+        if (is_low_severity or anchor_level == "LOW") and not boosted_keywords:
+            # Low-severity non-SIF observation anchored in LOW risk tier
+            raw_score = 0.15 + (calibrated_similarity * 0.18)
+            low_severity_penalty_applied = True
+        elif anchor_level == "MEDIUM":
+            # Medium precursor observation
+            raw_score = 0.52 + (calibrated_similarity * 0.18) + keyword_boost
+        else:
+            # High precursor observation (SIF-001 to SIF-025)
+            raw_score = (calibrated_similarity * 0.7) + (max_similarity * 0.3) + keyword_boost
+
         final_score = float(np.clip(raw_score, 0.0, 1.0))
 
         # 5. Label assignment
@@ -141,6 +161,7 @@ class SIFClassifier:
             "matched_anchor_similarity": round(max_similarity, 4),
             "keyword_boost_applied": bool(boosted_keywords),
             "boosted_keywords": boosted_keywords,
+            "low_severity_penalty_applied": low_severity_penalty_applied,
         }
 
     def classify_batch(self, texts: list[str]) -> list[dict]:

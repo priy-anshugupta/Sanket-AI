@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     PORT: int = 8000
 
     # --- Database ---
-    DATABASE_URL: str = "postgresql+asyncpg://postgres.hbpcldlvsgnsyaqyaosq:qAvX%2BD77%40nK6g6Z@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres"
+    DATABASE_URL: str = "sqlite+aiosqlite:///sanket.db"
     SQLITE_URL: str = "sqlite+aiosqlite:///sanket.db"
     DB_MODE: Literal["auto", "supabase", "sqlite"] = "auto"
 
