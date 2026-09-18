@@ -27,7 +27,9 @@ import {
   Pause,
   RotateCcw,
   Terminal,
-  Activity
+  Activity,
+  FileText,
+  Lock
 } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL
@@ -270,13 +272,76 @@ function EmergencyCommandContent() {
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Clean up interval on unmount to prevent phantom voice alarms on other pages
+  // ── Web Audio Dual-Frequency Siren Synthesizer (440Hz <-> 880Hz Warble) ──
+  const sirenAudioCtxRef = useRef<AudioContext | null>(null);
+  const sirenOscRef = useRef<OscillatorNode | null>(null);
+  const sirenIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [sirenPlaying, setSirenPlaying] = useState(false);
+
+  const startSiren = () => {
+    try {
+      if (typeof window === "undefined") return;
+      if (sirenPlaying) return;
+      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+      sirenAudioCtxRef.current = ctx;
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(440, ctx.currentTime);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      sirenOscRef.current = osc;
+
+      let freqHigh = false;
+      const interval = setInterval(() => {
+        if (sirenOscRef.current && sirenAudioCtxRef.current) {
+          const targetFreq = freqHigh ? 440 : 880;
+          try {
+            sirenOscRef.current.frequency.exponentialRampToValueAtTime(
+              targetFreq,
+              sirenAudioCtxRef.current.currentTime + 0.2
+            );
+          } catch {}
+          freqHigh = !freqHigh;
+        }
+      }, 250);
+      sirenIntervalRef.current = interval;
+      setSirenPlaying(true);
+    } catch (e) {
+      console.warn("Web Audio Siren error:", e);
+    }
+  };
+
+  const stopSiren = () => {
+    if (sirenIntervalRef.current) {
+      clearInterval(sirenIntervalRef.current);
+      sirenIntervalRef.current = null;
+    }
+    if (sirenOscRef.current) {
+      try { sirenOscRef.current.stop(); } catch {}
+      sirenOscRef.current = null;
+    }
+    if (sirenAudioCtxRef.current) {
+      try { sirenAudioCtxRef.current.close(); } catch {}
+      sirenAudioCtxRef.current = null;
+    }
+    setSirenPlaying(false);
+  };
+
+  // Clean up interval and audio on unmount to prevent phantom alarms on other pages
   useEffect(() => {
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
+      stopSiren();
     };
   }, []);
   useEffect(() => {
@@ -441,6 +506,7 @@ function EmergencyCommandContent() {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
     }
+    stopSiren();
     setEscalationStatus("IDLE");
     setTimeLeft(15);
     setSwaExecuted(false);
@@ -489,38 +555,66 @@ function EmergencyCommandContent() {
           </p>
         </div>
 
-        {/* Tab Controls */}
-        <div className="flex items-center gap-1.5 bg-[#F0F2ED] p-1 rounded-lg shrink-0">
-          <button type="button" suppressHydrationWarning
-            onClick={() => setActiveTab("playbook")}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
-              activeTab === "playbook"
-                ? "bg-white text-[#1A2B2D] shadow-xs"
-                : "text-[#5E7072] hover:text-[#1A2B2D]"
-            }`}
+        {/* Actions & Tab Controls */}
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <a
+            href={`${API_BASE}/api/pdf/dgms-form-iv?location=${encodeURIComponent(selectedLocation)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#102123] text-[#A3E635] hover:bg-[#1E3A3E] border border-[#234E52] transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+            title="Generate Regulation 99 DGMS Form IV Statutory Legal Notice PDF"
           >
-            <ShieldAlert className="h-3.5 w-3.5 text-[#D63B3B]" /> SWA Playbook & Fail-Safe
-          </button>
-          <button type="button" suppressHydrationWarning
-            onClick={() => setActiveTab("roip")}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
-              activeTab === "roip"
-                ? "bg-white text-[#1A2B2D] shadow-xs"
-                : "text-[#5E7072] hover:text-[#1A2B2D]"
+            <FileText className="w-3.5 h-3.5 text-[#A3E635]" />
+            <span>DGMS Form IV (PDF)</span>
+          </a>
+
+          <button
+            type="button"
+            onClick={sirenPlaying ? stopSiren : startSiren}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap border shadow-xs ${
+              sirenPlaying
+                ? "bg-[#D63B3B] text-white border-[#B92525] animate-pulse"
+                : "bg-white text-[#1A2B2D] border-[#C2CEC2] hover:border-[#D63B3B] hover:text-[#D63B3B]"
             }`}
+            title="Native Web Audio API Dual-Frequency (440Hz / 880Hz) Siren Synthesizer"
           >
-            <Mic className="h-3.5 w-3.5 text-[#0A6B63]" /> RoIP Radio Bridge
+            {sirenPlaying ? <VolumeX className="w-3.5 h-3.5 text-white" /> : <Volume2 className="w-3.5 h-3.5 text-[#D63B3B]" />}
+            <span>{sirenPlaying ? "Mute Rig Siren" : "Test Rig Siren"}</span>
           </button>
-          <button type="button" suppressHydrationWarning
-            onClick={() => setActiveTab("channels")}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
-              activeTab === "channels"
-                ? "bg-white text-[#1A2B2D] shadow-xs"
-                : "text-[#5E7072] hover:text-[#1A2B2D]"
-            }`}
-          >
-            <RadioTower className="h-3.5 w-3.5 text-[#5E7072]" /> Hardware Inputs (6)
-          </button>
+
+          {/* Tab Controls */}
+          <div className="flex items-center gap-1.5 bg-[#F0F2ED] p-1 rounded-lg shrink-0">
+            <button type="button" suppressHydrationWarning
+              onClick={() => setActiveTab("playbook")}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
+                activeTab === "playbook"
+                  ? "bg-white text-[#1A2B2D] shadow-xs"
+                  : "text-[#5E7072] hover:text-[#1A2B2D]"
+              }`}
+            >
+              <ShieldAlert className="h-3.5 w-3.5 text-[#D63B3B]" /> SWA Playbook & Fail-Safe
+            </button>
+            <button type="button" suppressHydrationWarning
+              onClick={() => setActiveTab("roip")}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
+                activeTab === "roip"
+                  ? "bg-white text-[#1A2B2D] shadow-xs"
+                  : "text-[#5E7072] hover:text-[#1A2B2D]"
+              }`}
+            >
+              <Mic className="h-3.5 w-3.5 text-[#0A6B63]" /> RoIP Radio Bridge
+            </button>
+            <button type="button" suppressHydrationWarning
+              onClick={() => setActiveTab("channels")}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
+                activeTab === "channels"
+                  ? "bg-white text-[#1A2B2D] shadow-xs"
+                  : "text-[#5E7072] hover:text-[#1A2B2D]"
+              }`}
+            >
+              <RadioTower className="h-3.5 w-3.5 text-[#5E7072]" /> Hardware Inputs (6)
+            </button>
+          </div>
         </div>
       </div>
 
@@ -829,6 +923,106 @@ function EmergencyCommandContent() {
                     ? `STOP WORK ACTIVE (${selectedLocation.toUpperCase()}) — ALL RIG OPERATIONS HALTED` 
                     : "TRIGGER EMERGENCY STOP WORK ORDER (SWA)"}
                 </button>
+              </div>
+            </div>
+
+            {/* ── Active e-PTW Lockout Inspection Board (OISD-189 §7.4) ── */}
+            <div className="bg-white rounded-xl border-2 border-[#C2CEC2] shadow-xs p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-[#D63B3B]" />
+                  <h3 className="font-heading font-bold text-sm text-[#1A2B2D]">
+                    Active e-PTW (Permit to Work) Lockout Board
+                  </h3>
+                </div>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                  swaExecuted 
+                    ? "bg-[#FEE2E2] text-[#DC2626] border border-[#FCA5A5] animate-pulse" 
+                    : "bg-[#E8F4F0] text-[#0A6B63] border border-[#A3D9C9]"
+                }`}>
+                  {swaExecuted ? "4 PERMITS FROZEN / REVOKED" : "4 ACTIVE PERMITS MONITORED"}
+                </span>
+              </div>
+              <p className="text-xs text-[#5E7072]">
+                Under OISD-189 Standard §7.4, triggering Stop Work Authority immediately propagates cryptographic permit freeze orders across all active contractor electronic permits in the 500m radius.
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1">
+                {/* Permit 1 */}
+                <div className={`p-3 rounded-lg border text-xs transition-all ${
+                  swaExecuted ? "bg-[#FFF5F5] border-[#F5C6C6]" : "bg-[#F7F8F5] border-[#C2CEC2]"
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-[#1A2B2D]">#PTW-2026-881</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                      swaExecuted ? "bg-[#DC2626] text-white animate-pulse" : "bg-[#FEF3C7] text-[#D97706]"
+                    }`}>
+                      {swaExecuted ? "EMERGENCY REVOKED" : "HOT WORK ACTIVE"}
+                    </span>
+                  </div>
+                  <div className="font-semibold text-[#1A2B2D] mt-1">Torch cutting wellhead cellar flange</div>
+                  <div className="text-[11px] text-[#5E7072] mt-0.5 flex items-center justify-between">
+                    <span>Contractor: Shivam Tech Engg</span>
+                    <span className="font-bold">{swaExecuted ? "LOTO ENFORCED" : "LOTO: VALID"}</span>
+                  </div>
+                </div>
+
+                {/* Permit 2 */}
+                <div className={`p-3 rounded-lg border text-xs transition-all ${
+                  swaExecuted ? "bg-[#FFF5F5] border-[#F5C6C6]" : "bg-[#F7F8F5] border-[#C2CEC2]"
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-[#1A2B2D]">#PTW-2026-884</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                      swaExecuted ? "bg-[#DC2626] text-white animate-pulse" : "bg-[#DBEAFE] text-[#1D4ED8]"
+                    }`}>
+                      {swaExecuted ? "EMERGENCY REVOKED" : "CONFINED SPACE"}
+                    </span>
+                  </div>
+                  <div className="font-semibold text-[#1A2B2D] mt-1">Cellar pit sludge inspection & de-sanding</div>
+                  <div className="text-[11px] text-[#5E7072] mt-0.5 flex items-center justify-between">
+                    <span>Contractor: Brahmaputra Infra</span>
+                    <span className="font-bold">{swaExecuted ? "CREW EVACUATED" : "ATM: 0.0 PPM H2S"}</span>
+                  </div>
+                </div>
+
+                {/* Permit 3 */}
+                <div className={`p-3 rounded-lg border text-xs transition-all ${
+                  swaExecuted ? "bg-[#FFF5F5] border-[#F5C6C6]" : "bg-[#F7F8F5] border-[#C2CEC2]"
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-[#1A2B2D]">#PTW-2026-887</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                      swaExecuted ? "bg-[#DC2626] text-white animate-pulse" : "bg-[#FEF3C7] text-[#D97706]"
+                    }`}>
+                      {swaExecuted ? "EMERGENCY REVOKED" : "ELECTRICAL PM"}
+                    </span>
+                  </div>
+                  <div className="font-semibold text-[#1A2B2D] mt-1">Substation B 11kV Feeder Breaker Servicing</div>
+                  <div className="text-[11px] text-[#5E7072] mt-0.5 flex items-center justify-between">
+                    <span>Crew: Oil India Electrical Dept</span>
+                    <span className="font-bold">{swaExecuted ? "INTERLOCK FROZEN" : "INTERLOCK: CLEAR"}</span>
+                  </div>
+                </div>
+
+                {/* Permit 4 */}
+                <div className={`p-3 rounded-lg border text-xs transition-all ${
+                  swaExecuted ? "bg-[#FFF5F5] border-[#F5C6C6]" : "bg-[#F7F8F5] border-[#C2CEC2]"
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-[#1A2B2D]">#PTW-2026-890</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                      swaExecuted ? "bg-[#DC2626] text-white animate-pulse" : "bg-[#E0E7FF] text-[#4338CA]"
+                    }`}>
+                      {swaExecuted ? "EMERGENCY REVOKED" : "HEAVY VEHICLE"}
+                    </span>
+                  </div>
+                  <div className="font-semibold text-[#1A2B2D] mt-1">Zone 1 Manifold crude vacuum tanker transit</div>
+                  <div className="text-[11px] text-[#5E7072] mt-0.5 flex items-center justify-between">
+                    <span>Transporter: Assam Tanker Logistics</span>
+                    <span className="font-bold">{swaExecuted ? "BARRIER RAISED" : "PERMITTED"}</span>
+                  </div>
+                </div>
               </div>
             </div>
 

@@ -743,9 +743,15 @@ export default function DualHeatmapAndMapPage() {
           weight: 1.5,
           fillColor: '#F59E0B',
           fillOpacity: 0.18,
-          dashArray: '3, 3',
-          interactive: false,
-        }).addTo(group);
+          dashArray: '4, 4',
+          interactive: true,
+        }).bindTooltip(`
+          <div style="font-family: sans-serif; font-size: 11px; padding: 3px;">
+            <div style="font-weight: bold; color: #D97706;">⚠️ ALOHA Zone 3: ERPG-1 (5.5 km)</div>
+            <div>• <b>Concentration:</b> &gt; 5 PPM H2S (Odor Threshold)</div>
+            <div>• <b>Action:</b> Peripheral roadblocks &amp; public safety advisory</div>
+          </div>
+        `, { sticky: true }).addTo(group);
 
         // Zone 2: Middle ERPG-2 Severe Irritation Arc (3.2 km)
         const len2 = 0.030;
@@ -765,9 +771,15 @@ export default function DualHeatmapAndMapPage() {
           color: '#EA580C',
           weight: 2,
           fillColor: '#EA580C',
-          fillOpacity: 0.30,
-          interactive: false,
-        }).addTo(group);
+          fillOpacity: 0.32,
+          interactive: true,
+        }).bindTooltip(`
+          <div style="font-family: sans-serif; font-size: 11px; padding: 3px;">
+            <div style="font-weight: bold; color: #EA580C;">🚨 ALOHA Zone 2: ERPG-2 (3.2 km)</div>
+            <div>• <b>Concentration:</b> &gt; 30 PPM H2S (Irreversible Injury)</div>
+            <div>• <b>Action:</b> Mandatory civilian evacuation &amp; shelter-in-place</div>
+          </div>
+        `, { sticky: true }).addTo(group);
 
         // Zone 1: Inner Lethal IDLH Arc (1.2 km)
         const len1 = 0.012;
@@ -787,9 +799,60 @@ export default function DualHeatmapAndMapPage() {
           color: '#DC2626',
           weight: 2.5,
           fillColor: '#DC2626',
-          fillOpacity: 0.55,
-          interactive: false,
-        }).addTo(group);
+          fillOpacity: 0.58,
+          interactive: true,
+        }).bindTooltip(`
+          <div style="font-family: sans-serif; font-size: 11px; padding: 3px;">
+            <div style="font-weight: bold; color: #DC2626;">☠️ ALOHA Zone 1: ERPG-3 / IDLH (1.2 km)</div>
+            <div>• <b>Concentration:</b> &gt; 100 PPM H2S (Lethal in 30 mins)</div>
+            <div>• <b>Action:</b> Immediate Stop Work Authority &amp; SCBA Evacuation</div>
+          </div>
+        `, { sticky: true }).addTo(group);
+
+        // ── DESIGNATED UPWIND EVACUATION CORRIDOR (Opposite Plume: 65° NE) ──
+        const upwindAngleRad = ((245 + 180) % 360) * Math.PI / 180;
+        const evacDist = 0.018; // ~1.8 km
+        const shelterLat = asset.lat + Math.cos(upwindAngleRad) * evacDist;
+        const shelterLng = asset.lng + Math.sin(upwindAngleRad) * evacDist;
+
+        // Evacuation polyline route
+        L.polyline([
+          [asset.lat, asset.lng],
+          [shelterLat, shelterLng]
+        ], {
+          color: '#059669',
+          weight: 4,
+          dashArray: '6, 6',
+          opacity: 0.9,
+          interactive: true,
+        }).bindTooltip(`
+          <div style="font-family: sans-serif; font-size: 11px; padding: 3px;">
+            <div style="font-weight: bold; color: #059669;">🛡️ Designated Upwind Evacuation Path</div>
+            <div>• <b>Bearing:</b> 65° NE (Directly Upwind of H2S Plume)</div>
+            <div>• <b>Safety Corridor:</b> ERPG-0 (0.0 PPM H2S Exposure)</div>
+          </div>
+        `, { sticky: true }).addTo(group);
+
+        // Shelter / Safe Haven Pin
+        const shelterHtml = `
+          <div class="relative flex items-center justify-center -translate-x-1/2 -translate-y-1/2 cursor-pointer">
+            <span class="w-8 h-8 rounded-full bg-emerald-500/40 animate-ping absolute"></span>
+            <div class="px-2 py-0.5 rounded bg-[#065F46] text-white border-2 border-white shadow-xl flex items-center gap-1 text-[10px] font-bold whitespace-nowrap">
+              🛡️ Shelter B (Muster)
+            </div>
+          </div>
+        `;
+        L.marker([shelterLat, shelterLng], {
+          icon: L.divIcon({ html: shelterHtml, className: 'shelter-pin', iconSize: [110, 24], iconAnchor: [55, 12] }),
+          interactive: true,
+        }).bindTooltip(`
+          <div style="font-family: sans-serif; font-size: 11px; padding: 4px;">
+            <div style="font-weight: bold; color: #059669; font-size: 12px;">🛡️ Safe Haven: Assembly Shelter B</div>
+            <div>• <b>Facility:</b> Positive-Pressure Air-Lock Bunker</div>
+            <div>• <b>Capacity:</b> 65 Personnel (3-day SCBA filtration)</div>
+            <div>• <b>Distance:</b> 1.8 km Upwind from ${asset.name}</div>
+          </div>
+        `, { direction: 'top', offset: [0, -10] }).addTo(group);
       });
     }
   }, [showGasPlume, windVector, liveAssets]);
@@ -938,7 +1001,7 @@ export default function DualHeatmapAndMapPage() {
             }`}
           >
             <Wind className="w-3.5 h-3.5" />
-            <span>Gas Plume</span>
+            <span>ALOHA Plume &amp; Evac Route</span>
             <span className={`w-1.5 h-1.5 rounded-full ${showGasPlume ? 'bg-white animate-pulse' : 'bg-[#94A3A5]'}`} />
           </button>
 
