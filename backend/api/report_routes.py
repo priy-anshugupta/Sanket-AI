@@ -356,3 +356,56 @@ async def ingest_demo_500(db: AsyncSession = Depends(get_db)):
         "elapsed_seconds": elapsed,
         "message": f"Successfully ingested and classified {len(reports_to_add)} reports in {elapsed}s!"
     }
+
+
+@router.post("/swarm-trace")
+async def execute_swarm_trace(request: ReportIngestRequest):
+    """
+    Execute full 8-Agent LangGraph Swarm workflow and return step-by-step agent trace.
+    Orchestrates: Supervisor -> Classifier -> Entity Extractor -> Rule Mapper ->
+                 Verifier -> Graph Analyst -> Explainer -> Action Agent.
+    """
+    import uuid
+    from ai.agents.swarm import sanket_swarm
+
+    report_id = f"SWARM-{str(uuid.uuid4())[:8].upper()}"
+    state = {
+        "report_id": report_id,
+        "raw_text": request.text,
+        "preprocessed_text": "",
+        "language": "en",
+        "sif_score": 0.0,
+        "sif_label": "LOW",
+        "is_sif_precursor": False,
+        "matched_anchor_id": None,
+        "matched_anchor_text": None,
+        "entities": [],
+        "lsr_tags": [],
+        "primary_iogp_rule": None,
+        "explanation": None,
+        "cluster_alert": False,
+        "cluster_details": None,
+        "consensus_confidence": None,
+        "guardrail_status": None,
+        "audit_notes": None,
+        "action_recommendation": None,
+        "agent_trace": [],
+    }
+
+    result = await sanket_swarm.ainvoke(state)
+    return {
+        "report_id": report_id,
+        "sif_score": round(min(result.get("sif_score", 0.0), 0.99), 4),
+        "sif_label": result.get("sif_label", "LOW"),
+        "is_sif_precursor": result.get("is_sif_precursor", False),
+        "matched_anchor_id": result.get("matched_anchor_id"),
+        "matched_anchor_text": result.get("matched_anchor_text"),
+        "entities": result.get("entities", []),
+        "primary_iogp_rule": result.get("primary_iogp_rule"),
+        "explanation": result.get("explanation"),
+        "consensus_confidence": result.get("consensus_confidence"),
+        "guardrail_status": result.get("guardrail_status"),
+        "audit_notes": result.get("audit_notes"),
+        "action_recommendation": result.get("action_recommendation"),
+        "agent_trace": result.get("agent_trace", []),
+    }
