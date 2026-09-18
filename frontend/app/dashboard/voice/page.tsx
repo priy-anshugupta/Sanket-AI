@@ -17,8 +17,10 @@ import {
   MapPin, 
   SendHorizonal,
   FlaskConical,
-  RadioTower
+  RadioTower,
+  Brain
 } from 'lucide-react';
+import SwarmTraceModal from '@/components/SwarmTraceModal';
 
 const API = process.env.NEXT_PUBLIC_API_URL
   ? process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
@@ -122,6 +124,7 @@ export default function FieldReporterPage() {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [liveSuccessMsg, setLiveSuccessMsg] = useState<string | null>(null);
+  const [showSwarmModal, setShowSwarmModal] = useState(false);
 
   const [result, setResult] = useState<{
     job_id?: string;
@@ -156,7 +159,100 @@ export default function FieldReporterPage() {
     setResult(null);
   };
 
+  // ── Native Web Audio Synthesizer for Motorola ATEX Squelch & 1800Hz Roger Beep ──
+  const playSquelchChirp = () => {
+    try {
+      if (typeof window === 'undefined') return;
+      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+
+      // RF noise burst (60ms)
+      const bufferSize = Math.floor(ctx.sampleRate * 0.06);
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(1400, ctx.currentTime);
+      filter.Q.setValueAtTime(2.0, ctx.currentTime);
+
+      const osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(700, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.05);
+
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
+
+      noise.connect(filter);
+      filter.connect(gain);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      noise.start(ctx.currentTime);
+      osc.start(ctx.currentTime);
+      noise.stop(ctx.currentTime + 0.06);
+      osc.stop(ctx.currentTime + 0.06);
+      setTimeout(() => { ctx.close(); }, 150);
+    } catch (e) {
+      console.warn('Squelch audio error:', e);
+    }
+  };
+
+  const playRogerBeep = () => {
+    try {
+      if (typeof window === 'undefined') return;
+      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+
+      // Motorola 1800Hz primary beep
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(1800, ctx.currentTime);
+
+      gain1.gain.setValueAtTime(0.16, ctx.currentTime);
+      gain1.gain.setValueAtTime(0.16, ctx.currentTime + 0.07);
+      gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(ctx.currentTime);
+      osc1.stop(ctx.currentTime + 0.08);
+
+      // Trailing 1200Hz confirmation tick
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(1200, ctx.currentTime + 0.08);
+
+      gain2.gain.setValueAtTime(0.001, ctx.currentTime);
+      gain2.gain.setValueAtTime(0.12, ctx.currentTime + 0.08);
+      gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(ctx.currentTime + 0.08);
+      osc2.stop(ctx.currentTime + 0.15);
+
+      setTimeout(() => { ctx.close(); }, 250);
+    } catch (e) {
+      console.warn('Roger beep audio error:', e);
+    }
+  };
+
   const startRecording = async () => {
+    if (hardwareMode === 'roip_walkie') {
+      playSquelchChirp();
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioChunksRef.current = [];
@@ -191,6 +287,9 @@ export default function FieldReporterPage() {
   };
 
   const stopRecording = () => {
+    if (hardwareMode === 'roip_walkie') {
+      playRogerBeep();
+    }
     if (timerRef.current) clearInterval(timerRef.current);
     setIsRecording(false);
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
@@ -514,30 +613,63 @@ export default function FieldReporterPage() {
           </div>
 
           {/* Microphone Recording Bar */}
-          <div className="p-3.5 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2] flex items-center justify-between gap-3">
-            <div>
-              <div className="text-xs font-bold text-[#1A2B2D] flex items-center gap-1.5">
-                <Volume2 className="w-4 h-4 text-[#0A6B63]" />
-                {activeChannel.inputLabel}
+          <div className="p-3.5 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2] space-y-2.5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-xs font-bold text-[#1A2B2D] flex items-center gap-1.5">
+                  <Volume2 className="w-4 h-4 text-[#0A6B63]" />
+                  {activeChannel.inputLabel}
+                </div>
+                <p className="text-[11px] text-[#5E7072] mt-0.5">
+                  {isRecording ? `🔴 Recording live (${recordingSeconds}s)... Speak clearly` : isTranscribing ? 'Converting voice to text...' : activeChannel.carrier}
+                </p>
               </div>
-              <p className="text-[11px] text-[#5E7072] mt-0.5">
-                {isRecording ? `🔴 Recording live (${recordingSeconds}s)... Speak clearly` : isTranscribing ? 'Converting voice to text...' : activeChannel.carrier}
-              </p>
+
+              <div className="flex items-center gap-2">
+                <button suppressHydrationWarning
+                  type="button"
+                  onClick={isRecording ? stopRecording : startRecording}
+                  disabled={isTranscribing}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+                    isRecording
+                      ? 'bg-[#D63B3B] text-white animate-pulse'
+                      : 'bg-[#0A6B63] hover:bg-[#085B54] text-white'
+                  }`}
+                >
+                  {isRecording ? <Square className="w-3.5 h-3.5 fill-white" /> : <Mic className="w-3.5 h-3.5" />}
+                  {isRecording ? 'Stop & Transcribe' : 'Record Voice (PTT)'}
+                </button>
+              </div>
             </div>
 
-            <button suppressHydrationWarning
-              type="button"
-              onClick={isRecording ? stopRecording : startRecording}
-              disabled={isTranscribing}
-              className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
-                isRecording
-                  ? 'bg-[#D63B3B] text-white animate-pulse'
-                  : 'bg-[#0A6B63] hover:bg-[#085B54] text-white'
-              }`}
-            >
-              {isRecording ? <Square className="w-3.5 h-3.5 fill-white" /> : <Mic className="w-3.5 h-3.5" />}
-              {isRecording ? 'Stop & Transcribe' : 'Record Voice'}
-            </button>
+            {/* ATEX RoIP Radio Audio Synthesizer Bar */}
+            {hardwareMode === 'roip_walkie' && (
+              <div className="pt-2 border-t border-[#D8E0D8]/60 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                <div className="flex items-center gap-1.5 text-[#5E7072]">
+                  <Radio className="w-3.5 h-3.5 text-[#0A6B63]" />
+                  <span className="font-semibold text-[#1A2B2D]">Motorola ATEX RoIP Engine:</span>
+                  <span>1800Hz Roger Beep &amp; Squelch Synthesizer</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={playSquelchChirp}
+                    className="px-2 py-1 rounded bg-white hover:bg-[#F0F2ED] text-[#1A2B2D] font-bold border border-[#C2CEC2] text-[10px] transition-colors cursor-pointer"
+                    title="Play 60ms VHF Radio Bandpass Squelch Burst"
+                  >
+                    ⚡ Squelch Chirp
+                  </button>
+                  <button
+                    type="button"
+                    onClick={playRogerBeep}
+                    className="px-2 py-1 rounded bg-[#102123] hover:bg-[#1E3A3E] text-[#A3E635] font-bold border border-[#234E52] text-[10px] transition-colors cursor-pointer"
+                    title="Play 1800Hz + 1200Hz Dual-Tone Motorola Roger Beep"
+                  >
+                    📻 1800Hz Roger Beep
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Transcript Area */}
@@ -601,9 +733,21 @@ export default function FieldReporterPage() {
                 AI Classification Result
               </h3>
             </div>
-            <span className="text-[10px] font-bold text-[#1B8A6C] bg-[#EDFAF4] px-2 py-0.5 rounded border border-[#BFEADB]">
-              {result?.latency_ms ? `${result.latency_ms}ms Latency` : '< 500ms Edge AI'}
-            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                suppressHydrationWarning
+                onClick={() => setShowSwarmModal(true)}
+                className="flex items-center gap-1 text-[11px] font-bold font-mono px-2 py-0.5 rounded bg-[#0B1317] text-[#00FFCC] border border-[#00FFCC]/40 hover:bg-[#15242C] transition-colors cursor-pointer"
+                title="Inspect real-time 8-agent LangGraph StateGraph trace"
+              >
+                <Brain className="w-3 h-3 text-[#00FFCC] animate-pulse" />
+                <span>Swarm Trace</span>
+              </button>
+              <span className="text-[10px] font-bold text-[#1B8A6C] bg-[#EDFAF4] px-2 py-0.5 rounded border border-[#BFEADB]">
+                {result?.latency_ms ? `${result.latency_ms}ms Latency` : '< 500ms Edge AI'}
+              </span>
+            </div>
           </div>
 
           {result ? (
@@ -654,6 +798,17 @@ export default function FieldReporterPage() {
                 <span>Latency: {result.latency_ms || 28}ms</span>
               </div>
 
+              {/* Glowing 8-Agent Swarm Trace Button */}
+              <button
+                type="button"
+                suppressHydrationWarning
+                onClick={() => setShowSwarmModal(true)}
+                className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-[#0B1317] hover:bg-[#121E24] text-[#00FFCC] border-2 border-[#00FFCC]/50 text-xs font-bold font-mono shadow-md shadow-[#00FFCC]/10 transition-all cursor-pointer group active:scale-[0.98]"
+              >
+                <Brain className="w-4 h-4 text-[#00FFCC] group-hover:scale-110 transition-transform animate-pulse" />
+                <span>🧠 Inspect 8-Agent LangGraph Swarm Trace</span>
+              </button>
+
             </div>
           ) : (
             <div className="py-20 text-center text-[#94A3A5] text-xs space-y-2">
@@ -666,6 +821,14 @@ export default function FieldReporterPage() {
         </div>
 
       </div>
+
+      {/* ── 8-Agent LangGraph Swarm Live Trace Modal ── */}
+      <SwarmTraceModal
+        isOpen={showSwarmModal}
+        onClose={() => setShowSwarmModal(false)}
+        initialText={inputText || 'Mayday, Rig 4 Floor Lead — BOP valve seal weeping hydraulic fluid under 1800 PSI vibration during pipe tripping.'}
+        reportId={result?.job_id || 'VOICE-SWARM-01'}
+      />
 
     </div>
   );
