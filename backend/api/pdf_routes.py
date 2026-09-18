@@ -153,3 +153,52 @@ async def get_report_pdf(report_id: str, db: AsyncSession = Depends(get_db)):
     )
 
 
+@router.get("/api/pdf/dgms-form-iv")
+@router.get("/api/pdf/dgms-form-iv/{report_id}")
+@router.get("/api/reports/{report_id}/dgms-form-iv")
+async def get_dgms_form_iv_pdf(
+    report_id: Optional[str] = "DEMO",
+    location: Optional[str] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Generate and stream Government of India · Directorate General of Mines Safety (DGMS)
+    FORM IV — Notice of Dangerous Occurrence (Regulation 99 of Oil Mines Regulations 2017).
+    """
+    report_data = {}
+    if report_id and report_id != "DEMO":
+        report = await report_service.get_report(db, report_id)
+        if report:
+            report_data = {
+                "id": report.id,
+                "location": location or report.location,
+                "raw_text": report.raw_text,
+                "sif_score": report.sif_score,
+                "sif_label": report.sif_label,
+                "iogp_rule": report.iogp_rule,
+                "created_at": report.created_at,
+            }
+
+    if not report_data:
+        report_data = {
+            "id": f"DGMS-{report_id}" if report_id else "DGMS-SWA-01",
+            "location": location or "Well Pad 7 (Upper Assam Exploration Asset)",
+            "raw_text": "Blowout Preventer (BOP) secondary valve seal weeping hydraulic fluid under 1800 PSI annular vibration during pipe tripping.",
+            "sif_score": 0.94,
+            "sif_label": "HIGH",
+            "iogp_rule": "Bypassing Safety Controls / Energy Isolation",
+        }
+
+    filepath = pdf_generator.generate_dgms_form_iv(report_data)
+    if not os.path.exists(filepath):
+        raise HTTPException(status_code=500, detail="Failed to generate DGMS Form IV document")
+
+    filename = os.path.basename(filepath)
+    return FileResponse(
+        path=filepath,
+        filename=filename,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename={filename}"}
+    )
+
+
