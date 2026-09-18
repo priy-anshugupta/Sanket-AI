@@ -164,31 +164,13 @@ class VoiceTranscriber:
 
     def _get_domain_fallback(self, file_bytes: bytes) -> dict:
         """Domain-calibrated fallback observation for offline air-gap or audio capture fallback."""
-        if not file_bytes or len(file_bytes) < 100:
-            return {
-                "text": "",
-                "language": "en",
-                "duration": 0.0,
-                "mocked": True,
-                "error": "Audio stream too short. Hold PTT button longer while speaking.",
-            }
-
-        # Select authentic Oil India operational observation deterministically based on audio length
-        fallbacks = [
-            "Annular BOP secondary valve seal weeping hydraulic fluid under 1800 PSI vibration flutter at Well Pad 7.",
-            "Cellar pit gas detector reading 15 PPM H2S during drain line flush near separator manifold at Moran OCS-3.",
-            "Standpipe pressure needle flutter 80 PSI observed with minor mud aeration in ditch during circulation test at Baghjan Well #5.",
-            "Worker standing on 12-meter scaffold platform without safety harness over active high-pressure pipe manifold.",
-            "Discharge pulsation dampener nitrogen pre-charge low on mud pump #2 at Digboi Rig #2.",
-        ]
-        chosen = fallbacks[len(file_bytes) % len(fallbacks)]
-        print(f"[VoiceTranscriber] Using resilient domain safety fallback: '{chosen}'", flush=True)
         return {
-            "text": chosen,
+            "text": "",
             "language": "en",
-            "duration": 3.2,
-            "mocked": True,
-            "fallback": True,
+            "duration": 0.0,
+            "mocked": False,
+            "error": "Audio stream too short or unintelligible. Hold PTT button longer while speaking.",
+            "status": "NO_SPEECH_DETECTED",
         }
 
 

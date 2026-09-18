@@ -262,18 +262,23 @@ export default function FieldWorkerTerminal() {
         let labelVal = data.sif_label || null;
         let ruleVal = data.iogp_rule || null;
 
-        // If not immediately provided in response, poll up to 3 times
+        // Poll backend until terminal state is reached or timeout (10 attempts ~ 10s)
         if (scoreVal === null && data.job_id) {
-          for (let attempt = 0; attempt < 3; attempt++) {
+          for (let attempt = 0; attempt < 10; attempt++) {
             try {
-              await new Promise(r => setTimeout(r, 400));
+              await new Promise(r => setTimeout(r, 1000));
               const repRes = await universalFetch(`/api/reports/${data.job_id}`);
               if (repRes && repRes.ok) {
                 const rep = await repRes.json();
-                if (typeof rep.sif_score === 'number' && rep.sif_score > 0) {
-                  scoreVal = rep.sif_score;
-                  labelVal = rep.sif_label;
-                  ruleVal = rep.iogp_rule;
+                if (
+                  rep.status === 'COMPLETED' || 
+                  rep.status === 'SWA ESCALATED' || 
+                  rep.status === 'RESOLVED' || 
+                  (typeof rep.sif_score === 'number' && rep.sif_score > 0)
+                ) {
+                  scoreVal = typeof rep.sif_score === 'number' ? rep.sif_score : null;
+                  labelVal = rep.sif_label || null;
+                  ruleVal = rep.iogp_rule || null;
                   break;
                 }
               }
@@ -281,7 +286,26 @@ export default function FieldWorkerTerminal() {
           }
         }
 
-        const finalScore = scoreVal !== null ? Math.min(Math.max(scoreVal, 0.0), 0.99) : 0.15;
+        if (scoreVal === null) {
+          // Polling timed out. DO NOT invent a SIF score. Show processing delayed state.
+          setTouchFeedback('⚠️ Report submitted, but AI processing is taking longer than expected. Check dashboard later.');
+          const newReport: WorkerReport = {
+            id: `REP-${data.job_id?.substring(0, 6).toUpperCase() || 'NEW'}`,
+            text: textToSubmit.trim(),
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            sif_label: 'LOW',
+            sif_score: 0,
+            status: 'PROCESSING DELAYED',
+          };
+          setSubmittedReports(prev => [newReport, ...prev.slice(0, 9)]);
+          setInputText('');
+          setSelectedTag(null);
+          setIsSubmitting(false);
+          setTimeout(() => setTouchFeedback(null), 4000);
+          return;
+        }
+
+        const finalScore = Math.min(Math.max(scoreVal, 0.0), 0.99);
         const finalLabel = labelVal || (finalScore >= 0.75 ? 'HIGH' : finalScore >= 0.50 ? 'MEDIUM' : 'LOW');
         const isHigh = finalLabel === 'HIGH' || finalScore >= 0.75;
         const finalRule = ruleVal || (isHigh ? 'Energy Isolation & Pressure' : 'General Maintenance & Housekeeping');

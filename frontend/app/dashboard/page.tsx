@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { 
   AlertTriangle, 
   CheckCircle2, 
@@ -44,6 +45,7 @@ interface SummaryStats {
 }
 
 export default function TriageDashboard() {
+  const router = useRouter();
   const [reports, setReports] = useState<Report[]>([]);
   const [summary, setSummary] = useState<SummaryStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -361,7 +363,11 @@ export default function TriageDashboard() {
                 </tr>
               ) : (
                 reports.map((report, idx) => (
-                  <tr key={report.id} className="group hover:bg-[#F4F6F2] transition-colors">
+                  <tr 
+                    key={report.id} 
+                    onClick={() => router.push(`/dashboard/report/${report.id}`)}
+                    className="group hover:bg-[#F4F6F2] transition-colors cursor-pointer"
+                  >
                     <td className="text-center font-mono text-xs text-[#94A3A5]">
                       {(page - 1) * pageSize + idx + 1}
                     </td>
@@ -465,7 +471,11 @@ export default function TriageDashboard() {
 
                     {/* Detail Arrow */}
                     <td className="text-right pr-4">
-                      <Link href={`/dashboard/report/${report.id}`} className="text-[#94A3A5] group-hover:text-[#0A6B63] transition-colors">
+                      <Link 
+                        href={`/dashboard/report/${report.id}`} 
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-[#94A3A5] group-hover:text-[#0A6B63] transition-colors"
+                      >
                         <ChevronRight className="w-4 h-4" />
                       </Link>
                     </td>

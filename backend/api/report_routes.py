@@ -254,7 +254,6 @@ async def ingest_demo_500(db: AsyncSession = Depends(get_db)):
     from backend.models.report import Report
     from backend.models.entity import Entity
     from backend.models.lsr_tag import LSRTag
-    from backend.models.graph_edge import GraphEdge
     import uuid
 
     start_time = time.time()

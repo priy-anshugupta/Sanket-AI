@@ -253,6 +253,7 @@ export default function SignalGraphPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
+  const [nodeDragOffset, setNodeDragOffset] = useState({ x: 0, y: 0 });
   const [isExpanded, setIsExpanded] = useState(false);
   const [mousePos, setMousePos] = useState<{ x: number; y: number; inside: boolean }>({ x: 0, y: 0, inside: false });
   const [evidence, setEvidence] = useState<NodeEvidence | null>(null);
@@ -386,9 +387,20 @@ export default function SignalGraphPage() {
     } else if (draggedNodeId) {
       const svg = e.currentTarget;
       const rect = svg.getBoundingClientRect();
-      const svgX = (e.clientX - rect.left - pan.x) / zoom * (900 / rect.width);
-      const svgY = (e.clientY - rect.top - pan.y) / zoom * (560 / rect.height);
-      setNodes(prev => prev.map(n => n.id === draggedNodeId ? { ...n, x: svgX, y: svgY } : n));
+      
+      // 1. Calculate cursor position in SVG viewBox coordinates
+      const viewBoxX = (e.clientX - rect.left) * (900 / rect.width);
+      const viewBoxY = (e.clientY - rect.top) * (560 / rect.height);
+      
+      // 2. Convert to node coordinate space (inverse of graph transform)
+      const pointerNodeX = (viewBoxX - pan.x - 450) / zoom + 450;
+      const pointerNodeY = (viewBoxY - pan.y - 280) / zoom + 280;
+      
+      // 3. Apply the preserved drag offset to prevent jumping
+      const newX = pointerNodeX - nodeDragOffset.x;
+      const newY = pointerNodeY - nodeDragOffset.y;
+      
+      setNodes(prev => prev.map(n => n.id === draggedNodeId ? { ...n, x: newX, y: newY } : n));
     }
   };
 
@@ -716,6 +728,22 @@ export default function SignalGraphPage() {
                         e.stopPropagation();
                         setDraggedNodeId(n.id);
                         setSelectedNode(n);
+                        
+                        // Calculate cursor position in SVG viewBox coordinates
+                        const svg = e.currentTarget.ownerSVGElement as SVGSVGElement;
+                        const rect = svg.getBoundingClientRect();
+                        const viewBoxX = (e.clientX - rect.left) * (900 / rect.width);
+                        const viewBoxY = (e.clientY - rect.top) * (560 / rect.height);
+                        
+                        // Convert to node coordinate space (inverse of graph transform)
+                        const pointerNodeX = (viewBoxX - pan.x - 450) / zoom + 450;
+                        const pointerNodeY = (viewBoxY - pan.y - 280) / zoom + 280;
+                        
+                        // Store the exact offset where the user grabbed the node
+                        setNodeDragOffset({
+                          x: pointerNodeX - n.x,
+                          y: pointerNodeY - n.y
+                        });
                       }}
                     >
                       {/* Live Ingestion Pulse Ring */}

@@ -15,120 +15,6 @@ from graph.graph_store import graph_store
 
 router = APIRouter(prefix="/api/graph", tags=["Knowledge Graph"])
 
-# Fallback baseline safety data if DB is empty/cold
-DEFAULT_SAFETY_GRAPH = [
-    {
-        "report_id": "INIT-001",
-        "entities": [
-            {"type": "LOCATION", "value": "Baghjan Well #5"},
-            {"type": "EQUIPMENT", "value": "Blowout Preventer (BOP)"},
-            {"type": "BARRIER_FAILURE", "value": "Primary Well Containment"},
-            {"type": "ENERGY_SOURCE", "value": "1800 PSI Gas Surge"},
-            {"type": "ACTIVITY", "value": "Drilling Operations"},
-        ],
-        "lsr_rules": [{"rule_name": "Bypassing Safety Controls", "rule_id": "LSR-01"}],
-        "sif_label": "HIGH",
-    },
-    {
-        "report_id": "INIT-002",
-        "entities": [
-            {"type": "LOCATION", "value": "Well Pad 7"},
-            {"type": "EQUIPMENT", "value": "12m Scaffold Tower"},
-            {"type": "BARRIER_FAILURE", "value": "100% Fall Arrest Harness"},
-            {"type": "ENERGY_SOURCE", "value": "12m Fall Drop Energy"},
-            {"type": "ACTIVITY", "value": "Well Workover"},
-        ],
-        "lsr_rules": [{"rule_name": "Working at Height", "rule_id": "LSR-03"}],
-        "sif_label": "HIGH",
-    },
-    {
-        "report_id": "INIT-003",
-        "entities": [
-            {"type": "LOCATION", "value": "Moran OCS-3"},
-            {"type": "EQUIPMENT", "value": "Crawler Crane (5-Ton)"},
-            {"type": "BARRIER_FAILURE", "value": "Overhead Line Clearance"},
-            {"type": "ENERGY_SOURCE", "value": "33,000V Power Grid"},
-            {"type": "ACTIVITY", "value": "Mechanical Lifting"},
-        ],
-        "lsr_rules": [{"rule_name": "Safe Mechanical Lifting", "rule_id": "LSR-05"}],
-        "sif_label": "HIGH",
-    },
-    {
-        "report_id": "INIT-004",
-        "entities": [
-            {"type": "LOCATION", "value": "Geleki Processing"},
-            {"type": "EQUIPMENT", "value": "Heavy Industrial Forklift"},
-            {"type": "BARRIER_FAILURE", "value": "Physical Crash Barrier"},
-            {"type": "ENERGY_SOURCE", "value": "Pressurized Flammable Gas"},
-            {"type": "ACTIVITY", "value": "Preventive Maintenance"},
-        ],
-        "lsr_rules": [{"rule_name": "Line of Fire", "rule_id": "LSR-07"}],
-        "sif_label": "HIGH",
-    },
-    {
-        "report_id": "INIT-005",
-        "entities": [
-            {"type": "LOCATION", "value": "Naharkatia Field"},
-            {"type": "EQUIPMENT", "value": "Mud Circulation Pump"},
-            {"type": "BARRIER_FAILURE", "value": "Lock-Out / Tag-Out Isolation"},
-            {"type": "ENERGY_SOURCE", "value": "1800 PSI Gas Surge"},
-            {"type": "ACTIVITY", "value": "Drilling Operations"},
-        ],
-        "lsr_rules": [{"rule_name": "Energy Isolation", "rule_id": "LSR-02"}],
-        "sif_label": "MEDIUM",
-    },
-    {
-        "report_id": "INIT-006",
-        "entities": [
-            {"type": "LOCATION", "value": "Duliajan Plant (HQ)"},
-            {"type": "EQUIPMENT", "value": "High-Pressure Manifold"},
-            {"type": "BARRIER_FAILURE", "value": "PTW Hot Work Authorization"},
-            {"type": "ENERGY_SOURCE", "value": "Pressurized Flammable Gas"},
-            {"type": "ACTIVITY", "value": "Production"},
-        ],
-        "lsr_rules": [{"rule_name": "Hot Work", "rule_id": "LSR-06"}],
-        "sif_label": "LOW",
-    },
-    {
-        "report_id": "INIT-007",
-        "entities": [
-            {"type": "LOCATION", "value": "Digboi Pad 14"},
-            {"type": "EQUIPMENT", "value": "Pressure Gauge Barrier"},
-            {"type": "ACTIVITY", "value": "Preventive Maintenance"},
-        ],
-        "lsr_rules": [{"rule_name": "Bypassing Safety Controls", "rule_id": "LSR-01"}],
-        "sif_label": "MEDIUM",
-    },
-    {
-        "report_id": "INIT-008",
-        "entities": [
-            {"type": "LOCATION", "value": "Lakwa Gathering"},
-            {"type": "EQUIPMENT", "value": "Isolation Gate Valve"},
-            {"type": "ENERGY_SOURCE", "value": "5-Ton Suspended Load"},
-            {"type": "ACTIVITY", "value": "Mechanical Lifting"},
-        ],
-        "lsr_rules": [{"rule_name": "Line of Fire", "rule_id": "LSR-07"}],
-        "sif_label": "LOW",
-    },
-    {
-        "report_id": "INIT-009",
-        "entities": [
-            {"type": "LOCATION", "value": "Tengakhat Station"},
-            {"type": "EQUIPMENT", "value": "Hydraulic Pressure Line"},
-            {"type": "ACTIVITY", "value": "Preventive Maintenance"},
-        ],
-        "sif_label": "LOW",
-    },
-    {
-        "report_id": "INIT-010",
-        "entities": [
-            {"type": "LOCATION", "value": "Rudrasagar Pad 2"},
-            {"type": "EQUIPMENT", "value": "Gas Cylinder Bank"},
-            {"type": "ACTIVITY", "value": "Production"},
-        ],
-        "sif_label": "LOW",
-    },
-]
 
 
 @router.get("/signals")
@@ -140,32 +26,31 @@ async def get_graph_signals(
     Returns Cytoscape.js-compatible {nodes[], edges[]} for the
     Safety Signal Knowledge Graph visualization with Bow-Tie causal chaining.
     """
+    from sqlalchemy.orm import selectinload
+
     if reload or graph_store.node_count == 0:
         try:
+            # Optimize: load all valid reports with relationships to avoid N+1 queries.
+            # Limit increased to prevent graph truncation while remaining performant.
             result = await db.execute(
                 select(Report)
+                .options(selectinload(Report.entities), selectinload(Report.lsr_tags))
                 .where(Report.sif_score.isnot(None))
                 .order_by(desc(Report.sif_score))
-                .limit(100)
+                .limit(1000)
             )
             reports = result.scalars().all()
 
             if reports:
                 graph_store.clear()
                 for r in reports:
-                    ent_res = await db.execute(
-                        select(Entity).where(Entity.report_id == r.id)
-                    )
                     entities = [
                         {"type": e.entity_type, "value": e.entity_value}
-                        for e in ent_res.scalars().all()
+                        for e in r.entities
                     ]
-                    lsr_res = await db.execute(
-                        select(LSRTag).where(LSRTag.report_id == r.id)
-                    )
                     lsr_rules = [
                         {"rule_name": t.rule_name, "rule_id": t.rule_id}
-                        for t in lsr_res.scalars().all()
+                        for t in r.lsr_tags
                     ]
 
                     if not any(e["type"] == "LOCATION" for e in entities) and r.location:
@@ -181,25 +66,8 @@ async def get_graph_signals(
                             sif_label=r.sif_label or "LOW",
                             timestamp=r.submitted_at or r.created_at,
                         )
-            
-            if graph_store.node_count == 0:
-                # Load baseline safety graph
-                for item in DEFAULT_SAFETY_GRAPH:
-                    graph_store.add_report_entities(
-                        report_id=item["report_id"],
-                        entities=item["entities"],
-                        lsr_rules=item.get("lsr_rules"),
-                        sif_label=item.get("sif_label", "LOW"),
-                    )
-        except Exception:
-            if graph_store.node_count == 0:
-                for item in DEFAULT_SAFETY_GRAPH:
-                    graph_store.add_report_entities(
-                        report_id=item["report_id"],
-                        entities=item["entities"],
-                        lsr_rules=item.get("lsr_rules"),
-                        sif_label=item.get("sif_label", "LOW"),
-                    )
+        except Exception as e:
+            print(f"[Graph] Failed to rebuild graph from DB: {e}")
 
     return graph_store.to_cytoscape_json()
 
@@ -304,16 +172,5 @@ async def get_node_evidence(
                 "created_at": r.created_at.isoformat() if r.created_at else None,
             }
             for r in supporting_reports
-        ] if supporting_reports else [
-            {
-                "id": "REP-0491",
-                "raw_text": f"Hydraulic weeping anomaly observed on {ent_value} during 1800 PSI surge pressure test.",
-                "sif_score": 0.94,
-                "sif_label": "HIGH",
-                "location": "Baghjan Well #5",
-                "activity_type": "Drilling Operations",
-                "iogp_rule": "Bypassing Safety Controls",
-                "created_at": "Today 08:30"
-            }
         ],
     }

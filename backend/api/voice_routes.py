@@ -81,7 +81,11 @@ async def transcribe_and_ingest_audio(
     text = transcription.get("text", "")
 
     if not text or len(text.strip()) < 3:
-        text = "Voice safety observation: Unspecified anomaly recorded by field worker."
+        # Instead of fabricating an observation, explicitly fail and alert the client.
+        return {
+            "status": "NO_AUDIO", 
+            "message": "Transcription failed or no speech detected. Please try again or enter manually."
+        }
 
     # Create report
     report = await report_service.create_report(

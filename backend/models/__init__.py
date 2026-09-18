@@ -9,7 +9,6 @@ from backend.models.alert import SystemicAlert
 from backend.models.audit import AuditTrail
 from backend.models.entity import Entity
 from backend.models.feedback import FeedbackLog
-from backend.models.graph_edge import GraphEdge
 from backend.models.lsr_tag import LSRTag
 from backend.models.report import Report
 from backend.models.user import User
@@ -19,7 +18,6 @@ __all__ = [
     "AuditTrail",
     "Entity",
     "FeedbackLog",
-    "GraphEdge",
     "LSRTag",
     "Report",
     "SystemicAlert",

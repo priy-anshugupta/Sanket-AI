@@ -83,6 +83,13 @@ Output ONLY the 3 sentences."""
             return self._deterministic_fallback(text, sif_label, sif_score, matched_anchor)
 
         # 1. Try OpenAI if in online mode
+        prompt = self.PROMPT_TEMPLATE.format(
+            text=text[:500],
+            sif_label=sif_label,
+            sif_score=sif_score,
+            matched_anchor=matched_anchor,
+        )
+
         if settings.OPENAI_API_KEY:
             res = await self._explain_openai(prompt)
             if res:
@@ -128,7 +135,7 @@ Output ONLY the 3 sentences."""
                     json={
                         "model": settings.OPENAI_MODEL or "gpt-4o",
                         "messages": [
-                            {"role": "system", "content": self.SYSTEM_PROMPT},
+                            {"role": "system", "content": "You are a DGMS-certified Senior Industrial Process Safety Expert & SIF Auditor."},
                             {"role": "user", "content": prompt},
                         ],
                         "temperature": 0.15,
