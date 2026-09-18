@@ -302,6 +302,17 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
           </button>
 
           <button type="button" suppressHydrationWarning
+            onClick={() => {
+              window.open(`${API}/api/reports/${reportId}/dgms-form-iv`, '_blank');
+            }}
+            title="Generate and print official Government of India DGMS Form IV Legal Notice (Regulation 99 of Oil Mines Regulations 2017)"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#FEF2F2] border border-[#FCA5A5] hover:bg-[#FEE2E2] rounded-lg text-xs font-bold text-[#991B1B] shadow-xs transition-all cursor-pointer group active:scale-95"
+          >
+            <FileText className="w-3.5 h-3.5 text-[#991B1B] group-hover:scale-110 transition-transform" />
+            <span>🏛️ DGMS Form IV Notice</span>
+          </button>
+
+          <button type="button" suppressHydrationWarning
             onClick={handleDownloadPDF}
             className="flex items-center gap-1.5 px-3.5 py-1.5 bg-white border border-[#C2CEC2] hover:bg-[#F0F2ED] rounded-lg text-xs font-semibold text-[#1A2B2D] shadow-xs transition-colors cursor-pointer"
           >

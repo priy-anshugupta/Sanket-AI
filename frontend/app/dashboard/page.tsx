@@ -16,8 +16,10 @@ import {
   ChevronsLeft,
   FileText,
   Zap,
-  Flame
+  Flame,
+  Brain
 } from 'lucide-react';
+import SwarmTraceModal from '@/components/SwarmTraceModal';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL
   ? process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
@@ -63,6 +65,10 @@ export default function TriageDashboard() {
   const [ingesting, setIngesting] = useState(false);
   const [batchProgress, setBatchProgress] = useState(0);
   const [batchSuccessMsg, setBatchSuccessMsg] = useState('');
+
+  // Swarm Trace Modal state
+  const [showSwarmModal, setShowSwarmModal] = useState(false);
+  const [selectedReportForTrace, setSelectedReportForTrace] = useState<{ text: string; id?: string } | null>(null);
 
   const fetchSummary = async () => {
     try {
@@ -211,6 +217,21 @@ export default function TriageDashboard() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button type="button" suppressHydrationWarning
+            onClick={() => {
+              setSelectedReportForTrace({
+                text: 'Mayday, Rig 4 Floor Lead — BOP valve seal weeping hydraulic fluid under 1800 PSI vibration during pipe tripping.',
+                id: 'SWARM-DEMO',
+              });
+              setShowSwarmModal(true);
+            }}
+            title="Inspect 8-Agent LangGraph StateGraph execution trace live"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 border-[#00BFA5] bg-[#0B1317] hover:bg-[#121E24] text-[#00FFCC] text-xs font-bold shadow-xs transition-all cursor-pointer group active:scale-95"
+          >
+            <Brain className="w-3.5 h-3.5 text-[#00FFCC] group-hover:scale-110 transition-transform animate-pulse" />
+            <span>🧠 Inspect 8-Agent Swarm Trace</span>
+          </button>
+
           <button type="button" suppressHydrationWarning
             onClick={() => {
               window.open(`${API_BASE}/api/pdf/shift-handover`, '_blank');
@@ -463,11 +484,27 @@ export default function TriageDashboard() {
                       })()}
                     </td>
 
-                    {/* Detail Arrow */}
+                    {/* Detail Arrow & Swarm Inspect */}
                     <td className="text-right pr-4">
-                      <Link href={`/dashboard/report/${report.id}`} className="text-[#94A3A5] group-hover:text-[#0A6B63] transition-colors">
-                        <ChevronRight className="w-4 h-4" />
-                      </Link>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          type="button"
+                          suppressHydrationWarning
+                          title="Inspect 8-Agent LangGraph Swarm Trace for this observation"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedReportForTrace({ text: report.raw_text, id: report.id });
+                            setShowSwarmModal(true);
+                          }}
+                          className="p-1 rounded text-[#94A3A5] hover:text-[#0A6B63] hover:bg-[#E8F4F0] transition-colors cursor-pointer"
+                        >
+                          <Brain className="w-3.5 h-3.5" />
+                        </button>
+                        <Link href={`/dashboard/report/${report.id}`} className="text-[#94A3A5] group-hover:text-[#0A6B63] transition-colors">
+                          <ChevronRight className="w-4 h-4" />
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -762,6 +799,14 @@ export default function TriageDashboard() {
           </div>
         </div>
       )}
+
+      {/* ── 8-Agent LangGraph Swarm Live Trace Modal ── */}
+      <SwarmTraceModal
+        isOpen={showSwarmModal}
+        onClose={() => setShowSwarmModal(false)}
+        initialText={selectedReportForTrace?.text}
+        reportId={selectedReportForTrace?.id}
+      />
 
     </div>
   );

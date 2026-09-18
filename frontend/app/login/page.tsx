@@ -15,28 +15,27 @@ export default function LoginPage() {
   const [badgeId, setBadgeId] = useState('4491');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [error, setError] = useState('');
-  const [demoBypass, setDemoBypass] = useState(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        return localStorage.getItem('sanket_demo_override') === 'true';
-      } catch {}
-    }
-    return false;
-  });
+  const [demoBypass, setDemoBypass] = useState(false);
 
   // Mobile Device Detection (Locks Manager Login on Phone)
   useEffect(() => {
+    let bypass = false;
+    try {
+      bypass = localStorage.getItem('sanket_demo_override') === 'true';
+      if (bypass) setDemoBypass(true);
+    } catch {}
+
     const checkMobile = () => {
       const isMobile = window.innerWidth < 480 || /iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       setIsMobileDevice(isMobile);
-      if (isMobile && !demoBypass) {
+      if (isMobile && !bypass) {
         setActiveTab('worker');
       }
     };
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
-  }, [demoBypass]);
+  }, []);
 
   const handleManagerLogin = async (e: React.FormEvent) => {
     e.preventDefault();

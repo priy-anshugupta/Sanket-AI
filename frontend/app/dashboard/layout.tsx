@@ -105,14 +105,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState<number>(3);
   const [isMobileScreen, setIsMobileScreen] = useState(false);
-  const [isDemoOverridden, setIsDemoOverridden] = useState(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        return localStorage.getItem('sanket_demo_override') === 'true';
-      } catch {}
-    }
-    return false;
-  });
+  const [isDemoOverridden, setIsDemoOverridden] = useState<boolean>(false);
 
   const handleToggleDemoOverride = (val: boolean) => {
     setIsDemoOverridden(val);
@@ -188,6 +181,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       const storedSound = localStorage.getItem('sanket_alert_sound');
       if (storedSound !== null) {
         setAlertSoundEnabled(storedSound === 'true');
+      }
+
+      const storedDemo = localStorage.getItem('sanket_demo_override');
+      if (storedDemo === 'true') {
+        setIsDemoOverridden(true);
       }
     } catch {
       setCurrentUser({ full_name: 'Rajesh Kumar', role: 'hse_manager', username: 'rajesh' });
@@ -309,7 +307,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // Live WebSocket + Polling listener for instant cross-terminal sync (<200ms)
   useEffect(() => {
-    let timer: NodeJS.Timeout;
     let ws: WebSocket | null = null;
     let reconnectTimeout: any = null;
 
@@ -406,7 +403,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     };
 
     checkLatestReports();
-    timer = setInterval(checkLatestReports, 3000);
+    const timer = setInterval(checkLatestReports, 3000);
 
     return () => {
       clearInterval(timer);
@@ -457,6 +454,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           <button
             type="button"
+            suppressHydrationWarning
             onClick={() => handleToggleDemoOverride(true)}
             className="w-full py-2.5 bg-white/5 hover:bg-white/10 text-[#0A6B63] hover:text-[#0D8A80] font-mono font-bold text-[11px] rounded-xl border border-[#0A6B63]/40 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
           >
@@ -680,6 +678,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Dynamic System Mode Badge — 1-Click Air-Gap Toggle */}
           <button
             type="button"
+            suppressHydrationWarning
             onClick={toggleAirGapMode}
             disabled={isSwitchingAirgap}
             title="Tap to toggle Sovereign Air-Gap vs Hybrid Online AI"
@@ -913,6 +912,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Dynamic System Status Pill — 1-Click Toggle */}
             <button
               type="button"
+              suppressHydrationWarning
               onClick={toggleAirGapMode}
               disabled={isSwitchingAirgap}
               title="Click to toggle between Sovereign Air-Gap and Hybrid Online AI"
