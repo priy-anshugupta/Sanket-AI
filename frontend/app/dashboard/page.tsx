@@ -225,11 +225,11 @@ export default function TriageDashboard() {
               });
               setShowSwarmModal(true);
             }}
-            title="Inspect 8-Agent LangGraph StateGraph execution trace live"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 border-[#00BFA5] bg-[#0B1317] hover:bg-[#121E24] text-[#00FFCC] text-xs font-bold shadow-xs transition-all cursor-pointer group active:scale-95"
+            title="Inspect 12-Agent LangGraph Swarm execution trace live"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 border-[#0A6B63] bg-[#E8F4F0] hover:bg-[#D4ECE5] text-[#0A6B63] text-xs font-bold shadow-xs transition-all cursor-pointer group active:scale-95"
           >
-            <Brain className="w-3.5 h-3.5 text-[#00FFCC] group-hover:scale-110 transition-transform animate-pulse" />
-            <span>🧠 Inspect 8-Agent Swarm Trace</span>
+            <Brain className="w-3.5 h-3.5 text-[#0A6B63] group-hover:scale-110 transition-transform animate-pulse" />
+            <span>🧠 Inspect Swarm Trace</span>
           </button>
 
           <button type="button" suppressHydrationWarning

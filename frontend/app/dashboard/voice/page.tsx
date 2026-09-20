@@ -798,15 +798,15 @@ export default function FieldReporterPage() {
                 <span>Latency: {result.latency_ms || 28}ms</span>
               </div>
 
-              {/* Glowing 8-Agent Swarm Trace Button */}
+              {/* Swarm Trace Button */}
               <button
                 type="button"
                 suppressHydrationWarning
                 onClick={() => setShowSwarmModal(true)}
-                className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-[#0B1317] hover:bg-[#121E24] text-[#00FFCC] border-2 border-[#00FFCC]/50 text-xs font-bold font-mono shadow-md shadow-[#00FFCC]/10 transition-all cursor-pointer group active:scale-[0.98]"
+                className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-[#E8F4F0] hover:bg-[#D4ECE5] text-[#0A6B63] border-2 border-[#0A6B63] text-xs font-bold shadow-xs transition-all cursor-pointer group active:scale-[0.98]"
               >
-                <Brain className="w-4 h-4 text-[#00FFCC] group-hover:scale-110 transition-transform animate-pulse" />
-                <span>🧠 Inspect 8-Agent LangGraph Swarm Trace</span>
+                <Brain className="w-4 h-4 text-[#0A6B63] group-hover:scale-110 transition-transform animate-pulse" />
+                <span>🧠 Inspect 12-Agent LangGraph Swarm Trace</span>
               </button>
 
             </div>
