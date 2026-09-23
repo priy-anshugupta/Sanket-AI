@@ -806,7 +806,7 @@ export default function FieldReporterPage() {
                 className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-[#E8F4F0] hover:bg-[#D4ECE5] text-[#0A6B63] border-2 border-[#0A6B63] text-xs font-bold shadow-xs transition-all cursor-pointer group active:scale-[0.98]"
               >
                 <Brain className="w-4 h-4 text-[#0A6B63] group-hover:scale-110 transition-transform animate-pulse" />
-                <span>🧠 Inspect 12-Agent LangGraph Swarm Trace</span>
+                <span>🧠 Inspect Multi-Agent Safety Pipeline</span>
               </button>
 
             </div>

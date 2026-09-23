@@ -389,25 +389,6 @@ export default function HomePage() {
                 </p>
               </div>
 
-              {/* Technical Blueprint Box */}
-              <div className="p-4 rounded-xl bg-[#0A1416] border border-white/[0.06] space-y-2">
-                <div className="flex items-center justify-between text-xs font-sans text-slate-400">
-                  <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
-                    <Activity className="w-3.5 h-3.5" /> Deterministic Pipeline Execution
-                  </span>
-                  <span>Zero Cloud Egress</span>
-                </div>
-                <div className="text-xs font-mono text-slate-300 bg-black/40 p-3 rounded-lg border border-white/[0.04] leading-relaxed">
-                  {activePipelineStage === 0 && '>> ASR_STREAM: Whisper Base (Quantized INT8) -> Lang: "Assamese / Hindi / English" -> Normalizer: OilFieldLexicon_v2'}
-                  {activePipelineStage === 1 && '>> VECTOR_SPACE: 384-Dim Dense Embeddings -> Cosine Sim vs 48 DEKRA SIF Anchors -> Threshold: > 0.72 Precursor Potential'}
-                  {activePipelineStage === 2 && '>> NER_ENGINE: ZeroShotEntityClassifier -> Found: [Annular BOP, 1800 PSI, Well Pad 7, Hydraulic Weeping]'}
-                  {activePipelineStage === 3 && '>> LSR_MAPPER: MultiLabel Sim -> Rule 01 (Energy Isolation: 94%) -> Rule 04 (Bypass Safety Controls: 88%)'}
-                  {activePipelineStage === 4 && '>> SIF_SCORER: Composite S_SIF = 0.94 (HIGH RISK) -> Grounding: "Annular valve degradation under active drilling pressure."'}
-                  {activePipelineStage === 5 && '>> GRAPH_CLUSTER: Cross-Linked REP-W7-01 with Historical Vibration Spike on Mud Pump #2 (Confidence: 96%)'}
-                  {activePipelineStage === 6 && '>> SWA_PERIMETER: DISPATCH_ALERT -> Freeze 4 active e-PTWs within 500m buffer -> Rig Siren Triggered.'}
-                </div>
-              </div>
-
             </div>
 
           </div>

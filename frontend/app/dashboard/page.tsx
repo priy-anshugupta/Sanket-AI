@@ -225,27 +225,16 @@ export default function TriageDashboard() {
               });
               setShowSwarmModal(true);
             }}
-            title="Inspect 12-Agent LangGraph Swarm execution trace live"
+            title="Inspect Multi-Agent Safety Pipeline execution live"
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 border-[#0A6B63] bg-[#E8F4F0] hover:bg-[#D4ECE5] text-[#0A6B63] text-xs font-bold shadow-xs transition-all cursor-pointer group active:scale-95"
           >
             <Brain className="w-3.5 h-3.5 text-[#0A6B63] group-hover:scale-110 transition-transform animate-pulse" />
-            <span>🧠 Inspect Swarm Trace</span>
-          </button>
-
-          <button type="button" suppressHydrationWarning
-            onClick={() => {
-              window.open(`${API_BASE}/api/pdf/shift-handover`, '_blank');
-            }}
-            title="Generate and print 1-Page Official Oil India Statutory Shift Handover Log (Form OISD-189/DGMS)"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 border-[#0A6B63] bg-[#E8F4F0] hover:bg-[#D4ECE5] text-[#0A6B63] text-xs font-bold shadow-xs transition-all cursor-pointer group active:scale-95"
-          >
-            <FileText className="w-3.5 h-3.5 text-[#0A6B63] group-hover:scale-110 transition-transform" />
-            <span>1-Click Shift Handover (PDF)</span>
+            <span>🧠 Inspect Safety Pipeline</span>
           </button>
 
           <button type="button" suppressHydrationWarning
             onClick={() => { fetchSummary(); fetchReports(); }}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#C2CEC2] bg-white hover:bg-[#F0F2ED] text-[#3E5052] text-xs font-semibold shadow-xs transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#C2CEC2] bg-white hover:bg-[#F0F2ED] text-[#3E5052] text-xs font-semibold shadow-xs transition-colors cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -490,7 +479,7 @@ export default function TriageDashboard() {
                         <button
                           type="button"
                           suppressHydrationWarning
-                          title="Inspect 8-Agent LangGraph Swarm Trace for this observation"
+                          title="Inspect Multi-Agent Safety Pipeline Trace for this observation"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
