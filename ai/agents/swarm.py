@@ -145,18 +145,14 @@ def graph_analyst_agent(state: ReportState) -> Dict[str, Any]:
 async def explainer_agent(state: ReportState) -> Dict[str, Any]:
     """Synthesizes grounded plain-English risk explanation."""
     trace = state.get("agent_trace", [])
-    explanation = None
-    if state["sif_score"] >= 0.50:
-        explanation = await llm_explainer.explain(
-            text=state["preprocessed_text"],
-            sif_label=state["sif_label"],
-            sif_score=state["sif_score"],
-            matched_anchor=state.get("matched_anchor_text", ""),
-            entities=state.get("entities", []),
-        )
-        trace.append("ExplainerAgent: Generated grounded Stage 5 plain-English explanation")
-    else:
-        trace.append("ExplainerAgent: Skipped explanation (score < 0.50)")
+    explanation = await llm_explainer.explain(
+        text=state["preprocessed_text"],
+        sif_label=state["sif_label"],
+        sif_score=state["sif_score"],
+        matched_anchor=state.get("matched_anchor_text", ""),
+        entities=state.get("entities", []),
+    )
+    trace.append("ExplainerAgent: Generated grounded Stage 5 plain-English explanation")
 
     return {
         "explanation": explanation,
