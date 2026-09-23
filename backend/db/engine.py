@@ -184,10 +184,10 @@ async def init_db():
         await switch_to_sqlite()
         return
 
-    # Auto or Supabase mode — test connection with crisp 4.0s fail-fast timeout
+    # Auto or Supabase mode — test connection with 10.0s timeout for reliable cloud TLS handshakes
     try:
-        print(f"[Database] Testing connection to Supabase (4s limit)...", flush=True)
-        async with asyncio.timeout(4.0):
+        print(f"[Database] Testing connection to Supabase (10s limit)...", flush=True)
+        async with asyncio.timeout(10.0):
             async with _current_engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
         active_db_type = "supabase"
