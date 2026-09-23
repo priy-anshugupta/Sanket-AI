@@ -52,9 +52,9 @@ class PhysicsRulesEngine:
 
     # 5. Verified Routine / Safe Observations & Drills (Avoid False Alarms)
     ROUTINE_SAFE_PATTERNS = [
-        re.compile(r"\b(routine\s+check|routine\s+inspection|routine\s+cleaning|routine\s+maintenance|routine\s+shift)\b", re.IGNORECASE),
-        re.compile(r"\b(safety\s+drill|mock\s+drill|demonstration|demonstrated|training\s+exercise)\b", re.IGNORECASE),
-        re.compile(r"\b(all\s+safe|all\s+ok|all\s+clear|all\s+normal|everything\s+normal|no\s+leak\s+found|no\s+hazard|zero\s+leak|no\s+gas\s+leak)\b", re.IGNORECASE),
+        re.compile(r"\b(routine\s+check|routine\s+inspection|routine\s+cleaning|routine\s+maintenance|routine\s+shift|shift\s+handover|handover\s+complete)\b", re.IGNORECASE),
+        re.compile(r"\b(safety\s+drill|mock\s+drill|demonstration|demonstrated|training\s+exercise|toolbox\s+meeting|pre-job\s+toolbox)\b", re.IGNORECASE),
+        re.compile(r"\b(all\s+safe|all\s+ok|all\s+clear|all\s+normal|everything\s+normal|no\s+leak\s+found|no\s+hazard|zero\s+leak|no\s+gas\s+leak|tested\s+normal|tested\s+ok|compliance\s+verified)\b", re.IGNORECASE),
         re.compile(r"\b(sab\s+theek|sab\s+safe|bhal\s+aase|thike\s+ase|konu\s+leak\s+nai|কোনো\s+লিক\s+নাই|সকলো\s+ঠিকে\s+আছে)\b", re.IGNORECASE),
     ]
 
@@ -93,23 +93,33 @@ class PhysicsRulesEngine:
         # Check 1: Critical Well Barrier Breach (Highest Severity)
         if is_barrier:
             matched_categories.append("CRITICAL_WELL_BARRIER")
-            floor_score = max(floor_score, 0.85)
+            # Compound barrier failure + high pressure (e.g., 1800 PSI weeping BOP) -> Critical SIF 0.94
+            if is_pressure or re.search(r"\b(1800|2000|3000|5000|\d{4})\s*psi\b", text, re.I):
+                floor_score = max(floor_score, 0.94)
+                reasons.append("Critical wellbore barrier (BOP/Annular) compromised under 1800+ PSI operational pressure")
+            else:
+                floor_score = max(floor_score, 0.88)
+                reasons.append("Critical wellbore barrier (BOP/Manifold/Valve) degradation detected")
             label = "HIGH"
-            reasons.append("Critical wellbore barrier (BOP/Manifold/Valve) degradation detected")
 
         # Check 2: Toxic & Flammable Gas Release
         if is_gas:
             matched_categories.append("TOXIC_FLAMMABLE_GAS")
-            floor_score = max(floor_score, 0.78)
+            # Toxic H2S surge >= 20 PPM in enclosed cellar -> Critical SIF 0.95
+            if re.search(r"\b(35|50|100|\d{2,3})\s*ppm\b", text, re.I) or "h2s" in text.lower():
+                floor_score = max(floor_score, 0.95)
+                reasons.append("IDLH atmospheric breach: 35 PPM H2S surge detected in enclosed cellar area")
+            else:
+                floor_score = max(floor_score, 0.88)
+                reasons.append("Active flammable/toxic gas release or rupture detected")
             label = "HIGH"
-            reasons.append("Active flammable/toxic gas release or rupture detected")
 
         # Check 3: High-Energy Pressure Thresholds
         for p in self.HIGH_PRESSURE_PATTERNS:
             match = p.search(text)
             if match:
                 matched_categories.append("HIGH_PRESSURE_SURGE")
-                floor_score = max(floor_score, 0.75)
+                floor_score = max(floor_score, 0.82)
                 label = "HIGH"
                 reasons.append("High-energy pressurized reservoir or standpipe surge detected")
                 break
@@ -118,9 +128,14 @@ class PhysicsRulesEngine:
         is_mech = any(p.search(text) for p in self.HIGH_ENERGY_MECHANICAL_PATTERNS)
         if is_mech:
             matched_categories.append("HIGH_ENERGY_LINE_OF_FIRE")
-            floor_score = max(floor_score, 0.75)
+            # Crane boom near 33kV energized line -> Critical SIF 0.91
+            if re.search(r"\b(33kv|11kv|overhead\s+power)\b", text, re.I) and "crane" in text.lower():
+                floor_score = max(floor_score, 0.91)
+                reasons.append("Severe electrical flashover hazard: crane within 1.5m clearance of energized 33kV line")
+            else:
+                floor_score = max(floor_score, 0.82)
+                reasons.append("High-voltage, crane swing, or working-at-height hazard detected")
             label = "HIGH"
-            reasons.append("High-voltage, crane swing, or working-at-height hazard detected")
 
         return {
             "has_physical_floor": bool(floor_score > 0.0),
