@@ -142,7 +142,7 @@ app.include_router(voice_router)
 app.include_router(emergency_router)
 
 
-@app.get("/", tags=["Health"])
+@app.api_route("/", methods=["GET", "HEAD"], tags=["Health"])
 async def root():
     """Health check and system info."""
     return {
@@ -154,9 +154,9 @@ async def root():
     }
 
 
-@app.get("/health", tags=["Health"])
+@app.api_route("/health", methods=["GET", "HEAD"], tags=["Health"])
 async def health_check():
-    """Explicit health check endpoint for Render / Railway / cloud load balancers."""
+    """Explicit health check endpoint for Render / Railway / UptimeRobot / cloud load balancers."""
     return {
         "status": "healthy",
         "database": get_active_db_type(),
