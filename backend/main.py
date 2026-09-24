@@ -154,6 +154,16 @@ async def root():
     }
 
 
+@app.get("/health", tags=["Health"])
+async def health_check():
+    """Explicit health check endpoint for Render / Railway / cloud load balancers."""
+    return {
+        "status": "healthy",
+        "database": get_active_db_type(),
+        "mode": settings.AI_MODE,
+    }
+
+
 @app.get("/api/system/airgap", tags=["System"])
 async def airgap_status():
     """Air-Gap status and real-time egress telemetry."""

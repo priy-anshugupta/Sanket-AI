@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "SANKET · AI"
     APP_VERSION: str = "1.0.0"
     AI_MODE: Literal["online", "airgapped"] = "online"
+    LOW_MEMORY_MODE: bool = False
     DEBUG: bool = True
     PORT: int = 8000
 

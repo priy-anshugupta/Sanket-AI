@@ -22,7 +22,7 @@ class Base(DeclarativeBase):
 # Internal State
 _current_engine = None
 _current_session_factory = None
-active_db_type = "sqlite" if ("sqlite" in settings.DATABASE_URL or settings.DB_MODE == "sqlite" or settings.AI_MODE == "airgapped") else "supabase"
+active_db_type = "sqlite" if ("sqlite" in settings.DATABASE_URL or settings.DB_MODE == "sqlite") else "supabase"
 
 
 def _build_sqlite_engine(url: str = None):
@@ -179,7 +179,7 @@ async def init_db():
     global active_db_type
     import backend.models  # noqa: F401
 
-    if settings.DB_MODE == "sqlite" or settings.AI_MODE == "airgapped":
+    if settings.DB_MODE == "sqlite":
         print("[Database] Mode forced to offline SQLite via configuration", flush=True)
         await switch_to_sqlite()
         return

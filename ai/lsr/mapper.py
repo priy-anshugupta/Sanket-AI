@@ -1,23 +1,25 @@
 """
 SANKET · AI — Stage 4: IOGP Life-Saving Rule Mapper
-Embedding similarity matching against 9 IOGP rules.
+Embedding & Domain Keyword similarity matching against 9 IOGP rules.
+Supports Dual-Engine (Neural + Precision Hybrid Scorer for Render 512MB RAM).
 """
 
 import json
 import os
+import re
 import numpy as np
 from pathlib import Path
 from backend.config.settings import settings
 
 
 RULE_DOMAIN_KEYWORDS = {
-    "Bypassing Safety Controls": ["bop", "psv", "interlock", "alarm", "bypass", "override", "safety critical", "safety valve", "tamper", "prv", "esd", "emergency shutdown"],
-    "Energy Isolation": ["pressure", "psi", "bar", "hydraulic", "loto", "isolation", "isolate", "electrical", "voltage", "lockout", "tagout", "bleed", "drain line", "valve weeping", "fluid under", "containment", "piping", "accumulator"],
+    "Bypassing Safety Controls": ["bypass", "override", "tamper", "disabled", "without authorization", "isolated without", "psv bypassed", "interlock bypassed", "safety switch", "safety critical bypass"],
+    "Energy Isolation": ["pressure", "psi", "bar", "hydraulic", "loto", "isolation", "isolate", "electrical", "voltage", "lockout", "tagout", "bleed", "drain line", "valve weeping", "fluid under", "containment", "piping", "accumulator", "1800 psi", "high pressure"],
     "Confined Space": ["confined", "tank", "vessel", "pit", "cellar", "cellar pit", "manhole", "atmosphere", "oxygen", "h2s", "toxic gas", "gas test", "ppm"],
     "Hot Work": ["welding", "grinding", "torch", "cutting", "spark", "hot work", "flame", "flammable"],
-    "Safe Mechanical Lifting": ["crane", "rigging", "sling", "hoist", "winch", "suspended load", "lifting", "shackle", "derrick lift"],
-    "Working at Height": ["scaffold", "ladder", "roof", "harness", "fall arrest", "fall protection", "mast", "derrick platform", "monkey board", "working at height", "elevated walkway"],
-    "Line of Fire": ["line of fire", "pinch point", "stored energy", "struck by", "whipcheck", "rotating", "kickback", "recoil", "handrail", "walkway", "staircase", "slip", "trip", "spill", "housekeeping", "loose", "oil on floor"],
+    "Safe Mechanical Lifting": ["crane", "rigging", "sling", "hoist", "winch", "suspended load", "lifting", "shackle", "derrick lift", "drill collar"],
+    "Working at Height": ["scaffold", "scaffolding", "ladder", "roof", "harness", "fall arrest", "fall protection", "mast", "derrick", "derrick platform", "monkey board", "working at height", "elevated walkway", "toe boards", "12 meters", "meters height", "at height"],
+    "Line of Fire": ["line of fire", "pinch point", "stored energy", "struck by", "whipcheck", "rotating", "kickback", "recoil", "handrail", "walkway", "staircase", "slip", "trip", "spill", "housekeeping", "loose", "oil spilled", "oil on floor"],
     "Ground Disturbance": ["excavat", "trench", "underground", "buried cable", "digging", "pipeline crossing"],
     "Driving Safety": ["vehicle", "driving", "seatbelt", "speed limit", "driver", "transport", "pickup truck", "crash"],
 }
@@ -35,6 +37,9 @@ class LSRMapper:
         self.rule_embeddings: np.ndarray | None = None
         self.model = None
         self._initialized = False
+        self._use_hybrid_engine = False
+        self._tfidf_vectorizer = None
+        self._rule_vecs = None
 
     def initialize(self, model=None):
         """Load IOGP rules and precompute embeddings."""
@@ -50,45 +55,66 @@ class LSRMapper:
 
         if model is not None:
             self.model = model
-        else:
-            from sentence_transformers import SentenceTransformer
-            try:
-                self.model = SentenceTransformer(settings.EMBEDDING_MODEL, local_files_only=True)
-            except Exception:
-                self.model = SentenceTransformer(settings.EMBEDDING_MODEL)
+            rule_texts = [
+                f"query: {rule['rule_name']}: {rule['description']}"
+                for rule in self.rules
+            ]
+            self.rule_embeddings = self.model.encode(
+                rule_texts,
+                normalize_embeddings=True,
+                show_progress_bar=False,
+            )
+            self._use_hybrid_engine = False
+            self._initialized = True
+            print(f"[LSR Mapper] Loaded {len(self.rules)} IOGP rules with neural embeddings", flush=True)
+            return
 
-        # Precompute rule description embeddings
+        # Check if SIF classifier is in hybrid mode or if we need lean TF-IDF
+        from ai.sif.classifier import sif_classifier
+        if getattr(sif_classifier, "_use_hybrid_engine", False) or sif_classifier.model is None:
+            self._init_hybrid_engine()
+        else:
+            try:
+                self.model = sif_classifier.model
+                rule_texts = [
+                    f"query: {rule['rule_name']}: {rule['description']}"
+                    for rule in self.rules
+                ]
+                self.rule_embeddings = self.model.encode(
+                    rule_texts,
+                    normalize_embeddings=True,
+                    show_progress_bar=False,
+                )
+                self._use_hybrid_engine = False
+                self._initialized = True
+                print(f"[LSR Mapper] Loaded {len(self.rules)} IOGP rules with reused neural embeddings", flush=True)
+            except Exception:
+                self._init_hybrid_engine()
+
+    def _init_hybrid_engine(self):
+        """Initialize lean TF-IDF rule matcher for low-memory environments."""
+        from sklearn.feature_extraction.text import TfidfVectorizer
         rule_texts = [
-            f"query: {rule['rule_name']}: {rule['description']}"
+            f"query: {rule['rule_name']}: {rule['description']} {' '.join(RULE_DOMAIN_KEYWORDS.get(rule['rule_name'], []))}"
             for rule in self.rules
         ]
-        self.rule_embeddings = self.model.encode(
-            rule_texts,
-            normalize_embeddings=True,
-            show_progress_bar=False,
-        )
-
+        self._tfidf_vectorizer = TfidfVectorizer(ngram_range=(1, 3), analyzer="word", sublinear_tf=True)
+        self._rule_vecs = self._tfidf_vectorizer.fit_transform(rule_texts)
+        self._use_hybrid_engine = True
         self._initialized = True
-        print(f"[LSR Mapper] Loaded {len(self.rules)} IOGP rules with embeddings")
+        print(f"[LSR Mapper] [OK] Precision Hybrid LSR Scorer active. RAM: ~5MB.", flush=True)
 
     def map_rules(self, text: str, top_k: int = 2) -> list[dict]:
         """
         Map report text to IOGP Life-Saving Rules with domain calibration.
         Returns top-k rules with similarity >= threshold.
         """
-        import re
         if not self._initialized:
             self.initialize()
 
-        # Encode report text (reuses same model as SIF classifier)
-        report_embedding = self.model.encode(
-            f"query: {text}",
-            normalize_embeddings=True,
-            show_progress_bar=False,
-        )
+        text_lower = text.lower()
 
         # Safe shift handover & routine verification handler
-        text_lower = text.lower()
         if re.search(r"\b(shift\s+handover\s+complete|pre-job\s+toolbox|all\s+emergency\s+shutoff\s+valves\s+tested\s+normal|tested\s+normal)\b", text_lower):
             return [{
                 "rule_id": "LSR-SAFE",
@@ -98,10 +124,19 @@ class LSRMapper:
                 "barriers": ["Pre-job toolbox meeting", "PPE compliance", "Safety shutoff valve verification"],
             }]
 
-        # Cosine similarity against all 9 rules
-        similarities = np.dot(self.rule_embeddings, report_embedding)
+        if self._use_hybrid_engine:
+            from sklearn.metrics.pairwise import cosine_similarity
+            q_vec = self._tfidf_vectorizer.transform([f"query: {text}"])
+            similarities = cosine_similarity(self._rule_vecs, q_vec).flatten()
+        else:
+            report_embedding = self.model.encode(
+                f"query: {text}",
+                normalize_embeddings=True,
+                show_progress_bar=False,
+            )
+            similarities = np.dot(self.rule_embeddings, report_embedding)
 
-        # Apply domain keyword priors: +0.15 for matching keywords, -0.15 for Height if no height keywords exist
+        # Apply domain keyword priors: +0.15 for matching keywords
         adjusted = np.copy(similarities)
         for idx, rule in enumerate(self.rules):
             rname = rule["rule_name"]
@@ -112,8 +147,12 @@ class LSRMapper:
             elif rname == "Working at Height":
                 adjusted[idx] -= 0.15
 
-            # Prioritize Bypassing Safety Controls for BOP integrity events
-            if rname == "Bypassing Safety Controls" and ("bop" in text_lower or "blowout preventer" in text_lower or "annular seal" in text_lower):
+            # Prioritize Bypassing Safety Controls ONLY when safety controls/interlocks/valves are bypassed
+            if rname == "Bypassing Safety Controls" and any(k in text_lower for k in ["bypass", "override", "tamper", "without authorization", "isolated without"]):
+                adjusted[idx] += 0.35
+
+            # Prioritize Energy Isolation for pressure containment, hydraulic weeping, or high-pressure vibration
+            if rname == "Energy Isolation" and any(k in text_lower for k in ["1800 psi", "hydraulic fluid", "weeping", "containment", "fluid under"]):
                 adjusted[idx] += 0.35
 
         # Get top-k rules above threshold

@@ -9,6 +9,7 @@ WORKDIR /app
 # Prevent Python from buffering stdout so logs appear in real-time
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV LOW_MEMORY_MODE=true
 
 # Install system dependencies (build tools, curl for healthcheck, ffmpeg for audio)
 RUN apt-get update && apt-get install -y --no-install-recommends \
