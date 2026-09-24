@@ -95,7 +95,7 @@ export default function SettingsPage() {
           const r = await fetch(url, { method: 'POST' });
           if (r.ok) return r;
         } catch {}
-        const direct = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000${url}` : `${API}${url}`;
+        const direct = `${API}${url}`;
         return await fetch(direct, { method: 'POST' });
       };
 

@@ -131,13 +131,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           const r = await fetch(url, { method: 'POST' });
           if (r.ok) return r;
         } catch {}
-        return await fetch(`http://${window.location.hostname}:8000${url}`, { method: 'POST' });
+        return await fetch(`${API_BASE}${url}`, { method: 'POST' });
       };
 
       await postSwitch(`/api/system/ai-switch?mode=${targetAi}`);
       await postSwitch(`/api/system/db-switch?mode=${targetDb}`);
 
-      const res = await fetch(`${API_BASE}/api/system/airgap`).catch(() => fetch(`http://${window.location.hostname}:8000/api/system/airgap`));
+      const res = await fetch(`${API_BASE}/api/system/airgap`);
       if (res && res.ok) {
         const d = await res.json();
         setSystemStatus(d);
@@ -780,7 +780,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* 1-Click Statutory Shift Handover PDF Export Button */}
             <button type="button" suppressHydrationWarning
               onClick={() => {
-                const api = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000';
+                const api = API_BASE;
                 window.open(`${api}/api/pdf/shift-handover`, '_blank');
               }}
               title="1-Click Official Oil India Statutory Shift Handover Briefing (Form OISD-189/DGMS)"
