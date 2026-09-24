@@ -3,6 +3,7 @@ SANKET · AI — Stage 2: SIF Classifier
 Scientific SIF Risk Classification using multilingual embeddings + negation-aware keyword boost.
 """
 
+import re
 import numpy as np
 from sentence_transformers import SentenceTransformer
 from backend.config.settings import settings
@@ -99,10 +100,42 @@ class SIFClassifier:
         max_similarity = float(adjusted_sims[max_idx])
         matched_anchor = anchor_library.anchors[max_idx]
 
+        # Check for low-information communication, generic greetings, or testing strings
+        words = [w for w in re.findall(r'\b[a-zA-Z0-9_\u0980-\u09FF\u0900-\u097F]+\b', text_lower) if len(w) > 1]
+        is_greeting_or_test = bool(re.search(
+            r"\b(hello|hi|hey|good\s+morning|good\s+afternoon|good\s+evening|testing|test\s+report|test\s+123|demo|sample|check\s+123|system\s+test)\b",
+            text_lower
+        ))
+        has_critical_hazard_terms = bool(re.search(
+            r"\b(bop|blowout|h2s|sour\s+gas|33kv|11kv|power\s+line|electrocution|burst|rupture|1800\s*psi|high\s+pressure|unclipped|scaffold\s+fall|suspended\s+load|fire\s+hazard|explosion|zui|aag|phat|leaking|leak)\b",
+            text_lower
+        ))
+        if (len(words) < 4 or is_greeting_or_test) and not has_critical_hazard_terms:
+            return {
+                "sif_score": 0.05,
+                "sif_label": "LOW",
+                "is_sif_precursor": False,
+                "matched_anchor_id": "SAFE-001",
+                "matched_anchor_text": "Non-hazardous communication, greeting, or test input without industrial precursors",
+                "matched_anchor_similarity": 0.05,
+                "keyword_boost_applied": False,
+                "boosted_keywords": [],
+                "low_severity_penalty_applied": False,
+                "consensus_confidence": 0.99,
+                "guardrail_status": "NORMAL_OPERATIONS",
+                "audit_notes": "Generic greeting or low-information observation verified without active barrier failures",
+            }
+
         # Check for explicitly safe / routine / non-hazardous observations
-        import re
         safe_regex = re.compile(
-            r"\b(all\s+good|all\s+safe|all\s+ok|everything\s+ok|everything\s+fine|routine\s+check|routine\s+inspection|routine\s+cleaning|no\s+hazard|no\s+issue|no\s+leak|no\s+danger|normal\s+shift|shift\s+handover|handover\s+complete|toolbox\s+meeting|tested\s+normal|tested\s+ok|ppe\s+compliance|sab\s+theek|bhal\s+aase|housekeeping\s+ok|normal\s+operation)\b",
+            r"\b(all\s+good|all\s+safe|all\s+ok|everything\s+ok|everything\s+fine|routine\s+check|"
+            r"routine\s+inspection|routine\s+cleaning|routine\s+maintenance|routine\s+shift|"
+            r"no\s+hazard|no\s+issue|no\s+leak|no\s+danger|normal\s+shift|shift\s+handover|"
+            r"handover\s+complete|toolbox\s+meeting|pre-job\s+toolbox|tested\s+normal|tested\s+ok|"
+            r"ppe\s+compliance|compliance\s+verified|in\s+green\s+zone|tags\s+updated|tags\s+in\s+green|"
+            r"fire\s+extinguisher(s)?\s+(checked|inspected|updated|in\s+green|ok)|"
+            r"eyewash\s+(station\s+)?(checked|inspected|working|functional)|"
+            r"sab\s+theek|sab\s+safe|bhal\s+aase|thike\s+ase|konu\s+leak\s+nai|housekeeping\s+ok|normal\s+operation)\b",
             re.IGNORECASE
         )
         is_explicit_routine_shift = bool(re.search(r"\b(shift\s+handover\s+complete|pre-job\s+toolbox|tested\s+normal|all\s+clear|zero\s+hazard)\b", text_lower))
@@ -128,9 +161,18 @@ class SIFClassifier:
                 "audit_notes": "Routine shift handover & toolbox compliance verified with zero barrier impairment",
             }
 
-        # Low-severity discriminator for non-SIF conditions (housekeeping, office, water bottle, etc.)
+        # Low-severity discriminator for non-SIF conditions (housekeeping, office, water bottle, facilities, visitor items)
         low_severity_regex = re.compile(
-            r"\b(housekeeping|cleaning|trash|garbage|broom|tidy|sweep|waste\s+bin|water\s+bottle|drinking\s+water|mosquito\s+net|canteen|lunch|cup|paper|office\s+building|sign\s*board\s+faded|faded\s+sign|first\s*aid|minor\s+cut|minor\s+scratch|finger\s+scratch|band-?aid|ointment)\b",
+            r"\b(housekeeping|cleaning|trash|garbage|broom|tidy|sweep|waste\s*bin|dust|"
+            r"water\s*bottle|drinking\s*water|mosquito\s*net|sleeping\s*quarters|bunk\s*bed|"
+            r"canteen|lunch|pantry|mess|kitchen|cup|paper|printer|photocopier|stationery|"
+            r"office(\s+building|\s+area|\s+desk|\s+computer|\s+monitor|\s+room)?|computer|monitor|laptop|mouse|keyboard|"
+            r"restroom|toilet|washroom|soap|dispenser|handwash|towel|mirror|"
+            r"sign\s*board|faded\s*sign|peeling\s*off|poster|notice\s*board|bulletin|"
+            r"visitor(\s+badge|\s+parking|\s+gate)?|lanyard|parking\s*lot|traffic\s*cone|warning\s*cone|"
+            r"chin\s*strap|helmet\s+chin\s+strap|equipment\s*store|tool\s*crib|"
+            r"first\s*aid|minor\s+cut|minor\s+scratch|finger\s+scratch|band-?aid|ointment|small\s+bandage|"
+            r"light\s*bulb\s+fused|fused\s+bulb|tube\s*light|ac\s+remote|fan\s+remote|door\s+handle|curtain)\b",
             re.IGNORECASE
         )
         is_low_severity = bool(low_severity_regex.search(text))
@@ -142,16 +184,22 @@ class SIFClassifier:
         calibrated_similarity = (max_similarity - 0.70) / 0.25 if max_similarity > 0.70 else 0.10
         calibrated_similarity = float(np.clip(calibrated_similarity, 0.0, 1.0))
 
-        if (is_low_severity or anchor_level == "LOW") and not boosted_keywords:
+        if anchor_level == "LOW" or is_low_severity:
             # Low-severity non-SIF observation anchored in LOW risk tier
-            raw_score = 0.15 + (calibrated_similarity * 0.18)
+            raw_score = 0.12 + (calibrated_similarity * 0.18)
             low_severity_penalty_applied = True
         elif anchor_level == "MEDIUM":
-            # Medium precursor observation
-            raw_score = 0.52 + (calibrated_similarity * 0.18) + keyword_boost
+            # Medium precursor observation: active only with strong match or explicit keywords
+            if max_similarity >= 0.70 or boosted_keywords:
+                raw_score = 0.52 + (calibrated_similarity * 0.18) + keyword_boost
+            else:
+                raw_score = 0.20 + (max_similarity * 0.25)
         else:
             # High precursor observation (SIF-001 to SIF-025)
-            raw_score = (calibrated_similarity * 0.7) + (max_similarity * 0.3) + keyword_boost
+            if max_similarity >= 0.68 or boosted_keywords:
+                raw_score = (calibrated_similarity * 0.7) + (max_similarity * 0.3) + keyword_boost
+            else:
+                raw_score = 0.22 + (max_similarity * 0.25)
 
         final_score = float(np.clip(raw_score, 0.0, 1.0))
 

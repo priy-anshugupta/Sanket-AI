@@ -87,7 +87,7 @@ class SafetyGuardrailEngine:
             "final_sif_score": round(final_score, 4),
             "final_sif_label": final_label,
             "consensus_confidence": round(float(confidence), 2),
-            "is_sif_precursor": final_label in ("HIGH", "MEDIUM"),
+            "is_sif_precursor": final_label == "HIGH" or final_score >= 0.75,
             "physical_override_applied": override_applied,
             "guardrail_status": guardrail_status,
             "matched_physical_categories": physics["matched_categories"],

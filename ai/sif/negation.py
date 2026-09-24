@@ -104,13 +104,25 @@ class NegationParser:
         results = []
 
         for keyword in keywords:
-            found = keyword.lower() in text_lower
+            kw_low = keyword.lower()
+            found = kw_low in text_lower
             negated = self.is_negated(text, keyword) if found else False
+
+            # Check if keyword is part of benign safety equipment or routine context (e.g. fire extinguisher)
+            is_benign_compound = False
+            if found:
+                if kw_low == "fire" and re.search(r"\bfire\s+(extinguisher|extinguishers|blanket|drill|alarm\s+test|hose\s*box|hydrant|warden)\b", text_lower):
+                    is_benign_compound = True
+                elif kw_low == "leak" and re.search(r"\b(bottle|canteen|drinking\s+water|water\s+cooler|pen|ink)\s+(leak|leaking)\b", text_lower):
+                    is_benign_compound = True
+                elif kw_low in ("cut", "crush") and re.search(r"\b(minor\s+cut|paper\s+cut|small\s+cut|finger\s+scratch|first\s*aid)\b", text_lower):
+                    is_benign_compound = True
+
             results.append({
                 "keyword": keyword,
                 "found": found,
-                "negated": negated,
-                "should_boost": found and not negated,
+                "negated": negated or is_benign_compound,
+                "should_boost": found and not negated and not is_benign_compound,
             })
 
         return results
