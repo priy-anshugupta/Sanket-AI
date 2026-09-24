@@ -1,7 +1,7 @@
 // SANKET · AI — API Client
 // Typed REST client for all backend endpoints
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import { getApiBase } from './config';
+const API_BASE = getApiBase();
 
 import type {
   Report, ReportListResponse, AnalyticsSummary,

@@ -31,13 +31,10 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
+import { getApiBase, getWsBase } from '@/lib/config';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL
-  ? process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
-  : (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:8000` : 'http://localhost:8000');
-const WS_BASE = process.env.NEXT_PUBLIC_WS_URL
-  ? process.env.NEXT_PUBLIC_WS_URL.replace(/\/+$/, '')
-  : (typeof window !== 'undefined' ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.hostname}:8000/ws/alerts` : 'ws://localhost:8000/ws/alerts');
+const API_BASE = getApiBase();
+const WS_BASE = getWsBase();
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Triage Queue', icon: ClipboardList, shortcut: 'Alt+1', fnKey: 'F9' },
@@ -126,6 +123,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       const targetAi = isCurrentlyOnline ? 'airgapped' : 'online';
       const targetDb = isCurrentlyOnline ? 'sqlite' : 'supabase';
 
+      setSystemStatus((prev: any) => prev ? {
+        ...prev,
+        is_airgapped: targetAi === 'airgapped',
+        mode: targetAi,
+        zero_egress: targetAi === 'airgapped',
+        status_badge: targetAi === 'airgapped' ? '0 KB/s OUT · AIR-GAPPED' : '1.4 KB/s · SANITIZED EGRESS'
+      } : { is_airgapped: targetAi === 'airgapped', mode: targetAi });
+
       const postSwitch = async (url: string) => {
         try {
           const r = await fetch(url, { method: 'POST' });
@@ -137,11 +142,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       await postSwitch(`/api/system/ai-switch?mode=${targetAi}`);
       await postSwitch(`/api/system/db-switch?mode=${targetDb}`);
 
-      const res = await fetch(`${API_BASE}/api/system/airgap`);
-      if (res && res.ok) {
-        const d = await res.json();
-        setSystemStatus(d);
-      }
+      try {
+        const res = await fetch(`${API_BASE}/api/system/airgap`);
+        if (res && res.ok) {
+          const d = await res.json();
+          setSystemStatus(d);
+        }
+      } catch {}
 
       const msg = isCurrentlyOnline
         ? '🔒 Switched to SOVEREIGN AIR-GAP (0 KB/s Out · Local Ollama/SQLite)'

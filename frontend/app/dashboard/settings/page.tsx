@@ -16,10 +16,9 @@ import {
   RefreshCw,
   SlidersHorizontal
 } from 'lucide-react';
+import { getApiBase } from '@/lib/config';
 
-const API = process.env.NEXT_PUBLIC_API_URL
-  ? process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
-  : (typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000');
+const API = getApiBase();
 
 interface AirGapStatus {
   is_airgapped: boolean;
@@ -49,9 +48,9 @@ export default function SettingsPage() {
 
   const fetchSystemStatus = async () => {
     try {
-      let res = await fetch('/api/system/airgap');
+      let res = await fetch(`${API}/api/system/airgap`);
       if (!res.ok) {
-        res = await fetch(`${API}/api/system/airgap`);
+        res = await fetch('/api/system/airgap');
       }
       if (res.ok) {
         const data = await res.json();
@@ -59,7 +58,7 @@ export default function SettingsPage() {
       }
     } catch {
       try {
-        const res = await fetch(`${API}/api/system/airgap`);
+        const res = await fetch('/api/system/airgap');
         if (res.ok) {
           const data = await res.json();
           setAirgap(data);
@@ -90,13 +89,24 @@ export default function SettingsPage() {
       const targetAiMode = isOnline ? 'airgapped' : 'online';
       const targetDbMode = isOnline ? 'sqlite' : 'supabase';
 
+      // Optimistically update UI immediately so button flips with zero lag
+      setAirgap((prev) => prev ? {
+        ...prev,
+        is_airgapped: targetAiMode === 'airgapped',
+        mode: targetAiMode,
+        zero_egress: targetAiMode === 'airgapped',
+        outbound_kbps: targetAiMode === 'airgapped' ? 0.0 : 1.4,
+        outbound_connections: targetAiMode === 'airgapped' ? 0 : 1,
+        status_badge: targetAiMode === 'airgapped' ? '0 KB/s OUT · AIR-GAPPED' : '1.4 KB/s · SANITIZED EGRESS'
+      } : null);
+
       const postSwitch = async (url: string) => {
         try {
-          const r = await fetch(url, { method: 'POST' });
+          const direct = `${API}${url}`;
+          const r = await fetch(direct, { method: 'POST' });
           if (r.ok) return r;
         } catch {}
-        const direct = `${API}${url}`;
-        return await fetch(direct, { method: 'POST' });
+        return await fetch(url, { method: 'POST' });
       };
 
       await postSwitch(`/api/system/ai-switch?mode=${targetAiMode}`);

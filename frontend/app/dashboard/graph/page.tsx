@@ -22,10 +22,9 @@ import {
   Plus,
   Minus
 } from "lucide-react";
+import { getApiBase } from '@/lib/config';
 
-const API = process.env.NEXT_PUBLIC_API_URL
-  ? process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
-  : (typeof window !== "undefined" ? `http://${window.location.hostname}:8000` : "http://localhost:8000");
+const API = getApiBase();
 
 /* ──────── Types ──────── */
 interface GNode {

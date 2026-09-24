@@ -27,6 +27,7 @@ import {
   ArrowRight,
   X
 } from 'lucide-react';
+import { getApiBase } from '@/lib/config';
 
 interface WorkerReport {
   id: string;
@@ -66,14 +67,7 @@ export default function FieldWorkerTerminal() {
 
   // ── Ultra-Robust API Resolution (works on Vercel, phone, laptop, any IP, localhost) ──
   const getApiUrl = useCallback((path: string) => {
-    if (process.env.NEXT_PUBLIC_API_URL) {
-      const base = process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '');
-      return `${base}${path.startsWith('/') ? path : `/${path}`}`;
-    }
-    if (typeof window !== 'undefined' && window.location?.hostname) {
-      return `http://${window.location.hostname}:8000${path}`;
-    }
-    return `http://localhost:8000${path}`;
+    return getApiBase(path);
   }, []);
 
   // Universal fetch with automatic fallback (Same-Origin Next.js Rewrite Port 3000 -> Direct Port 8000)

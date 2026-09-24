@@ -6,6 +6,9 @@
  * 3. Localhost workstation development
  */
 
+export const RENDER_BACKEND_URL = 'https://sanket-ai-13ld.onrender.com';
+export const RENDER_WS_URL = 'wss://sanket-ai-13ld.onrender.com/ws/alerts';
+
 export const getApiBase = (path: string = ''): string => {
   // If explicitly configured in environment variables (Vercel / Production)
   if (process.env.NEXT_PUBLIC_API_URL) {
@@ -28,12 +31,14 @@ export const getApiBase = (path: string = ''): string => {
       return path ? `${base}${path.startsWith('/') ? path : `/${path}`}` : base;
     }
 
-    // On cloud hosting like Vercel without NEXT_PUBLIC_API_URL, use relative route to leverage Next rewrites
-    return path ? (path.startsWith('/') ? path : `/${path}`) : '';
+    // On cloud hosting like Vercel without NEXT_PUBLIC_API_URL, direct to Render backend
+    return path ? `${RENDER_BACKEND_URL}${path.startsWith('/') ? path : `/${path}`}` : RENDER_BACKEND_URL;
   }
 
-  return path ? `http://localhost:8000${path.startsWith('/') ? path : `/${path}`}` : 'http://localhost:8000';
+  return path ? `${RENDER_BACKEND_URL}${path.startsWith('/') ? path : `/${path}`}` : RENDER_BACKEND_URL;
 };
+
+export const API_BASE = getApiBase();
 
 export const getWsBase = (): string => {
   if (process.env.NEXT_PUBLIC_WS_URL) {
@@ -60,9 +65,10 @@ export const getWsBase = (): string => {
       return `ws://${hostname}:8000/ws/alerts`;
     }
 
-    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    return `${proto}//${window.location.host}/ws/alerts`;
+    return RENDER_WS_URL;
   }
 
-  return 'ws://localhost:8000/ws/alerts';
+  return RENDER_WS_URL;
 };
+
+export const WS_BASE = getWsBase();

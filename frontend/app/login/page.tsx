@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Shield, Lock, User, ArrowLeft, ArrowRight, Sparkles, HardHat } from 'lucide-react';
+import { getApiBase } from '@/lib/config';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -47,9 +48,7 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const loginUrl = process.env.NEXT_PUBLIC_API_URL
-        ? `${process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')}/api/auth/login`
-        : (typeof window !== 'undefined' ? `http://${window.location.hostname}:8000/api/auth/login` : 'http://localhost:8000/api/auth/login');
+      const loginUrl = getApiBase('/api/auth/login');
 
       const res = await fetch(loginUrl, {
         method: 'POST',
@@ -72,7 +71,7 @@ export default function LoginPage() {
         router.push('/dashboard');
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Login failed. Is backend running on localhost:8000?');
+      setError(err instanceof Error ? err.message : 'Login failed. Please verify credentials or backend connection.');
     } finally {
       setIsLoggingIn(false);
     }
@@ -93,9 +92,7 @@ export default function LoginPage() {
     const destination = targetPath || defaultPath;
 
     try {
-      const loginUrl = process.env.NEXT_PUBLIC_API_URL
-        ? `${process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')}/api/auth/login`
-        : (typeof window !== 'undefined' ? `http://${window.location.hostname}:8000/api/auth/login` : 'http://localhost:8000/api/auth/login');
+      const loginUrl = getApiBase('/api/auth/login');
 
       const res = await fetch(loginUrl, {
         method: 'POST',

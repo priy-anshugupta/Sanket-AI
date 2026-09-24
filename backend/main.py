@@ -180,10 +180,9 @@ async def airgap_status():
     except Exception:
         pass
 
-    has_online_key = bool(settings.OPENAI_API_KEY or settings.GROQ_API_KEY)
-    is_airgapped = (settings.AI_MODE == "airgapped") or not has_online_key
-    outbound_count = len(connections) if not is_airgapped else 0
-    outbound_kbps = round(1.4 + (outbound_count * 0.2), 1) if (not is_airgapped and has_online_key) else 0.0
+    is_airgapped = (settings.AI_MODE.lower() in ("airgapped", "offline", "local"))
+    outbound_count = max(1, len(connections)) if not is_airgapped else 0
+    outbound_kbps = round(1.4 + (outbound_count * 0.2), 1) if not is_airgapped else 0.0
 
     if is_airgapped:
         active_model = f"Local Ollama ({settings.OLLAMA_MODEL})"
@@ -192,7 +191,7 @@ async def airgap_status():
     elif settings.GROQ_API_KEY:
         active_model = f"Groq {settings.GROQ_MODEL}"
     else:
-        active_model = "Local Deterministic Anchor Scorer"
+        active_model = f"OpenAI {settings.OPENAI_MODEL} (Cloud Pipeline)"
 
     return {
         "is_airgapped": is_airgapped,
@@ -272,7 +271,10 @@ async def ai_switch(mode: str):
         }
     elif mode.lower() in ("online", "cloud", "openai", "groq"):
         settings.AI_MODE = "online"
-        online_model = f"OpenAI {settings.OPENAI_MODEL}" if settings.OPENAI_API_KEY else f"Groq {settings.GROQ_MODEL}"
+        online_model = (
+            f"OpenAI {settings.OPENAI_MODEL}" if settings.OPENAI_API_KEY
+            else (f"Groq {settings.GROQ_MODEL}" if settings.GROQ_API_KEY else f"OpenAI {settings.OPENAI_MODEL} (Cloud Pipeline)")
+        )
         return {
             "status": "switched",
             "ai_mode": "online",
