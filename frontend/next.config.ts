@@ -31,7 +31,7 @@ const nextConfig: NextConfig = {
     "*"
   ],
   async rewrites() {
-    const backendUrl = (process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '');
+    const backendUrl = (process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'https://sanket-ai-13ld.onrender.com').replace(/\/+$/, '');
     return [
       {
         source: '/api/:path*',
