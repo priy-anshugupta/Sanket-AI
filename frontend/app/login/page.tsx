@@ -213,7 +213,7 @@ export default function LoginPage() {
 
           {/* ── PORTAL 1: SAFETY MANAGER LOGIN ── */}
           {activeTab === 'manager' && (
-            <div className="space-y-5" suppressHydrationWarning>
+            <div className="space-y-4" suppressHydrationWarning>
               {isMobileDevice && !demoBypass ? (
                 <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-center space-y-3">
                   <div className="w-10 h-10 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
@@ -248,95 +248,182 @@ export default function LoginPage() {
                   </button>
                 </div>
               ) : (
-                <form onSubmit={handleManagerLogin} className="space-y-3.5" suppressHydrationWarning>
-                  <div>
-                    <label className="block text-[11px] font-medium uppercase text-[#8BA4A7] mb-1">Username / Employee ID</label>
-                    <div className="relative">
-                      <User className="w-4 h-4 absolute left-3 top-3 text-[#5E7072]" />
-                      <input
-                        type="text"
-                        suppressHydrationWarning
-                        placeholder="e.g. rajesh.kumar"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        className="w-full pl-9 pr-3.5 py-2.5 rounded-lg bg-[#1D3234] border border-[#264245] text-[#F7F8F5] placeholder-[#5E7072] focus:outline-none focus:ring-1 focus:ring-[#0A6B63] focus:border-[#0A6B63] transition-all text-xs"
-                        required
-                      />
+                <>
+                  {/* Demo 1-Click Quick Access Pills for Evaluators — AT THE TOP */}
+                  <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1.5 tracking-wide uppercase">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                        Evaluator 1-Click Quick Access
+                      </span>
+                      <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-amber-400/10 text-amber-300 border border-amber-400/20">
+                        No Password Needed
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <button type="button" suppressHydrationWarning
+                        onClick={() => quickLogin('rajesh', 'rajesh123', '/dashboard')}
+                        className="p-2.5 rounded-lg border border-[#264245] bg-[#1D3234] hover:bg-[#233D3F] hover:border-[#0A6B63] text-left transition-all cursor-pointer group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-white group-hover:text-emerald-300 transition-colors">Rajesh Kumar</span>
+                          <ArrowRight className="w-3 h-3 text-[#8BA4A7] group-hover:text-emerald-400 group-hover:translate-x-0.5 transition-all" />
+                        </div>
+                        <div className="text-[10px] text-[#8BA4A7] font-mono mt-0.5">HSE GM (HQ Duliajan)</div>
+                        <div className="text-[10px] font-mono text-emerald-400/90 mt-1.5 pt-1.5 border-t border-white/5 flex items-center gap-1">
+                          <span className="text-[#8BA4A7]">Creds:</span> rajesh / rajesh123
+                        </div>
+                      </button>
+
+                      <button type="button" suppressHydrationWarning
+                        onClick={() => quickLogin('priya', 'priya123', '/dashboard')}
+                        className="p-2.5 rounded-lg border border-[#264245] bg-[#1D3234] hover:bg-[#233D3F] hover:border-[#0A6B63] text-left transition-all cursor-pointer group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-white group-hover:text-emerald-300 transition-colors">Priya Singh</span>
+                          <ArrowRight className="w-3 h-3 text-[#8BA4A7] group-hover:text-emerald-400 group-hover:translate-x-0.5 transition-all" />
+                        </div>
+                        <div className="text-[10px] text-[#8BA4A7] font-mono mt-0.5">Site Safety Officer</div>
+                        <div className="text-[10px] font-mono text-emerald-400/90 mt-1.5 pt-1.5 border-t border-white/5 flex items-center gap-1">
+                          <span className="text-[#8BA4A7]">Creds:</span> priya / priya123
+                        </div>
+                      </button>
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-[11px] font-medium uppercase text-[#8BA4A7] mb-1">Password</label>
-                    <div className="relative">
-                      <Lock className="w-4 h-4 absolute left-3 top-3 text-[#5E7072]" />
-                      <input
-                        type="password"
-                        suppressHydrationWarning
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full pl-9 pr-3.5 py-2.5 rounded-lg bg-[#1D3234] border border-[#264245] text-[#F7F8F5] placeholder-[#5E7072] focus:outline-none focus:ring-1 focus:ring-[#0A6B63] focus:border-[#0A6B63] transition-all text-xs"
-                        required
-                      />
-                    </div>
+                  {/* Subtle Divider */}
+                  <div className="relative flex py-1 items-center">
+                    <div className="flex-grow border-t border-[#264245]"></div>
+                    <span className="flex-shrink mx-3 text-[10px] font-mono uppercase tracking-wider text-[#5E7072]">
+                      Or Manual Credentials
+                    </span>
+                    <div className="flex-grow border-t border-[#264245]"></div>
                   </div>
 
-                  {error && (
-                    <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-mono">
-                      {error}
+                  {/* Manual Form */}
+                  <form onSubmit={handleManagerLogin} className="space-y-3" suppressHydrationWarning>
+                    <div>
+                      <label className="block text-[11px] font-medium uppercase text-[#8BA4A7] mb-1">
+                        Username / Employee ID <span className="text-[10px] font-mono text-[#5E7072]">(e.g. rajesh)</span>
+                      </label>
+                      <div className="relative">
+                        <User className="w-4 h-4 absolute left-3 top-3 text-[#5E7072]" />
+                        <input
+                          type="text"
+                          suppressHydrationWarning
+                          placeholder="e.g. rajesh"
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          className="w-full pl-9 pr-3.5 py-2.5 rounded-lg bg-[#1D3234] border border-[#264245] text-[#F7F8F5] placeholder-[#5E7072] focus:outline-none focus:ring-1 focus:ring-[#0A6B63] focus:border-[#0A6B63] transition-all text-xs"
+                          required
+                        />
+                      </div>
                     </div>
-                  )}
 
-                  <button
-                    type="submit"
-                    disabled={isLoggingIn}
-                    suppressHydrationWarning
-                    className="w-full py-2.5 bg-[#0A6B63] hover:bg-[#085B54] text-white font-semibold text-xs tracking-wider uppercase rounded-lg transition-all shadow-xs disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    {isLoggingIn ? 'Authenticating...' : 'Sign In to Command Center'}
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </form>
+                    <div>
+                      <label className="block text-[11px] font-medium uppercase text-[#8BA4A7] mb-1">
+                        Password <span className="text-[10px] font-mono text-[#5E7072]">(e.g. rajesh123)</span>
+                      </label>
+                      <div className="relative">
+                        <Lock className="w-4 h-4 absolute left-3 top-3 text-[#5E7072]" />
+                        <input
+                          type="password"
+                          suppressHydrationWarning
+                          placeholder="e.g. rajesh123"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="w-full pl-9 pr-3.5 py-2.5 rounded-lg bg-[#1D3234] border border-[#264245] text-[#F7F8F5] placeholder-[#5E7072] focus:outline-none focus:ring-1 focus:ring-[#0A6B63] focus:border-[#0A6B63] transition-all text-xs"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {error && (
+                      <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-mono">
+                        {error}
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={isLoggingIn}
+                      suppressHydrationWarning
+                      className="w-full py-2.5 bg-[#0A6B63] hover:bg-[#085B54] text-white font-semibold text-xs tracking-wider uppercase rounded-lg transition-all shadow-xs disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      {isLoggingIn ? 'Authenticating...' : 'Sign In to Command Center'}
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </form>
+                </>
               )}
-
-              {/* Demo 1-Click Quick Access Pills for Evaluators */}
-              <div className="pt-4 border-t border-[#264245]">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-medium text-[#8BA4A7] flex items-center gap-1.5">
-                    <Sparkles className="w-3 h-3 text-amber-400" />
-                    Evaluator 1-Click Quick Access:
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <button type="button" suppressHydrationWarning
-                    onClick={() => quickLogin('rajesh', 'rajesh123', '/dashboard')}
-                    className="p-2.5 rounded-lg border border-[#264245] bg-[#1D3234] hover:bg-[#233D3F] hover:border-[#0A6B63] text-left transition-all cursor-pointer"
-                  >
-                    <div className="text-xs font-semibold text-white">Rajesh Kumar</div>
-                    <div className="text-[10px] text-[#8BA4A7] font-mono mt-0.5">HSE GM (HQ Duliajan)</div>
-                  </button>
-
-                  <button type="button" suppressHydrationWarning
-                    onClick={() => quickLogin('priya', 'priya123', '/dashboard')}
-                    className="p-2.5 rounded-lg border border-[#264245] bg-[#1D3234] hover:bg-[#233D3F] hover:border-[#0A6B63] text-left transition-all cursor-pointer"
-                  >
-                    <div className="text-xs font-semibold text-white">Priya Singh</div>
-                    <div className="text-[10px] text-[#8BA4A7] font-mono mt-0.5">Site Safety Officer</div>
-                  </button>
-                </div>
-              </div>
             </div>
           )}
 
           {/* ── PORTAL 2: FIELD WORKER QUICK-ACCESS ── */}
           {activeTab === 'worker' && (
-            <div className="space-y-5">
+            <div className="space-y-4">
               <div className="p-3 rounded-lg bg-[#FEF7EC]/10 border border-[#F8DFB6]/20 text-[#F8DFB6] text-xs leading-relaxed">
                 <strong>ATEX Zone 1/2 Field Terminal:</strong> Simplified, high-contrast mobile interface for rig floor operators and toolpushers with giant PTT voice logging.
               </div>
 
+              {/* 1-Click Crew Profiles — AT THE TOP */}
+              <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1.5 tracking-wide uppercase">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                    Evaluator 1-Click Crew Launch
+                  </span>
+                  <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-amber-400/10 text-amber-300 border border-amber-400/20">
+                    Auto-Launch
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button type="button" suppressHydrationWarning
+                    onClick={() => quickLogin('bikash', 'bikash123', '/worker')}
+                    className="p-2.5 rounded-lg border border-[#264245] bg-[#1D3234] hover:bg-[#233D3F] hover:border-[#1B8A6C] text-left transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-white group-hover:text-emerald-300 transition-colors">Bikash Das</span>
+                      <ArrowRight className="w-3 h-3 text-[#8BA4A7] group-hover:text-emerald-400 group-hover:translate-x-0.5 transition-all" />
+                    </div>
+                    <div className="text-[10px] text-[#8BA4A7] font-mono mt-0.5">Rig Floor Operator (Well Pad 7)</div>
+                    <div className="text-[10px] font-mono text-emerald-400/90 mt-1.5 pt-1.5 border-t border-white/5 flex items-center gap-1">
+                      <span className="text-[#8BA4A7]">Badge / Creds:</span> 4491 / bikash
+                    </div>
+                  </button>
+
+                  <button type="button" suppressHydrationWarning
+                    onClick={() => quickLogin('horen', 'horen123', '/worker')}
+                    className="p-2.5 rounded-lg border border-[#264245] bg-[#1D3234] hover:bg-[#233D3F] hover:border-[#1B8A6C] text-left transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-white group-hover:text-emerald-300 transition-colors">Horen Gogoi</span>
+                      <ArrowRight className="w-3 h-3 text-[#8BA4A7] group-hover:text-emerald-400 group-hover:translate-x-0.5 transition-all" />
+                    </div>
+                    <div className="text-[10px] text-[#8BA4A7] font-mono mt-0.5">Drilling Toolpusher (Rig #4)</div>
+                    <div className="text-[10px] font-mono text-emerald-400/90 mt-1.5 pt-1.5 border-t border-white/5 flex items-center gap-1">
+                      <span className="text-[#8BA4A7]">Badge / Creds:</span> 4491 / horen
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Subtle Divider */}
+              <div className="relative flex py-1 items-center">
+                <div className="flex-grow border-t border-[#264245]"></div>
+                <span className="flex-shrink mx-3 text-[10px] font-mono uppercase tracking-wider text-[#5E7072]">
+                  Or Enter 4-Digit Badge ID
+                </span>
+                <div className="flex-grow border-t border-[#264245]"></div>
+              </div>
+
+              {/* Manual Badge ID */}
               <div>
-                <label className="block text-[11px] font-medium uppercase text-[#8BA4A7] mb-1">Enter 4-Digit Rig Badge ID</label>
+                <label className="block text-[11px] font-medium uppercase text-[#8BA4A7] mb-1">
+                  Enter 4-Digit Rig Badge ID <span className="text-[10px] font-mono text-[#5E7072]">(default: 4491)</span>
+                </label>
                 <input suppressHydrationWarning
                   type="text"
                   maxLength={4}
@@ -354,30 +441,6 @@ export default function LoginPage() {
                 <HardHat className="w-4 h-4" />
                 Open Rugged Field Terminal (/worker)
               </button>
-
-              <div className="pt-4 border-t border-[#264245]">
-                <div className="text-[11px] font-medium text-[#8BA4A7] mb-2 flex items-center gap-1.5">
-                  <Sparkles className="w-3 h-3 text-amber-400" />
-                  Select Field Crew Profile:
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <button type="button" suppressHydrationWarning
-                    onClick={() => quickLogin('bikash', 'bikash123', '/worker')}
-                    className="p-2.5 rounded-lg border border-[#264245] bg-[#1D3234] hover:bg-[#233D3F] hover:border-[#1B8A6C] text-left transition-all cursor-pointer"
-                  >
-                    <div className="text-xs font-semibold text-white">Bikash Das</div>
-                    <div className="text-[10px] text-[#8BA4A7] font-mono mt-0.5">Rig Floor Operator (Well Pad 7)</div>
-                  </button>
-
-                  <button type="button" suppressHydrationWarning
-                    onClick={() => quickLogin('horen', 'horen123', '/worker')}
-                    className="p-2.5 rounded-lg border border-[#264245] bg-[#1D3234] hover:bg-[#233D3F] hover:border-[#1B8A6C] text-left transition-all cursor-pointer"
-                  >
-                    <div className="text-xs font-semibold text-white">Horen Gogoi</div>
-                    <div className="text-[10px] text-[#8BA4A7] font-mono mt-0.5">Drilling Toolpusher (Rig #4)</div>
-                  </button>
-                </div>
-              </div>
 
             </div>
           )}
