@@ -254,7 +254,7 @@ export default function LoginPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1.5 tracking-wide uppercase">
                         <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-                        Evaluator 1-Click Quick Access
+                        1-Click Quick Access
                       </span>
                       <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-amber-400/10 text-amber-300 border border-amber-400/20">
                         No Password Needed
@@ -372,7 +372,7 @@ export default function LoginPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1.5 tracking-wide uppercase">
                     <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-                    Evaluator 1-Click Crew Launch
+                    1-Click Crew Launch
                   </span>
                   <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-amber-400/10 text-amber-300 border border-amber-400/20">
                     Auto-Launch
