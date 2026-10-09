@@ -1,4 +1,5 @@
 "use client";
+import { useLiveTask } from "@/lib/use-live-task";
 
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
@@ -343,12 +344,13 @@ function EmergencyCommandContent() {
       stopSiren();
     };
   }, []);
-  useEffect(() => {
-    const fetchLatest = async () => {
+  useLiveTask(async signal => {
+
       try {
-        const res = await fetch(`${API_BASE}/api/reports?limit=15&sort_by=latest`);
+        const res = await fetch(`${API_BASE}/api/reports?limit=15&sort_by=latest`, { signal });
         if (res.ok) {
           const data = await res.json();
+          if (signal.aborted) return;
           const reports: any[] = data.reports || [];
           const matched = reports.find(r => 
             r.location && r.location.toLowerCase().includes(selectedLocation.split(" ")[0].toLowerCase())
@@ -369,12 +371,7 @@ function EmergencyCommandContent() {
       } catch {
         // Fallback
       }
-    };
-
-    fetchLatest();
-    const interval = setInterval(fetchLatest, 3000);
-    return () => clearInterval(interval);
-  }, [selectedLocation]);
+  }, [selectedLocation], { events: true });
 
   const activeThreat = LOCATION_THREATS[selectedLocation] || LOCATION_THREATS["Baghjan Well #5"];
   const currentChecklist = checklistsState[selectedLocation] || activeThreat.checklist;

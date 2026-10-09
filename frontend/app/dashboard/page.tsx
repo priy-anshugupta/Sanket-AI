@@ -1,4 +1,5 @@
 'use client';
+import { useLiveTask } from '@/lib/use-live-task';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -69,19 +70,19 @@ export default function TriageDashboard() {
   const [showSwarmModal, setShowSwarmModal] = useState(false);
   const [selectedReportForTrace, setSelectedReportForTrace] = useState<{ text: string; id?: string } | null>(null);
 
-  const fetchSummary = async () => {
+  const fetchSummary = async (signal?: AbortSignal) => {
     try {
-      const res = await fetch(`${API_BASE}/api/analytics/summary`);
+      const res = await fetch(`${API_BASE}/api/analytics/summary`, { signal });
       if (res.ok) {
         const data = await res.json();
-        setSummary(data);
+        if (!signal?.aborted) setSummary(data);
       }
     } catch {
       // Fallback
     }
   };
 
-  const fetchReports = async (silent = false) => {
+  const fetchReports = async (silent = false, signal?: AbortSignal) => {
     if (!silent) setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -91,39 +92,24 @@ export default function TriageDashboard() {
       if (filter) params.append('sif_label', filter);
       if (search) params.append('search', search);
 
-      const res = await fetch(`${API_BASE}/api/reports?${params.toString()}`);
+      const res = await fetch(`${API_BASE}/api/reports?${params.toString()}`, { signal });
       if (res.ok) {
         const data = await res.json();
+        if (signal?.aborted) return;
         setReports(data.reports || []);
         setTotal(data.total || 0);
       }
     } catch {
       // Offline fallback
     } finally {
-      if (!silent) setLoading(false);
+      if (!silent && !signal?.aborted) setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchSummary();
-    fetchReports(false); // Show loading spinner only on initial mount or filter change
-
-    const handleLiveReport = (e: any) => {
-      fetchSummary();
-      fetchReports(true); // Silent update on live event
-    };
-
-    window.addEventListener('sanket:new_report', handleLiveReport);
-    const interval = setInterval(() => {
-      fetchSummary();
-      fetchReports(true); // Silent background polling without flickering spinner
-    }, 4000);
-
-    return () => {
-      window.removeEventListener('sanket:new_report', handleLiveReport);
-      clearInterval(interval);
-    };
-  }, [page, pageSize, filter, search]);
+  useLiveTask(async signal => {
+    await fetchSummary(signal);
+    if (!signal.aborted) await fetchReports(false, signal);
+  }, [page, pageSize, filter, search], { events: true });
 
   // Handle single manual ingestion
   const handleSingleIngest = async (e: React.FormEvent) => {

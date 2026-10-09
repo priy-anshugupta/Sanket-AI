@@ -1,4 +1,5 @@
 'use client';
+import { useLiveTask } from '@/lib/use-live-task';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
@@ -104,27 +105,23 @@ export default function FieldWorkerTerminal() {
   // Poll system air-gap status
   const [airgapStatus, setAirgapStatus] = useState<{ is_airgapped: boolean; outbound_kbps?: number } | null>(null);
 
-  useEffect(() => {
-    const fetchAirgap = async () => {
-      try {
-        const res = await universalFetch('/api/system/airgap');
-        if (res && res.ok) {
-          const d = await res.json();
-          setAirgapStatus(d);
-        }
-      } catch {}
-    };
-    fetchAirgap();
-    const interval = setInterval(fetchAirgap, 5000);
-    return () => clearInterval(interval);
-  }, [universalFetch]);
+  useLiveTask(async signal => {
+    try {
+      const res = await fetch(getApiUrl('/api/system/airgap'), { signal });
+      if (res.ok) {
+        const data = await res.json();
+        if (!signal.aborted) setAirgapStatus(data);
+      }
+    } catch {}
+  }, [], { once: true, enabled: true });
 
   // Fetch real submitted worker reports from database
-  const fetchWorkerHistory = useCallback(async () => {
+  const fetchWorkerHistory = useCallback(async (signal?: AbortSignal) => {
     try {
-      const res = await universalFetch('/api/reports?limit=12&sort_by=latest');
+      const res = await fetch(getApiUrl('/api/reports?limit=12&sort_by=latest'), { signal });
       if (res && res.ok) {
         const d = await res.json();
+        if (signal?.aborted) return;
         const reps: any[] = d.reports || [];
         if (reps.length > 0) {
           const formatted: WorkerReport[] = reps.map((r: any) => {
@@ -170,16 +167,12 @@ export default function FieldWorkerTerminal() {
     } catch {
       try {
         const cached = localStorage.getItem('sanket_worker_history');
-        if (cached) setSubmittedReports(JSON.parse(cached));
+        if (cached && !signal?.aborted) setSubmittedReports(JSON.parse(cached));
       } catch {}
     }
   }, [universalFetch]);
 
-  useEffect(() => {
-    fetchWorkerHistory();
-    const interval = setInterval(fetchWorkerHistory, 4000);
-    return () => clearInterval(interval);
-  }, [fetchWorkerHistory]);
+  useLiveTask(signal => fetchWorkerHistory(signal), [], { once: true, enabled: true });
 
   const [lastResult, setLastResult] = useState<{
     sif_score: number;
@@ -198,6 +191,7 @@ export default function FieldWorkerTerminal() {
   const handleLogout = () => {
     localStorage.removeItem('sanket_token');
     localStorage.removeItem('sanket_user');
+    window.dispatchEvent(new Event('sanket:auth'));
     router.push('/login');
   };
 

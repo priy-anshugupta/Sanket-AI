@@ -20,15 +20,15 @@ class ApiClient {
     this.token = token;
     if (typeof window !== 'undefined') {
       localStorage.setItem('sanket_token', token);
+      window.dispatchEvent(new Event('sanket:auth'));
     }
   }
 
   getToken(): string | null {
-    if (this.token) return this.token;
     if (typeof window !== 'undefined') {
       return localStorage.getItem('sanket_token');
     }
-    return null;
+    return this.token;
   }
 
   private async fetch<T>(path: string, options: RequestInit = {}): Promise<T> {

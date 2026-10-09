@@ -1,4 +1,5 @@
 'use client';
+import { useLiveTask } from '@/lib/use-live-task';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { 
@@ -446,23 +447,14 @@ export default function DualHeatmapAndMapPage() {
   const thermalGroupRef = useRef<any>(null);
   const markersGroupRef = useRef<any>(null);
 
-  useEffect(() => {
-    const fetchHeatmap = () => {
-      fetch(`${API}/api/analytics/heatmap`)
-        .then(r => r.json())
-        .then(d => { setData(d); setLoading(false); })
-        .catch(() => setLoading(false));
-    };
-
-    fetchHeatmap();
-    const interval = setInterval(fetchHeatmap, 4000);
-    window.addEventListener('sanket:new_report', fetchHeatmap);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('sanket:new_report', fetchHeatmap);
-    };
-  }, []);
+  useLiveTask(async signal => {
+    try {
+      const response = await fetch(`${API}/api/analytics/heatmap`, { signal });
+      if (!response.ok) throw new Error('Heatmap unavailable');
+      const data = await response.json();
+      if (!signal.aborted) { setData(data); setLoading(false); }
+    } catch { if (!signal.aborted) setLoading(false); }
+  }, [], { events: true });
 
   useEffect(() => {
     if (mapInstanceRef.current) {

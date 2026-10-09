@@ -1,4 +1,5 @@
 'use client';
+import { useLiveTask } from '@/lib/use-live-task';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -31,6 +32,8 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
+import { LIVE_PATHS, startPolling, startSocket } from '@/lib/live-lifecycle';
+import { activityOptions } from '@/lib/use-live-task';
 import { getApiBase, getWsBase } from '@/lib/config';
 
 const API_BASE = getApiBase();
@@ -61,12 +64,16 @@ interface LiveAlert {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const socketHealthy = useRef(false);
+  const liveEnabled = LIVE_PATHS.has(pathname);
   const [currentUser, setCurrentUser] = useState<{ full_name: string; role: string; username: string } | null>(null);
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
   
   // Real-time live alert & sound state
+  const soundRef = useRef(true);
   const [activeAlert, setActiveAlert] = useState<LiveAlert | null>(null);
   const [alertSoundEnabled, setAlertSoundEnabled] = useState<boolean>(true);
+  useEffect(() => { soundRef.current = alertSoundEnabled; }, [alertSoundEnabled]);
   const [notifications, setNotifications] = useState<LiveAlert[]>([
     {
       id: 'REP-DEMO-01',
@@ -199,20 +206,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, []);
 
-  useEffect(() => {
-    const fetchSys = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/api/system/airgap`);
-        if (res.ok) {
-          const d = await res.json();
-          setSystemStatus(d);
-        }
-      } catch {}
-    };
-    fetchSys();
-    const interval = setInterval(fetchSys, 5000);
-    return () => clearInterval(interval);
-  }, []);
+  useLiveTask(async signal => {
+    try {
+      const res = await fetch(`${API_BASE}/api/system/airgap`, { signal });
+      if (res.ok) {
+        const data = await res.json();
+        if (!signal.aborted) setSystemStatus(data);
+      }
+    } catch {}
+  });
 
   // Close notification dropdown when clicking outside
   useEffect(() => {
@@ -312,11 +314,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   };
 
-  // Live WebSocket + Polling listener for instant cross-terminal sync (<200ms)
+  // Live alerts are scoped to visible authenticated live routes; HTTP is a socket fallback.
   useEffect(() => {
-    let ws: WebSocket | null = null;
-    let reconnectTimeout: any = null;
-
     const handleIncomingReport = (report: any) => {
       if (!report || !report.id) return;
       if (report.id === lastSeenIdRef.current) return;
@@ -346,7 +345,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       // Routine safe observations (like 0.18 LOW) are logged in Triage without alarming the operator
       if (isHighSif) {
         setActiveAlert(newAlert);
-        if (alertSoundEnabled) {
+        if (soundRef.current) {
           playChime(880, 1174, 0.35);
         }
       }
@@ -354,33 +353,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       window.dispatchEvent(new CustomEvent('sanket:new_report', { detail: report }));
     };
 
-    const connectWs = () => {
+    const stopSocket = startSocket(WS_BASE, event => {
       try {
-        ws = new WebSocket(WS_BASE);
-        ws.onmessage = (event) => {
-          try {
-            const msg = JSON.parse(event.data);
-            if (msg.type === 'SIF_ALERT' || msg.type === 'NEW_REPORT') {
-              handleIncomingReport(msg.data);
-            }
-          } catch {}
-        };
-        ws.onerror = () => {
-          ws?.close();
-        };
-        ws.onclose = () => {
-          reconnectTimeout = setTimeout(connectWs, 4000);
-        };
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'SIF_ALERT' || msg.type === 'NEW_REPORT') handleIncomingReport(msg.data);
+        if (msg.type === 'REPORT_UPDATE') window.dispatchEvent(new Event('sanket:new_report'));
       } catch {}
-    };
+    }, { ...activityOptions(liveEnabled), status: healthy => { socketHealthy.current = healthy; } });
 
-    connectWs();
-
-    const checkLatestReports = async () => {
+    const checkLatestReports = async (signal: AbortSignal) => {
       try {
-        const res = await fetch(`${API_BASE}/api/reports?limit=1&page=1&sort_by=latest`);
+        const res = await fetch(`${API_BASE}/api/reports?limit=1&page=1&sort_by=latest`, { signal });
         if (!res.ok) return;
         const data = await res.json();
+        if (signal.aborted) return;
         const latest = data.reports?.[0];
 
         if (!latest) return;
@@ -409,22 +395,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
     };
 
-    checkLatestReports();
-    const timer = setInterval(checkLatestReports, 3000);
-
-    return () => {
-      clearInterval(timer);
-      if (reconnectTimeout) clearTimeout(reconnectTimeout);
-      if (ws) {
-        ws.onclose = null;
-        ws.close();
-      }
-    };
-  }, [alertSoundEnabled]);
+    const polling = startPolling(checkLatestReports, {
+      ...activityOptions(liveEnabled), poll: () => !socketHealthy.current,
+    });
+    return () => { polling.stop(); stopSocket(); };
+  }, [liveEnabled, pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem('sanket_token');
     localStorage.removeItem('sanket_user');
+    window.dispatchEvent(new Event('sanket:auth'));
     router.push('/login');
   };
 

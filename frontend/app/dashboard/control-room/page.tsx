@@ -1,4 +1,5 @@
 'use client';
+import { useLiveTask } from '@/lib/use-live-task';
 
 import { useState, useEffect, useRef } from 'react';
 import { 
@@ -56,11 +57,13 @@ export default function ControlRoomPage() {
   }, []);
 
   // Fetch Live Reports from Backend API
-  const fetchLiveReports = async () => {
+  const fetchLiveReports = async (signal?: AbortSignal) => {
+    if (signal?.aborted) return;
     try {
-      const res = await fetch(`${API_BASE}/api/reports?limit=15&sort_by=latest`);
+      const res = await fetch(`${API_BASE}/api/reports?limit=15&sort_by=latest`, { signal });
       if (res.ok) {
         const data = await res.json();
+        if (signal?.aborted) return;
         const reps: any[] = data.reports || [];
         const precursorReps = reps.filter((r: any) => (r.sif_score && r.sif_score >= 0.40) || r.sif_label === 'HIGH' || r.sif_label === 'MEDIUM');
         if (precursorReps.length > 0) {
@@ -77,10 +80,12 @@ export default function ControlRoomPage() {
       }
     } catch {}
 
+    if (signal?.aborted) return;
     try {
-      const sRes = await fetch(`${API_BASE}/api/analytics/summary`);
+      const sRes = await fetch(`${API_BASE}/api/analytics/summary`, { signal });
       if (sRes.ok) {
         const d = await sRes.json();
+        if (signal?.aborted) return;
         if (d.total_reports) {
           setStats({
             total: d.total_reports || 509,
@@ -92,10 +97,12 @@ export default function ControlRoomPage() {
       }
     } catch {}
 
+    if (signal?.aborted) return;
     try {
-      const hRes = await fetch(`${API_BASE}/api/analytics/heatmap`);
+      const hRes = await fetch(`${API_BASE}/api/analytics/heatmap`, { signal });
       if (hRes.ok) {
         const hData = await hRes.json();
+        if (signal?.aborted) return;
         const siteDensities: Record<string, number> = hData.site_densities || {};
         const siteTelemetry: Record<string, any> = hData.site_telemetry || {};
 
@@ -134,15 +141,7 @@ export default function ControlRoomPage() {
     } catch {}
   };
 
-  useEffect(() => {
-    fetchLiveReports();
-    const interval = setInterval(fetchLiveReports, 3000);
-    window.addEventListener('sanket:new_report', fetchLiveReports);
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('sanket:new_report', fetchLiveReports);
-    };
-  }, []);
+  useLiveTask(signal => fetchLiveReports(signal), [], { events: true });
 
   const playAlarmSound = () => {
     try {

@@ -322,9 +322,10 @@ export default function SignalGraphPage() {
   useEffect(() => {
     if (!selectedNode) { setEvidence(null); return; }
     let isCurrent = true;
+    const controller = new AbortController();
     setEvidence(null);
 
-    fetch(`${API}/api/graph/evidence/${encodeURIComponent(selectedNode.id)}`)
+    fetch(`${API}/api/graph/evidence/${encodeURIComponent(selectedNode.id)}`, { signal: controller.signal })
       .then(r => r.json())
       .then(data => {
         if (isCurrent && data && data.node_id === selectedNode.id) {
@@ -337,6 +338,7 @@ export default function SignalGraphPage() {
 
     return () => {
       isCurrent = false;
+      controller.abort();
     };
   }, [selectedNode]);
 

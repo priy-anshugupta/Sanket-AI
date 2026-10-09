@@ -66,8 +66,10 @@ export default function LoginPage() {
       localStorage.setItem('sanket_user', JSON.stringify(data));
       
       if (data.role === 'field_worker') {
+        window.dispatchEvent(new Event('sanket:auth'));
         router.push('/worker');
       } else {
+        window.dispatchEvent(new Event('sanket:auth'));
         router.push('/dashboard');
       }
     } catch (err: unknown) {
@@ -109,6 +111,7 @@ export default function LoginPage() {
         };
         localStorage.setItem('sanket_token', mockUser.token);
         localStorage.setItem('sanket_user', JSON.stringify(mockUser));
+        window.dispatchEvent(new Event('sanket:auth'));
         router.push(destination);
         return;
       }
@@ -116,6 +119,7 @@ export default function LoginPage() {
       const data = await res.json();
       localStorage.setItem('sanket_token', data.token);
       localStorage.setItem('sanket_user', JSON.stringify(data));
+      window.dispatchEvent(new Event('sanket:auth'));
       router.push(destination);
     } catch {
       const mockUser = {
@@ -126,6 +130,7 @@ export default function LoginPage() {
       };
       localStorage.setItem('sanket_token', mockUser.token);
       localStorage.setItem('sanket_user', JSON.stringify(mockUser));
+      window.dispatchEvent(new Event('sanket:auth'));
       router.push(destination);
     } finally {
       setIsLoggingIn(false);

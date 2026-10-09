@@ -1,4 +1,5 @@
 'use client';
+import { useLiveTask } from '@/lib/use-live-task';
 
 import { useState, useEffect } from 'react';
 import { 
@@ -46,34 +47,16 @@ export default function SettingsPage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [switchingMode, setSwitchingMode] = useState(false);
 
-  const fetchSystemStatus = async () => {
+  const fetchSystemStatus = async (signal?: AbortSignal) => {
     try {
-      let res = await fetch(`${API}/api/system/airgap`);
-      if (!res.ok) {
-        res = await fetch('/api/system/airgap');
-      }
+      const res = await fetch(`${API}/api/system/airgap`, { signal });
       if (res.ok) {
         const data = await res.json();
-        setAirgap(data);
+        if (!signal?.aborted) setAirgap(data);
       }
-    } catch {
-      try {
-        const res = await fetch('/api/system/airgap');
-        if (res.ok) {
-          const data = await res.json();
-          setAirgap(data);
-        }
-      } catch {}
-    } finally {
-      setLoading(false);
-    }
+    } catch {} finally { if (!signal?.aborted) setLoading(false); }
   };
-
-  useEffect(() => {
-    fetchSystemStatus();
-    const interval = setInterval(fetchSystemStatus, 4000);
-    return () => clearInterval(interval);
-  }, []);
+  useLiveTask(signal => fetchSystemStatus(signal), [], { once: true, enabled: true });
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
