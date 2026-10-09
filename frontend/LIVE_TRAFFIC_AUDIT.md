@@ -25,7 +25,7 @@ Remaining timers drive local clocks, playback, animation/progress, recording, si
 
 ## Validation
 
-- npm run test: 13 lifecycle tests passed, covering visibility, auth, expiry, route changes, abort/stale response behavior, long cold starts, fallback suppression, retry backoff, pagehide/pageshow, query changes and unmount.
+- npm run test: 16 tests passed, covering visibility, auth, expiry, route changes, abort/stale response behavior, long cold starts, fallback suppression, retry backoff, pagehide/pageshow, query changes, unmount, five-second React rerenders, response-driven state updates and request source labels.
 - npm run typecheck: passed.
 - npm run lint -- --quiet: passed (the normal lint command reports existing application warnings).
 - npm run build: passed; all routes generated successfully.
@@ -39,3 +39,11 @@ Deploy the frontend, including package.json/package-lock.json and the new lifecy
 The backend exposes GET/HEAD / and /health, and /ws/alerts supports client heartbeat pings. No recurring external monitor configuration or backend self-ping was found in this repository. Check external uptime monitors, cron jobs, CI/API test scripts, bots/crawlers, other clients and old tabs. Requests through Next.js /api rewrites reach the backend too. Active live dashboards and explicit user actions intentionally generate traffic.
 
 Render documents a 15-minute idle period without inbound HTTP traffic or WebSocket messages, with HTTP requests and new socket connections waking the service: https://render.com/docs/free . Verify quiet request logs and actual instance-hour usage after deployment. No hour savings have been measured.
+
+## Investigating five-second status requests
+
+Automatic status reads now carry `client=sanket-live-v2` and `view` query parameters in the access-log URL. The view is a static frontend route, not a username or token. For example: `/api/system/airgap?client=sanket-live-v2&view=%2Fdashboard`.
+
+In the current source, only the dashboard layout schedules repeated status reads, using the shared 45-second controller. Settings and worker status reads are once-only. A regression test recreates the callback and rerenders every five seconds, including state updates from responses: it produces requests only at initial activation and 45 seconds, then none while hidden. This does not identify the source of already observed production traffic.
+
+After the diagnostic version deploys and tabs reload, recurring unlabelled `/api/system/airgap` reads are not from these three automatic callers. Manual mode-switch refreshes remain unlabelled. Check the exact Vercel URL: old immutable preview/deployment URLs can continue serving old code even after the main production alias updates. Multiple active clients can also interleave otherwise slower polling in combined backend logs. Determine the actual caller from labelled URLs and browser Network initiators before attributing it to an old tab or external monitor.

@@ -1,5 +1,6 @@
 'use client';
 import { useLiveTask } from '@/lib/use-live-task';
+import { systemStatusUrl } from '@/lib/system-status-url';
 
 import { useState, useEffect } from 'react';
 import { 
@@ -49,7 +50,7 @@ export default function SettingsPage() {
 
   const fetchSystemStatus = async (signal?: AbortSignal) => {
     try {
-      const res = await fetch(`${API}/api/system/airgap`, { signal });
+      const res = await fetch(systemStatusUrl(API, '/dashboard/settings'), { signal });
       if (res.ok) {
         const data = await res.json();
         if (!signal?.aborted) setAirgap(data);

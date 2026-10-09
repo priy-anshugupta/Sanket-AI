@@ -1,5 +1,6 @@
 'use client';
 import { useLiveTask } from '@/lib/use-live-task';
+import { systemStatusUrl } from '@/lib/system-status-url';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -208,7 +209,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useLiveTask(async signal => {
     try {
-      const res = await fetch(`${API_BASE}/api/system/airgap`, { signal });
+      const res = await fetch(systemStatusUrl(API_BASE, pathname), { signal });
       if (res.ok) {
         const data = await res.json();
         if (!signal.aborted) setSystemStatus(data);

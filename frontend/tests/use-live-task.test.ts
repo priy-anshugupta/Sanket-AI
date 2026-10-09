@@ -2,6 +2,7 @@ import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { useLiveTask, activityOptions } from '../src/lib/use-live-task';
 import { startSocket } from '../src/lib/live-lifecycle';
+import { useState } from 'react';
 let pathname = '/dashboard';
 vi.mock('next/navigation', () => ({ usePathname: () => pathname }));
 const token = () => `header.${btoa(JSON.stringify({ exp: Date.now() / 1000 + 3600 }))}.signature`;
@@ -12,6 +13,44 @@ beforeEach(() => {
   Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
 });
 afterEach(() => { cleanup(); localStorage.clear(); vi.useRealTimers(); });
+it('does not restart status polling on five-second rerenders or updates from its own response', async () => {
+  const fetchStatus = vi.fn(async () => ({}));
+  const hook = renderHook(({ tick }) => {
+    const [, setStatus] = useState({});
+    useLiveTask(async signal => {
+      const response = await fetchStatus();
+      if (!signal.aborted) setStatus(response);
+      void tick;
+    });
+  }, { initialProps: { tick: 0 } });
+  for (let tick = 1; tick <= 8; tick++) {
+    await act(async () => { await vi.advanceTimersByTimeAsync(5_000); });
+    hook.rerender({ tick });
+    expect(fetchStatus).toHaveBeenCalledTimes(1);
+  }
+  await act(async () => { await vi.advanceTimersByTimeAsync(5_000); });
+  expect(fetchStatus).toHaveBeenCalledTimes(2);
+  await act(async () => {
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden' });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  for (let tick = 9; tick <= 20; tick++) {
+    await act(async () => { await vi.advanceTimersByTimeAsync(5_000); });
+    hook.rerender({ tick });
+  }
+  expect(fetchStatus).toHaveBeenCalledTimes(2);
+});
+
+it('never starts automatic dashboard status reads on static and historical routes', async () => {
+  const task = vi.fn(async () => {});
+  for (const route of ['/', '/login', '/dashboard/replay', '/dashboard/report/123', '/dashboard/voice', '/dashboard/settings', '/worker']) {
+    pathname = route;
+    const page = renderHook(() => useLiveTask(task));
+    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+    page.unmount();
+  }
+  expect(task).not.toHaveBeenCalled();
+});
 it('gates actual hooks by auth, route, visibility, logout, and navigation', async () => {
   localStorage.clear();
   const task = vi.fn(async () => {});

@@ -1,5 +1,6 @@
 'use client';
 import { useLiveTask } from '@/lib/use-live-task';
+import { systemStatusUrl } from '@/lib/system-status-url';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
@@ -107,7 +108,7 @@ export default function FieldWorkerTerminal() {
 
   useLiveTask(async signal => {
     try {
-      const res = await fetch(getApiUrl('/api/system/airgap'), { signal });
+      const res = await fetch(systemStatusUrl(getApiUrl(''), '/worker'), { signal });
       if (res.ok) {
         const data = await res.json();
         if (!signal.aborted) setAirgapStatus(data);
