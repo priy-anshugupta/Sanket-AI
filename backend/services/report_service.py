@@ -4,14 +4,13 @@ Core business logic for report CRUD and pipeline triggering.
 """
 
 import uuid
-import csv
-import io
 from datetime import datetime
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, case
 from sqlalchemy.orm import selectinload
 
+from backend.services.csv_import import parse_observation_csv
 from backend.models.report import Report
 from backend.models.entity import Entity
 from backend.models.feedback import FeedbackLog
@@ -83,27 +82,19 @@ class ReportService:
         self, db: AsyncSession, csv_content: str
     ) -> list[Report]:
         """Parse CSV content and create report records."""
+        rows = parse_observation_csv(csv_content)
         reports = []
-        reader = csv.DictReader(io.StringIO(csv_content))
-
-        for row in reader:
-            text = row.get("text", row.get("description", row.get("narrative", "")))
-            if not text or len(text.strip()) < 3:
-                continue
-
+        for row in rows:
             report = await self.create_report(
                 db=db,
-                raw_text=text.strip(),
+                raw_text=row["text"],
                 source="csv",
                 location=row.get("location"),
-                asset_id=row.get("asset_id", row.get("equipment")),
-                activity_type=row.get("activity_type", row.get("activity")),
+                asset_id=row.get("asset_id") or row.get("equipment"),
+                activity_type=row.get("activity_type") or row.get("activity"),
                 shift=row.get("shift"),
             )
             reports.append(report)
-
-            if len(reports) >= 500:  # PRD max batch size
-                break
 
         return reports
 

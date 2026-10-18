@@ -1,7 +1,7 @@
 'use client';
 import { useLiveTask } from '@/lib/use-live-task';
 
-import { useState, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { 
   AlertTriangle, 
@@ -18,8 +18,11 @@ import {
   FileText,
   Zap,
   Flame,
-  Brain
+  Brain,
+  Upload,
+  Loader2
 } from 'lucide-react';
+import { api } from '@/lib/api';
 import SwarmTraceModal from '@/components/SwarmTraceModal';
 import { getApiBase } from '@/lib/config';
 
@@ -63,7 +66,9 @@ export default function TriageDashboard() {
   const [ingestActivity, setIngestActivity] = useState('Drilling');
   const [ingestShift, setIngestShift] = useState('DAY');
   const [ingesting, setIngesting] = useState(false);
-  const [batchProgress, setBatchProgress] = useState(0);
+  const batchInputRef = useRef<HTMLInputElement>(null);
+  const [batchFile, setBatchFile] = useState<File | null>(null);
+  const [batchError, setBatchError] = useState('');
   const [batchSuccessMsg, setBatchSuccessMsg] = useState('');
 
   // Swarm Trace Modal state
@@ -143,40 +148,21 @@ export default function TriageDashboard() {
     }
   };
 
-  // Handle 1-click batch demo dataset ingestion (507 reports)
-  const handleBatchIngest500 = async () => {
+  const handleBatchUpload = async () => {
+    if (!batchFile || ingesting) return;
     setIngesting(true);
-    setBatchProgress(10);
-    const timer = setInterval(() => {
-      setBatchProgress(prev => (prev < 90 ? prev + 15 : prev));
-    }, 400);
-
+    setBatchError('');
+    setBatchSuccessMsg('');
     try {
-      const res = await fetch(`${API_BASE}/api/reports/ingest/demo-500`, {
-        method: 'POST',
-      });
-      clearInterval(timer);
-      setBatchProgress(100);
-
-      if (res.ok) {
-        const data = await res.json();
-        setBatchSuccessMsg(`Ingested & classified ${data.total_ingested} reports in ${data.elapsed_seconds}s`);
-        setTimeout(() => {
-          setShowIngest(false);
-          setBatchProgress(0);
-          setBatchSuccessMsg('');
-          fetchSummary();
-          fetchReports();
-          window.dispatchEvent(new CustomEvent('sanket:new_report', { detail: data }));
-        }, 1200);
-      } else {
-        alert('Batch ingestion failed on server.');
-        setBatchProgress(0);
-      }
-    } catch {
-      clearInterval(timer);
-      alert('Network error during batch ingestion.');
-      setBatchProgress(0);
+      const data = await api.ingestCSV(batchFile);
+      setBatchSuccessMsg(`${data.count} observations imported and queued for AI processing.`);
+      setBatchFile(null);
+      if (batchInputRef.current) batchInputRef.current.value = '';
+      setPage(1);
+      await Promise.all([fetchSummary(), fetchReports()]);
+      window.dispatchEvent(new CustomEvent('sanket:new_report', { detail: data }));
+    } catch (error) {
+      setBatchError(error instanceof Error ? error.message : 'Upload failed. Please try again.');
     } finally {
       setIngesting(false);
     }
@@ -610,13 +596,14 @@ export default function TriageDashboard() {
                 <h3 className="font-heading font-bold text-base text-[#1A2B2D]">Ingest Safety Observations</h3>
                 <p className="text-xs text-[#5E7072]">Multilingual neural pipeline (Assamese, Hindi, English)</p>
               </div>
-              <button type="button" suppressHydrationWarning onClick={() => setShowIngest(false)} className="text-[#94A3A5] hover:text-[#1A2B2D] font-bold text-base">✕</button>
+              <button type="button" suppressHydrationWarning disabled={ingesting} aria-label="Close import dialog" onClick={() => setShowIngest(false)} className="text-[#94A3A5] hover:text-[#1A2B2D] font-bold text-base">✕</button>
             </div>
 
             {/* Ingest Mode Tabs */}
             <div className="grid grid-cols-2 p-1 bg-[#F0F2ED] rounded-lg">
               <button suppressHydrationWarning
                 type="button"
+                disabled={ingesting}
                 onClick={() => setIngestTab('batch')}
                 className={`py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${
                   ingestTab === 'batch'
@@ -630,6 +617,7 @@ export default function TriageDashboard() {
 
               <button suppressHydrationWarning
                 type="button"
+                disabled={ingesting}
                 onClick={() => setIngestTab('single')}
                 className={`py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${
                   ingestTab === 'single'
@@ -642,53 +630,56 @@ export default function TriageDashboard() {
               </button>
             </div>
 
-            {/* TAB 1: 1-Click 507 Oil India Demo Dataset */}
+            {/* Batch import requires an explicitly selected file. */}
             {ingestTab === 'batch' && (
               <div className="space-y-4 py-1">
-                <div className="p-3.5 rounded-lg bg-[#F7F8F5] border border-[#C2CEC2] text-xs text-[#3E5052] space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-[#1A2B2D]">Dataset Scope:</span>
-                    <span className="font-mono text-[#0A6B63] font-semibold">507 Observations</span>
-                  </div>
-                  <p className="text-[#5E7072] leading-relaxed">
-                    Loads Upper Assam operational dataset spanning 10 assets (Well Pad 7, Moran OCS-3, Digboi, Baghjan) across Drilling, Workover, and Maintenance.
-                  </p>
-                </div>
-
-                {/* Progress Bar */}
-                {ingesting && (
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between text-xs font-mono text-[#3E5052]">
-                      <span>Processing neural pipeline...</span>
-                      <span>{batchProgress}%</span>
-                    </div>
-                    <div className="w-full bg-[#F0F2ED] rounded-full h-2 overflow-hidden">
-                      <div 
-                        className="bg-[#0A6B63] h-2 rounded-full transition-all duration-300 ease-out" 
-                        style={{ width: `${batchProgress}%` }}
-                      />
+                <div className="rounded-xl border border-dashed border-[#81B8AD] bg-gradient-to-br from-[#EDF8F4] to-[#F7F8F5] p-5 space-y-3 transition-colors hover:border-[#0A6B63]">
+                  <div className="flex items-center gap-3">
+                    <span className="rounded-lg bg-white p-2.5 shadow-xs"><Upload className="w-5 h-5 text-[#0A6B63]" /></span>
+                    <div>
+                      <label htmlFor="batch-dataset" className="block text-sm font-semibold text-[#1A2B2D]">Upload your observation dataset</label>
+                      <p id="batch-file-help" className="text-xs text-[#5E7072] mt-1">CSV · UTF-8 · up to 500 observations · 5 MB maximum</p>
                     </div>
                   </div>
-                )}
-
-                {batchSuccessMsg && (
-                  <div className="p-3 rounded-lg bg-[#EDFAF4] border border-[#BFEADB] text-[#1B8A6C] text-xs font-semibold flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#1B8A6C]" />
-                    {batchSuccessMsg}
-                  </div>
-                )}
-
-                <div className="pt-1">
-                  <button suppressHydrationWarning
-                    type="button"
-                    onClick={handleBatchIngest500}
+                  <input
+                    ref={batchInputRef}
+                    id="batch-dataset"
+                    type="file"
+                    accept=".csv,text/csv"
                     disabled={ingesting}
-                    className="w-full py-2.5 rounded-lg bg-[#0A6B63] hover:bg-[#085B54] text-white font-semibold text-xs shadow-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
-                  >
-                    <Zap className="w-4 h-4" />
-                    {ingesting ? 'Classifying Dataset via Neural Pipeline...' : 'Ingest Safety Dataset (507 Reports)'}
-                  </button>
+                    aria-describedby="batch-file-help batch-columns"
+                    className="block w-full text-xs text-[#3E5052] file:mr-3 file:rounded-lg file:border-0 file:bg-[#0A6B63] file:px-4 file:py-2 file:font-semibold file:text-white cursor-pointer disabled:opacity-50"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null;
+                      setBatchFile(null);
+                      setBatchError('');
+                      setBatchSuccessMsg('');
+                      if (!file) return;
+                      if (!file.name.toLowerCase().endsWith('.csv')) {
+                        setBatchError('Choose a CSV file.');
+                      } else if (file.size > 5 * 1024 * 1024) {
+                        setBatchError('File exceeds the 5 MB limit.');
+                      } else if (file.size === 0) {
+                        setBatchError('The selected file is empty.');
+                      } else {
+                        setBatchFile(file);
+                      }
+                    }}
+                  />
+                  {batchFile && <p className="text-xs font-mono text-[#0A6B63] break-all">{batchFile.name} · {(batchFile.size / 1024).toFixed(1)} KB selected</p>}
                 </div>
+                <p id="batch-columns" className="text-xs text-[#5E7072] leading-relaxed">
+                  Required column: <strong>text</strong>, <strong>description</strong>, or <strong>narrative</strong>.
+                  Optional: location, asset_id, activity_type, shift. Select a file, then import to add its observations.
+                </p>
+                <a href="data:text/csv;charset=utf-8,text%2Clocation%2Casset_id%2Cactivity_type%2Cshift%0A" download="observations-template.csv" className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#0A6B63] underline underline-offset-4">Download CSV template</a>
+                {batchError && <p role="alert" className="rounded-lg border border-[#EBC6C6] bg-[#FFF3F3] p-3 text-xs text-[#A33232]">{batchError}</p>}
+                {batchSuccessMsg && <p role="status" className="flex items-center gap-2 rounded-lg border border-[#BFEADB] bg-[#EDFAF4] p-3 text-xs text-[#1B6B54]"><CheckCircle2 className="w-4 h-4 shrink-0" />{batchSuccessMsg}</p>}
+                <button type="button" onClick={handleBatchUpload} disabled={!batchFile || ingesting}
+                  className="w-full py-3 rounded-lg bg-[#0A6B63] hover:bg-[#085B54] text-white font-semibold text-xs shadow-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                  {ingesting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  {ingesting ? 'Uploading observations…' : 'Import selected file'}
+                </button>
               </div>
             )}
 

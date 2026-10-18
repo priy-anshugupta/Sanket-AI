@@ -3,7 +3,6 @@ SANKET · AI — Report API Routes
 Thin route handlers delegating to report_service.
 """
 
-import asyncio
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, UploadFile, File, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
@@ -137,17 +136,23 @@ async def ingest_csv(
     Batch ingest reports from CSV file (up to 500 reports).
     CSV must have a 'text' or 'description' or 'narrative' column.
     """
-    if not file.filename.endswith(".csv"):
+    if not file.filename or not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only CSV files accepted")
 
-    content = await file.read()
-    csv_text = content.decode("utf-8", errors="replace")
+    content = await file.read(5 * 1024 * 1024 + 1)
+    if len(content) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="CSV file exceeds the 5 MB limit")
+    try:
+        csv_text = content.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=400, detail="Save the CSV with UTF-8 encoding")
 
-    reports = await report_service.create_reports_from_csv(db, csv_text)
-    await db.commit()
-
-    if not reports:
-        raise HTTPException(status_code=400, detail="No valid reports found in CSV")
+    try:
+        reports = await report_service.create_reports_from_csv(db, csv_text)
+        await db.commit()
+    except ValueError as error:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail=str(error))
 
     # Enqueue batch processing
     report_ids = [r.id for r in reports]
@@ -240,122 +245,12 @@ async def resolve_report(
 
 
 @router.post("/ingest/demo-500")
-async def ingest_demo_500(db: AsyncSession = Depends(get_db)):
-    """
-    1-Click fast batch ingestion of all 507 Oil India synthetic safety reports.
-    Executes local SIF neural classification, entity extraction, and knowledge graph mapping.
-    """
-    import json
-    import os
-    import time
-    from ai.sif.classifier import SIFClassifier
-    from ai.lsr.mapper import LSRMapper
-    from graph.graph_store import graph_store
-    from backend.models.report import Report
-    from backend.models.entity import Entity
-    from backend.models.lsr_tag import LSRTag
-    from backend.models.graph_edge import GraphEdge
-    import uuid
-
-    start_time = time.time()
-    data_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-        "data", "synthetic", "synthetic_500.json"
+async def ingest_demo_500():
+    """Retired: importing bundled demo data is no longer supported."""
+    raise HTTPException(
+        status_code=410,
+        detail="Demo dataset ingestion has been removed. Upload a CSV file instead.",
     )
-
-    if not os.path.exists(data_path):
-        raise HTTPException(status_code=404, detail="synthetic_500.json not found")
-
-    with open(data_path, "r", encoding="utf-8") as f:
-        items = json.load(f)
-
-    # Reuse singleton local AI models
-    from ai.sif.classifier import sif_classifier
-    from ai.lsr.mapper import lsr_mapper
-    if not sif_classifier._initialized:
-        sif_classifier.initialize()
-    if not lsr_mapper._initialized:
-        lsr_mapper.initialize(model=sif_classifier.model)
-
-    # Offload CPU-bound PyTorch neural classification loop to worker thread
-    def _classify_all_sync():
-        processed = []
-        h_cnt = 0
-        m_cnt = 0
-        l_cnt = 0
-        for item in items:
-            text_content = item.get("text", "")
-            loc = item.get("location", "Well Pad 7")
-            act = item.get("activity_type", "Drilling")
-            shift = item.get("shift", "DAY")
-
-            # Classify SIF
-            res = sif_classifier.classify(text_content)
-            sif_score = res["sif_score"]
-            sif_label = res["sif_label"]
-            is_precursor = sif_score >= 0.75
-
-            if sif_label == "HIGH":
-                h_cnt += 1
-            elif sif_label == "MEDIUM":
-                m_cnt += 1
-            else:
-                l_cnt += 1
-
-            # Match LSR
-            lsr_res = lsr_mapper.map_rules(text_content)
-            top_rule = lsr_res[0]["rule_name"] if lsr_res else None
-
-            rep_id = f"REP-{str(uuid.uuid4())[:8].upper()}"
-            processed.append((rep_id, text_content, sif_score, sif_label, is_precursor, top_rule, loc, act, shift))
-        return processed, h_cnt, m_cnt, l_cnt
-
-    classified_items, high_count, med_count, low_count = await asyncio.to_thread(_classify_all_sync)
-
-    reports_to_add = []
-    for rep_id, text_content, sif_score, sif_label, is_precursor, top_rule, loc, act, shift in classified_items:
-        report = Report(
-            id=rep_id,
-            raw_text=text_content,
-            sif_score=round(min(sif_score, 0.99), 2),
-            sif_label=sif_label,
-            is_sif_precursor=is_precursor,
-            iogp_rule=top_rule,
-            location=loc,
-            activity_type=act,
-            shift=shift,
-            status="COMPLETED",
-            source="demo_dataset",
-        )
-        reports_to_add.append(report)
-
-        # Graph node integration
-        entities = [
-            {"type": "Location", "value": loc},
-            {"type": "Activity", "value": act},
-        ]
-        if top_rule:
-            entities.append({"type": "LSR Rule", "value": top_rule})
-
-        graph_store.add_report_entities(
-            report_id=rep_id,
-            entities=entities,
-            sif_label=sif_label,
-        )
-
-    db.add_all(reports_to_add)
-    await db.commit()
-
-    elapsed = round(time.time() - start_time, 2)
-    return {
-        "status": "COMPLETED",
-        "total_ingested": len(reports_to_add),
-        "high_sif_count": high_count,
-        "medium_count": med_count,
-        "low_count": low_count,
-        "elapsed_seconds": elapsed,
-        "message": f"Successfully ingested and classified {len(reports_to_add)} reports in {elapsed}s!"
-    }
 
 
 @router.post("/swarm-trace")

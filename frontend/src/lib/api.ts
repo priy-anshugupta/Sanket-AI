@@ -112,7 +112,10 @@ class ApiClient {
     const res = await fetch(`${this.baseUrl}/api/reports/ingest/csv`, {
       method: 'POST', body: formData, headers,
     });
-    if (!res.ok) throw new Error('CSV upload failed');
+    if (!res.ok) {
+      const error = await res.json().catch(() => null);
+      throw new Error(error?.detail || `CSV upload failed (${res.status})`);
+    }
     return res.json();
   }
 
