@@ -3,8 +3,10 @@ SANKET · AI — FastAPI Application Entry Point
 SIH26165 · AI/NLP Engine for SIF Precursor Detection
 """
 
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import DBAPIError, TimeoutError as PoolTimeoutError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
@@ -21,6 +23,9 @@ if sys.platform == "win32":
 from backend.config.settings import settings
 from backend.db.engine import (
     init_db,
+    check_database_ready,
+    DatabaseUnavailable,
+    is_connection_failure,
     close_db,
     get_active_db_type,
     switch_to_sqlite,
@@ -40,31 +45,45 @@ async def async_ai_model_startup():
         print(f"[Startup] [WARN] SIF Classifier init deferred: {e}", flush=True)
 
 
+async def initialize_database():
+    # Each attempt has a deadline; startup recovery continues with capped backoff.
+    async with asyncio.timeout(20):
+        await init_db()
+        await seed_default_users()
+
+
+async def recover_database_startup():
+    delay = 2
+    while True:
+        await asyncio.sleep(delay)
+        try:
+            await initialize_database()
+            print("[Database] Startup recovery completed", flush=True)
+            return
+        except Exception as error:
+            print(f"[Database] Startup recovery pending ({type(error).__name__})", flush=True)
+            delay = min(delay * 2, 30)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Guaranteed DB Ready Startup Lifecycle."""
-    print("=" * 60, flush=True)
-    print("  SANKET · AI — Starting Up", flush=True)
-    print(f"  Mode: {settings.AI_MODE.upper()}", flush=True)
-    print(f"  Database: {settings.DATABASE_URL}", flush=True)
-    print("=" * 60, flush=True)
-
-    # 1. Synchronously initialize DB & seed users before port accepts traffic
+    print(f"[Startup] SANKET AI · database mode: {settings.DB_MODE}", flush=True)
+    recovery_task = None
     try:
-        await asyncio.wait_for(init_db(), timeout=30.0)
-        print("[Startup] [OK] Database connected & initialized", flush=True)
-        await seed_default_users()
-    except Exception as e:
-        print(f"[Startup] [WARN] DB init error during startup: {e}", flush=True)
-
-    # 2. Warm up AI neural models in background task
-    asyncio.create_task(async_ai_model_startup())
-
-    yield
-
-    # ── Shutdown ──
-    await close_db()
-    print("[Shutdown] Database connections closed", flush=True)
+        await initialize_database()
+    except Exception as error:
+        print(f"[Startup] Database unavailable ({type(error).__name__}); recovery scheduled", flush=True)
+        recovery_task = asyncio.create_task(recover_database_startup())
+    ai_task = asyncio.create_task(async_ai_model_startup())
+    try:
+        yield
+    finally:
+        for task in (recovery_task, ai_task):
+            if task is not None:
+                task.cancel()
+                with suppress(asyncio.CancelledError):
+                    await task
+        await close_db()
 
 
 async def seed_default_users():
@@ -103,6 +122,28 @@ app = FastAPI(
     version=settings.APP_VERSION,
     lifespan=lifespan,
 )
+
+
+def database_unavailable_response():
+    return JSONResponse(
+        status_code=503,
+        content={"detail": "Database temporarily unavailable. Please try again shortly."},
+        headers={"Retry-After": "10", "Cache-Control": "no-store"},
+    )
+
+
+@app.exception_handler(DatabaseUnavailable)
+@app.exception_handler(PoolTimeoutError)
+async def unavailable_database_handler(request, error):
+    return database_unavailable_response()
+
+
+@app.exception_handler(DBAPIError)
+async def database_error_handler(request, error):
+    if is_connection_failure(error):
+        return database_unavailable_response()
+    return JSONResponse(status_code=500, content={"detail": "Database request failed."})
+
 
 # CORS — allow frontend dev server and local clients without invalid wildcard
 app.add_middleware(
@@ -164,6 +205,19 @@ async def health_check():
     }
 
 
+@app.api_route("/ready", methods=["GET", "HEAD"], tags=["Health"])
+async def readiness_check():
+    """Database readiness for external uptime monitors; /health remains process liveness."""
+    try:
+        await check_database_ready()
+    except Exception:
+        return database_unavailable_response()
+    return JSONResponse(
+        content={"status": "ready", "database": get_active_db_type()},
+        headers={"Cache-Control": "no-store"},
+    )
+
+
 @app.get("/api/system/airgap", tags=["System"])
 async def airgap_status():
     """Air-Gap status and real-time egress telemetry."""
@@ -214,7 +268,13 @@ async def airgap_status():
 async def db_status():
     """Get the current active database (Supabase vs SQLite) and connectivity."""
     active = get_active_db_type()
+    try:
+        await check_database_ready()
+        connected = True
+    except Exception:
+        connected = False
     return {
+        "connected": connected,
         "active_database": active,
         "is_offline": active == "sqlite",
         "configured_mode": settings.DB_MODE,
@@ -242,13 +302,9 @@ async def db_switch(mode: str):
                 "active_database": "supabase",
                 "message": "Switched to Cloud Supabase PostgreSQL."
             }
-        except Exception as e:
-            await switch_to_sqlite()
-            return {
-                "status": "fallback_sqlite",
-                "active_database": "sqlite",
-                "message": f"Could not connect to Supabase ({e}). Maintained local SQLite fallback."
-            }
+        except Exception:
+            return database_unavailable_response()
+
     else:
         return {
             "status": "error",

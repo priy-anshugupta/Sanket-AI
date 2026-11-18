@@ -1,7 +1,7 @@
 """
-SANKET · AI — Dual-Mode Database Engine & Dynamic Session Factory
+SANKET Â· AI â€” Dual-Mode Database Engine & Dynamic Session Factory
 Seamlessly switches between Cloud PostgreSQL (Supabase) and Local SQLite (sanket.db).
-Guarantees 100% air-gapped offline operation with automatic fallback and default seeding.
+Explicit offline mode supports SQLite; cloud mode preserves the configured database.
 """
 
 import asyncio
@@ -10,7 +10,8 @@ from datetime import datetime
 from typing import Optional
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import event, select, func
+from sqlalchemy import event, select, func, text
+from sqlalchemy.exc import DBAPIError, OperationalError, TimeoutError as PoolTimeoutError
 from backend.config.settings import settings
 
 
@@ -58,6 +59,7 @@ def _build_postgres_engine(url: str = None):
         },
         pool_pre_ping=True,
         pool_recycle=300,
+        pool_timeout=4,
     )
 
 
@@ -132,69 +134,94 @@ async def switch_to_sqlite():
     await seed_offline_defaults()
 
 
-async def switch_to_supabase():
-    """Explicitly switch active database to Cloud Supabase PostgreSQL."""
-    global _current_engine, _current_session_factory, active_db_type
-    if _current_engine:
-        try:
-            await _current_engine.dispose()
-        except Exception:
-            pass
+class DatabaseUnavailable(RuntimeError):
+    """The configured database cannot currently serve requests."""
 
-    _current_engine = _build_postgres_engine()
-    _current_session_factory = async_sessionmaker(
-        _current_engine,
-        class_=AsyncSession,
-        expire_on_commit=False,
+
+def is_connection_failure(error: Exception) -> bool:
+    return isinstance(error, (OSError, TimeoutError, PoolTimeoutError, OperationalError)) or (
+        isinstance(error, DBAPIError) and error.connection_invalidated
     )
+
+
+async def switch_to_supabase():
+    """Validate a replacement cloud engine before changing the active database."""
+    global _current_engine, _current_session_factory, active_db_type
+    candidate = _build_postgres_engine()
+    try:
+        import backend.models  # noqa: F401
+        async with asyncio.timeout(10):
+            async with candidate.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+    except BaseException:
+        await candidate.dispose()
+        raise
+    previous = _current_engine
+    _current_engine = candidate
+    _current_session_factory = async_sessionmaker(candidate, class_=AsyncSession, expire_on_commit=False)
     active_db_type = "supabase"
+    await previous.dispose()
 
-    import backend.models  # noqa: F401
-    async with _current_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
 
-    print("[Database] [CLOUD MODE] Active database is now Supabase PostgreSQL", flush=True)
+async def check_database_ready(timeout: float = 4.0):
+    """Check connectivity AND access to application data, without exposing any records."""
+    async with asyncio.timeout(timeout):
+        async with async_session_factory() as session:
+            await session.execute(text("SELECT id FROM reports LIMIT 1"))
 
 
 async def get_db() -> AsyncSession:
-    """FastAPI dependency: yields an async DB session from the active engine."""
-    async with async_session_factory() as session:
+    """Retry only connection acquisition; never replay application reads or writes."""
+    for attempt in range(3):
+        session = async_session_factory()
         try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
-        finally:
+            async with asyncio.timeout(4):
+                await session.execute(text("SELECT 1"))
+        except Exception as error:
             await session.close()
+            if not is_connection_failure(error):
+                raise
+            if attempt == 2:
+                raise DatabaseUnavailable("Database temporarily unavailable. Please try again shortly.") from error
+            await asyncio.sleep(0.25 * (2 ** attempt))
+            continue
+        except BaseException:
+            await session.close()
+            raise
+        break
+    try:
+        yield session
+        await session.commit()
+    except Exception as error:
+        await session.rollback()
+        if is_connection_failure(error):
+            raise DatabaseUnavailable("Database temporarily unavailable. Please try again shortly.") from error
+        raise
+    finally:
+        await session.close()
 
 
 async def init_db():
-    """
-    Initialize database on startup with intelligent fallback:
-    - If DB_MODE is 'sqlite' or AI_MODE is 'airgapped': uses SQLite directly.
-    - If DB_MODE is 'supabase' or 'auto': tests connection with a 3.5s timeout.
-      If unreachable (e.g. offline/no internet), automatically switches to SQLite.
-    """
+    """Cloud failures stay on PostgreSQL; local auto mode may opt into offline fallback."""
     global active_db_type
     import backend.models  # noqa: F401
 
-    if settings.DB_MODE == "sqlite":
-        print("[Database] Mode forced to offline SQLite via configuration", flush=True)
+    if settings.DB_MODE == "sqlite" or (
+        settings.DB_MODE == "auto" and "sqlite" in settings.DATABASE_URL
+    ):
         await switch_to_sqlite()
         return
-
-    # Auto or Supabase mode — test connection with 10.0s timeout for reliable cloud TLS handshakes
     try:
-        print(f"[Database] Testing connection to Supabase (10s limit)...", flush=True)
-        async with asyncio.timeout(10.0):
+        async with asyncio.timeout(10):
             async with _current_engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
         active_db_type = "supabase"
-        print("[Database] [OK] Supabase PostgreSQL connected & verified (Cloud Mode)", flush=True)
-    except Exception as e:
-        print(f"[Database] [WARN] Supabase unreachable or timed out ({e})", flush=True)
-        print("[Database] [AUTO-SWITCH] Seamlessly falling back to local SQLite (sanket.db)...", flush=True)
+        print("[Database] Supabase connected and schema verified", flush=True)
+    except Exception:
+        if settings.DB_MODE == "supabase" or os.environ.get("RENDER") or os.environ.get("RAILWAY_ENVIRONMENT"):
+            # Keep the PostgreSQL engine so subsequent attempts can reconnect.
+            raise
+        print("[Database] Local auto mode: falling back to offline SQLite", flush=True)
         await switch_to_sqlite()
 
 
